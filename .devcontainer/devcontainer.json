@@ -1,0 +1,29 @@
+{
+    "name": "transcendence",
+    // "build": {
+    //     "dockerfile": "Dockerfile"
+    // },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                // General Tools
+                "davidanson.vscode-markdownlint",
+                "ms-vscode-remote.remote-ssh",
+                "ms-vsliveshare.vsliveshare",
+                "pkief.material-icon-theme",
+
+                // Shell Check
+                "timonwong.shellcheck",
+
+                // Yaml
+                "redhat.vscode-yaml",
+
+                // Python
+                "ms-python.python",
+                "ms-python.vscode-pylance"
+
+                // Javascript
+            ]
+        }
+    }
+}
