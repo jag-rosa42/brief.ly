@@ -51,7 +51,7 @@ Observed failure modes without a convention:
 
 ---
 
-### Option 2: Conventional Commits ⭐ *(chosen)*
+### Option 2: Conventional Commits ⭐
 
 > Adopt the [Conventional Commits](https://www.conventionalcommits.org)
 > specification: `<type>(<scope>): <short description>`.
@@ -71,11 +71,11 @@ Observed failure modes without a convention:
 
 ---
 
-### Option 3: Gitmoji
+### Option 3: Gitmoji *(chosen)*
 
 > Prefix every commit message with a relevant emoji to convey type visually.
-
-- 📝 **More details**: `🐛 fix login validation`, `✨ add JWT auth`.
+> specification: `<gitmoji> [scope] <short description>`.
+- 📝 **More details**: `🐛 fix [authentication] login validation`, `✨ add [authentication] JWT auth`.
 - ✅ **Advantages**:
   - Visually distinctive in log output
   - Fun and expressive
@@ -88,28 +88,28 @@ Observed failure modes without a convention:
 
 ## ✅ Decision
 
-**We adopt the Conventional Commits specification for all commit messages.**
+**We adopt the Gitmoji specification for all commit messages.**
 
 Implementation details:
-- Format: `<type>(<optional scope>): <short description>`
+- Format: `<gitmoji> [<scope>] <short description>`.
 - Approved types:
 
-  | Type       | When to use                                      |
-  |------------|--------------------------------------------------|
-  | `feat`     | A new feature                                    |
-  | `fix`      | A bug fix                                        |
-  | `refactor` | Code change that is neither a fix nor a feature  |
-  | `docs`     | Documentation only                               |
-  | `test`     | Adding or updating tests                         |
-  | `chore`    | Build process, dependency updates, tooling       |
-  | `ci`       | CI/CD pipeline changes                           |
-  | `perf`     | Performance improvement                          |
+  | Type | When to use                                      |
+  |------|--------------------------------------------------|
+  | ✨   | A new feature                                    |
+  | 🐛   | A bug fix                                        |
+  | ♻️   | Code change that is neither a fix nor a feature  |
+  | 📝   | Documentation only                               |
+  | ✅   | Adding or updating tests                         |
+  | 🔧   | Build process, dependency updates, tooling       |
+  | 👷   | CI/CD pipeline changes                           |
+  | ⚡️   | Performance improvement                          |
 
 - Examples:
-	- feat(auth): add JWT token refresh endpoint
-	- fix(parser): resolve off-by-one in Content-Length handling
-	- docs(adr): add ADR-0003 commit convention
-	- chore(deps): upgrade FastAPI to 0.111.0
+	- ✨ [auth] add JWT token refresh endpoint
+	- 🐛 [parser] resolve off-by-one in Content-Length handling
+	- 📝 [adr] add ADR-0003 commit convention
+	- 🔧 [deps] upgrade FastAPI to 0.111.0
 ---
 
 ## 🔄 Consequences
@@ -117,12 +117,12 @@ Implementation details:
 ### 🟢 Positive
 
 * `git log --oneline` becomes a structured changelog at a glance
-* Type prefix instantly signals the nature and risk level of a change
+* gitmoji prefix instantly signals the nature and risk level of a change
 * Enables automated changelog and release note generation if needed later
 
 ### 🔴 Negative
 
-* Team must learn and consistently apply the type vocabulary
+* Team must learn and consistently apply the gitmoji vocabulary
 * Scope definitions may require a follow-up decision if ambiguity arises
 
 ### 📌 Required Actions
