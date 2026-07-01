@@ -75,7 +75,7 @@ Observed failure modes without a convention:
 
 > Prefix every commit message with a relevant emoji to convey type visually.
 > specification: `<gitmoji> [scope] <short description>`.
-- 📝 **More details**: `🐛 fix [authentication] login validation`, `✨ add [authentication] JWT auth`.
+- 📝 **More details**: `🐛 [authentication] fix login validation`, `✨ [authentication] add JWT auth`.
 - ✅ **Advantages**:
   - Visually distinctive in log output
   - Fun and expressive
