@@ -11,7 +11,11 @@ requires-python = ">=3.14"
 
 # Runtime dependencies installed with the application.
 dependencies = [
+    "alembic>=1.18.5",
     "fastapi[standard]>=0.141.1",
+    "psycopg[binary]>=3.3.4",
+    "pydantic-settings>=2.14.2",
+    "sqlalchemy>=2.0.51",
 ]
 
 # ============================================================================
