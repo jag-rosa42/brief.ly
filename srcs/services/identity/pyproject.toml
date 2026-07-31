@@ -21,3 +21,60 @@ dependencies = [
 # ============================================================================
 # Development dependencies
 # ============================================================================
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",  # Test framework
+    "ruff>=0.16.1",   # Linter and formatter
+    "ty>=0.0.65",     # Static type checker
+]
+
+# ============================================================================
+# FastAPI CLI
+# ============================================================================
+
+[tool.fastapi]
+entrypoint = "src.main:app"
+
+
+# ============================================================================
+# Ruff
+# ============================================================================
+
+[tool.ruff]
+line-length = 88
+target-version = "py314"
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle
+    "F",    # Pyflakes
+    "I",    # Import sorting
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "SIM",  # flake8-simplify
+    "C4",   # flake8-comprehensions
+    "RET",  # flake8-return
+    "RUF",  # Ruff-specific rules
+]
+
+# Allow Ruff to automatically fix any fixable issue.
+fixable = ["ALL"]
+
+[tool.ruff.lint.isort]
+
+# Treat imports from the local `src` package as first-party.
+known-first-party = ["src"]
+
+
+# ============================================================================
+# ty
+# ============================================================================
+
+[tool.ty]
+
+# No configuration required yet.
+# Add options here if the project grows and needs them.
