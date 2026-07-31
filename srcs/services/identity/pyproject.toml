@@ -1,0 +1,19 @@
+# ============================================================================
+# Project metadata
+# ============================================================================
+
+[project]
+name = "identity"
+version = "0.1.0"
+description = "Identity service"
+readme = "README.md"
+requires-python = ">=3.14"
+
+# Runtime dependencies installed with the application.
+dependencies = [
+    "fastapi[standard]>=0.141.1",
+]
+
+# ============================================================================
+# Development dependencies
+# ============================================================================
