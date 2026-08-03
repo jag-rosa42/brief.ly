@@ -42,8 +42,6 @@
 *.su
 *.idb
 *.pdb
-test.cpp
-my_config.conf
 
 # Kernel Module Compile Results
 *.mod*
@@ -60,3 +58,7 @@ dkms.conf
 # Transcendence specific files
 *env
 *secrets/
+
+# front
+node_modules
+dist
