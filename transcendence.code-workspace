@@ -1,0 +1,20 @@
+{
+  "folders": [
+    { "name": "transcendence", "path": "." },
+    { "name": "frontend", "path": "srcs/frontend" },
+    { "name": "identity", "path": "srcs/services/identity" },
+  ],
+  "settings": {
+    "files.exclude": {
+      "srcs/frontend": true,
+      "srcs/services/identity": true,
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "astral-sh.ty",
+      "charliermarsh.ruff",
+      "ms-python.python"
+    ]
+  }
+}
