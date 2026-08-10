@@ -3,14 +3,15 @@
     { "name": "transcendence", "path": "." },
     { "name": "frontend", "path": "srcs/frontend" },
     { "name": "identity", "path": "srcs/services/identity" },
-    { "name": "personalization", "path": "srcs/services/personalization" }
+    { "name": "personalization", "path": "srcs/services/personalization" },
+    { "name": "content_management", "path": "srcs/services/content_management" },
   ],
   "settings": {
     "files.exclude": {
       "srcs/frontend": true,
       "srcs/services/identity": true,
-      "srcs/services/personalization": true
-    }
+      "srcs/services/personalization": true,
+      "srcs/services/content_management": true,
   },
   "extensions": {
     "recommendations": [
