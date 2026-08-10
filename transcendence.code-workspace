@@ -6,6 +6,7 @@
     { "name": "personalization", "path": "srcs/services/personalization" },
     { "name": "content_management", "path": "srcs/services/content_management" },
     { "name": "ai_processing", "path": "srcs/services/ai_processing" },
+    { "name": "morning_briefing", "path": "srcs/services/morning_briefing" },
   ],
   "settings": {
     "files.exclude": {
@@ -14,6 +15,7 @@
       "srcs/services/personalization": true,
       "srcs/services/content_management": true,
       "srcs/services/ai_processing": true,
+      "srcs/services/morning_briefing": true,
     }
   },
   "extensions": {
