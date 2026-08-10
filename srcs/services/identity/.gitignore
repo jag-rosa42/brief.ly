@@ -14,3 +14,4 @@ wheels/
 !.vscode/settings.json
 .ruff_cache
 .env
+.pytest_cache
