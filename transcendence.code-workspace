@@ -3,11 +3,13 @@
     { "name": "transcendence", "path": "." },
     { "name": "frontend", "path": "srcs/frontend" },
     { "name": "identity", "path": "srcs/services/identity" },
+    { "name": "personalization", "path": "srcs/services/personalization" }
   ],
   "settings": {
     "files.exclude": {
       "srcs/frontend": true,
       "srcs/services/identity": true,
+      "srcs/services/personalization": true
     }
   },
   "extensions": {
