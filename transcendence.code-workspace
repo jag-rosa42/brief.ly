@@ -5,6 +5,7 @@
     { "name": "identity", "path": "srcs/services/identity" },
     { "name": "personalization", "path": "srcs/services/personalization" },
     { "name": "content_management", "path": "srcs/services/content_management" },
+    { "name": "ai_processing", "path": "srcs/services/ai_processing" },
   ],
   "settings": {
     "files.exclude": {
@@ -12,6 +13,8 @@
       "srcs/services/identity": true,
       "srcs/services/personalization": true,
       "srcs/services/content_management": true,
+      "srcs/services/ai_processing": true,
+    }
   },
   "extensions": {
     "recommendations": [
