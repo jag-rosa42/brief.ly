@@ -17,7 +17,7 @@ Database URL
 Engine
     │
     ▼
-SessionLocal (factory)
+SessionFactory (factory)
     │
     ▼
 Session
@@ -26,7 +26,7 @@ Session
 ORM Models
 """
 """
-SessionLocal is a factory that creates new SQLAlchemy Session objects.
+SessionFactory is a factory that creates new SQLAlchemy Session objects.
 
 Each Session represents one unit of work with the database (typically one
 HTTP request in a FastAPI application).
@@ -43,20 +43,17 @@ A Session is responsible for:
 
 In a FastAPI application, we usually create one Session per request.
 """
-SessionLocal = sessionmaker(
+SessionFactory = sessionmaker(
     # The Engine this Session will use to communicate with the database.
     bind=engine,
-
     # The class used when creating new Session objects.
     # Explicitly specifying Session is optional because it is the default.
     class_=Session,
-
     # Prevent SQLAlchemy from automatically flushing pending INSERT,
     # UPDATE, and DELETE statements before executing queries.
     #
     # Changes are still flushed automatically when commit() is called.
     autoflush=False,
-
     # Keep ORM objects' attributes available after commit().
     #
     # If True (the default), SQLAlchemy expires object state after every

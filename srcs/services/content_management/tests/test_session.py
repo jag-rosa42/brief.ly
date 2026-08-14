@@ -1,7 +1,7 @@
 """
-Tests for SessionLocal (src/infrastructure/database/config/session.py).
+Tests for SessionFactory (src/infrastructure/database/config/session.py).
 
-SessionLocal is a factory (a `sessionmaker`), not a Session itself. These
+SessionFactory is a factory (a `sessionmaker`), not a Session itself. These
 tests create real Session objects from it and check both their config
 (autoflush/expire_on_commit) and that they can actually run a query.
 """
@@ -9,11 +9,11 @@ tests create real Session objects from it and check both their config
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from src.infrastructure.database.config import SessionLocal, engine
+from src.infrastructure.database.config import SessionFactory, engine
 
 
 def test_session_local_builds_sessions_bound_to_the_engine():
-    session = SessionLocal()
+    session = SessionFactory()
     try:
         assert isinstance(session, Session)
         assert session.get_bind() is engine
@@ -22,7 +22,7 @@ def test_session_local_builds_sessions_bound_to_the_engine():
 
 
 def test_session_local_disables_autoflush():
-    session = SessionLocal()
+    session = SessionFactory()
     try:
         assert session.autoflush is False
     finally:
