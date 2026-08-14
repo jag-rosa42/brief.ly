@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from src.infrastructure.database.config import SessionLocal
+from src.infrastructure.database.config import SessionFactory
 
 
 def get_db() -> Generator[Session]:
@@ -16,7 +16,7 @@ def get_db() -> Generator[Session]:
     """
 
     # Create a new Session for this request.
-    db = SessionLocal()
+    db = SessionFactory()
 
     try:
         # Pause here and give the Session to the route handler.
