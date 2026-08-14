@@ -1,0 +1,17 @@
+name: "${DOMAIN}"
+
+services:
+  #Frontend:
+  frontend:
+    build:
+      context: ./srcs/frontend/
+      dockerfile: Dockerfile
+    image: front-react-ts
+    container_name: frontend
+    pull_policy: build
+    ports:
+      - 8080:${FRONTEND_PORT:?Variable not set}
+    profiles:
+      - frontend
+
+
