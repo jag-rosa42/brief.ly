@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: SecretStr
     POSTGRES_DB_NAME: str
 
+    # Origins allowed to call this API from a browser (CORS).
+    BACKEND_CORS_ORIGINS: list[str] = []
+
     @computed_field(repr=False)
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
