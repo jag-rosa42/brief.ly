@@ -2,8 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from src.api.dependencies import SessionDep
-from src.api.routers.router import api_router
+from src.api.routers import api_routers
 from src.infrastructure.database.config import settings
 
 app = FastAPI(title=settings.PROJECT_NAME)
@@ -17,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(api_router)
+app.include_router(api_routers)
 
 @app.get("/")
 async def root():
