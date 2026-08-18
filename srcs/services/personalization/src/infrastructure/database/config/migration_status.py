@@ -54,7 +54,7 @@ from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
 
-from src.infrastructure.database.config import engine
+from src.infrastructure.database.config.engine import engine
 
 
 def get_current_revision() -> str | None:
