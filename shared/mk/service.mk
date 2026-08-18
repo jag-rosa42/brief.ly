@@ -36,7 +36,7 @@ check-env:
 
 ##################################### RULES ####################################
 
-.PHONY: run sync migration upgrade downgrade test lint typecheck shell
+.PHONY: run sync migration upgrade downgrade test lint typecheck shell status clear-cache
 
 run: check-env
 	@$(call print,$(GREEN_COLOR),[RUN] Starting $(PROJECT_NAME)...)
@@ -53,6 +53,15 @@ ifndef MESSAGE
 endif
 	@$(call print,$(BLUE_COLOR),[MIGRATION] Creating migration for $(PROJECT_NAME)...)
 	$(RUN) alembic revision --autogenerate -m "$(MESSAGE)"
+
+status: check-env
+	$(RUN) python -m src.infrastructure.database.config.migration_status
+
+clear-cache: check-env
+	@find "$(SERVICE_DIR)" \
+		\( -name '.venv' -o -name '.ruff_cache' -o -name '.pytest_cache' -o -name '__pycache__' \) \
+		-type d -prune -exec rm -rf {} +
+	@$(call print,$(GREEN_COLOR),[CACHE] Caches cleared for $(PROJECT_NAME).)
 
 upgrade: check-env
 	@$(call print,$(GREEN_COLOR),[UPGRADE] Applying migrations for $(PROJECT_NAME)...)

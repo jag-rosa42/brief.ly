@@ -17,7 +17,7 @@ include shared/mk/colors.mk
 
 ##################################### RULES ####################################
 
-.PHONY: frontend frontend-install frontend-build \
+.PHONY: frontend frontend-install frontend-build status clear-cache \
 		sync run migration upgrade downgrade test lint typecheck shell list-services \
 		up down build ps logs
 
@@ -41,7 +41,7 @@ list-frontend:
 	@printf "  make frontend-build    Build for production\n"
 
 # ---- Per-service dispatch (local dev, via uv) ----
-run sync migration upgrade downgrade test lint typecheck shell:
+run sync migration upgrade downgrade test lint typecheck shell status clear-cache:
 ifndef SERVICE
 	$(error SERVICE is not set. Usage: make $@ SERVICE=<service-name>)
 endif
