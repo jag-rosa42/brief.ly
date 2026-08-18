@@ -48,7 +48,7 @@ services/
     │   │
     │   ├── infrastructure/                 # Technical implementations and external integrations
     │   │   ├── database/
-    │   │   │   ├── models.py               # SQLAlchemy ORM models
+    │   │   │   ├── models.py/              # SQLAlchemy ORM models
     │   │   │   └── repositories/           # Repository implementations using SQLAlchemy
     │   │   │
     │   │   ├── clients/                    # HTTP clients, message brokers, third-party APIs
