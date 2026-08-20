@@ -63,6 +63,70 @@ services:
       - POSTGRES_DB=postgres
     secrets:
       - postgres_password
+
+  # One-shot bootstrap: apply this service's migrations before the service starts.
+  prestart-identity:
+    build:
+      context: ./srcs/services/identity
+      dockerfile: Dockerfile
+    image: identity
+    container_name: prestart-identity
+    pull_policy: build
+    profiles:
+      - backend
+    env_file:
+      - ./srcs/services/identity/.env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:?Variable not set}
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - POSTGRES_HOST=pgsql
+    secrets:
+      - postgres_password
+    command:
+      ["sh", "-c", "python -m src.infrastructure.database.bootstrap && alembic upgrade head"]
+    restart: "no"
+    depends_on:
+      pgsql:
+        condition: service_healthy
+
+  #Business Services
+  identity:
+    build:
+      context: ./srcs/services/identity
+      dockerfile: Dockerfile
+    image: identity
+    container_name: identity
+    pull_policy: build
+    restart: always
+    profiles:
+      - backend
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      pgvector:
+        condition: service_healthy
+      prestart-identity:
+        condition: service_completed_successfully
+    env_file:
+      - ./srcs/services/identity/.env
+    environment:
+      - POSTGRES_HOST=pgsql
+      - POSTGRES_USER=${POSTGRES_USER:?Variable not set}
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  #personalization:
+  #content_management:
+  #ai_processing:
+  #morning_briefing:
+  #administration:
+
 secrets:
   postgres_password:
     file: ./shared/secrets/postgres_password

@@ -52,5 +52,25 @@ services:
     restart: "no"
     ports:
       - "${AI_POSTGRES_PORT:?Variable not set}:5432"
+
+  prestart-identity:
+    build:
+      context: ./srcs/services/identity
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./srcs/services/identity:/app:Z
+
+  identity:
+    build:
+      context: ./srcs/services/identity
+      dockerfile: Dockerfile.dev
+    ports:
+      - "${IDENTITY_PORT:?Variable not set}:${SERVICE_CONTAINER_PORT:?Variable not set}"
+    volumes:
+      - ./srcs/services/identity:/app:Z
+    environment:
+      # Used by Uvicorn/watchfiles for backend --reload, independently of Vite.
+      WATCHFILES_FORCE_POLLING: ${WATCHFILES_FORCE_POLLING:-false}
+
 volumes:
   frontend_node_modules:
