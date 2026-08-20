@@ -26,5 +26,31 @@ services:
     command: ["npm", "run", "test", "--", "--watch"]
     profiles:
       - front-test
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: "no"
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      pgvector:
+        condition: service_healthy
+    environment:
+      - ADMINER_DESIGN=pepa-linha-dark
+    ports:
+      - "${ADMINER_PORT:?Variable not set}:8080"
+    profiles:
+      - databases
+
+  pgsql:
+    restart: "no"
+    ports:
+      - "${POSTGRES_PORT:?Variable not set}:5432"
+
+  pgvector:
+    restart: "no"
+    ports:
+      - "${AI_POSTGRES_PORT:?Variable not set}:5432"
 volumes:
   frontend_node_modules:

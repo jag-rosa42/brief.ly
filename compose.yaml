@@ -14,4 +14,76 @@ services:
     profiles:
       - frontend
 
+  #Reverse proxy
 
+  #api_gateway
+
+  #Databases
+  pgsql:
+    image: postgres:18
+    container_name: pgsql
+    restart: always
+    profiles:
+      - databases
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$$POSTGRES_USER" -d postgres']
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    volumes:
+      - pgsql:${PGDATA:?Variable not set}
+    environment:
+      - PGDATA=${PGDATA:?Variable not set}
+      - POSTGRES_USER=${POSTGRES_USER:?Variable not set}
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - POSTGRES_PORT=${POSTGRES_PORT:?Variable not set}
+      - POSTGRES_DB=postgres
+    secrets:
+      - postgres_password
+
+  pgvector:
+    image: pgvector/pgvector:pg18
+    container_name: pgvector
+    restart: always
+    profiles:
+      - databases
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$$POSTGRES_USER" -d postgres']
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    volumes:
+      - pgvector:${PGDATA:?Variable not set}
+    environment:
+      - PGDATA=${PGDATA:?Variable not set}
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - POSTGRES_USER=${POSTGRES_USER:?Variable not set}
+      - POSTGRES_DB=postgres
+    secrets:
+      - postgres_password
+secrets:
+  postgres_password:
+    file: ./shared/secrets/postgres_password
+
+volumes:
+  pgsql:
+    name: pgsql
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "${DATABASES_VOLUME_DIR}/pgsql"
+  pgvector:
+    name: pgvector
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "${DATABASES_VOLUME_DIR}/pgvector"
+
+networks:
+  default:
+    name: ${DOMAIN}
+    driver: bridge
