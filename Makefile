@@ -116,6 +116,10 @@ frontend-build:
 	@$(call print,$(BLUE_COLOR),[FRONTEND] Building frontend...)
 	@$(MAKE) -C $(FRONTEND_DIR) build -s
 
+frontend-test:
+	@$(call print,$(BLUE_COLOR),[FRONTEND] Running tests in Docker...)
+	@$(DEV_COMPOSE) --profile front-test up --build front-test
+
 list-frontend:
 	@$(call print,$(BLUE_COLOR),Frontend commands:)
 	@printf "  make frontend          Start development server\n"
@@ -124,6 +128,7 @@ list-frontend:
 
 # ---- Per-service dispatch (local dev, via uv) ----
 run sync migration upgrade downgrade test lint typecheck shell status clear-cache:
+
 ifndef SERVICE
 	$(error SERVICE is not set. Usage: make $@ SERVICE=<service-name>)
 endif
@@ -137,19 +142,56 @@ list-services:
 	@$(call print,$(BLUE_COLOR),[SERVICES] Available services:)
 	@ls $(SERVICES_DIR)
 
-
-down:
-	@$(call print,$(YELLOW_COLOR),[DOCKER] Stopping all services...)
-	$(COMPOSE) down
-
-build:
-	@$(call print,$(BLUE_COLOR),[DOCKER] Building all services...)
-	$(COMPOSE) build
-
-ps:
-	@$(call print,$(BLUE_COLOR),[DOCKER] Container status:)
-	$(COMPOSE) ps
 # ============================================================================ #
+#                                  DEV-DOCKER                                  #
+# ============================================================================ #
+
+# Without SERVICE, start the complete development stack. With SERVICE, Compose
+# starts only that service and its declared `depends_on` graph (its databases).
+dev-docker: check-databases-volume secrets
+
+ifeq ($(strip $(SERVICE)),)
+	@$(call print,$(GREEN_COLOR),[DOCKER] Starting all services in dev mode...)
+	$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up --build
+
+else
+	@$(call print,$(GREEN_COLOR),[DOCKER] Starting $(SERVICE) and its dependencies in dev mode...)
+	@$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up --build $(SERVICE)
+endif
+	@$(call print,$(GREEN_COLOR),✓ [DOCKER] $(NAME) development environment started successfully! 🥳🥳🥳)
+
+#check if DATABASES_VOLUME_DIR presents in .env file
+check-databases-volume:
+	@if [ -z "$(DATABASES_VOLUME_DIR)" ]; then \
+		printf "DATABASES_VOLUME_DIR is not set. Add it to .env before starting containers.\\n" >&2; \
+		exit 2; \
+	fi
+	@mkdir -p "$(DATABASES_VOLUME_DIR)/pgsql" "$(DATABASES_VOLUME_DIR)/pgvector"
+
+#Generate missing secrets files
+secrets:
+	@printf "$(CYAN_COLOR)🔍🔍🔍 Verifying and generating secrets at current directory 🕵️$(DEFAULT_COLOR)\n"
+	mkdir -p $(SECRET_DIR); \
+	for secret in $(SECRET_FILES); do \
+		if [ ! -s $$secret ]; then \
+			printf "$(YELLOW_COLOR)㊙️ Generating $$secret...$(DEFAULT_COLOR)\n"; \
+			openssl rand -base64 32 | tr -d '=+/' | head -c 32 > $$secret; \
+			printf "$(GREEN_COLOR)✓ $$secret generated$(DEFAULT_COLOR)\n"; \
+		else \
+			printf "$(GREEN_COLOR)✓ $$secret already exists, skipping ㊙️$(DEFAULT_COLOR)\n"; \
+		fi \
+	done
+
+# ============================================================================ #
+#                                  PROD-DOCKER#
+# ============================================================================ #
+
+prod: check-databases-volume secrets
+	@$(call print,$(GREEN_COLOR),[DOCKER] Starting all services in production mode...)
+	$(PROD_COMPOSE) $(COMPOSE_PROFILES_ALL) build --no-cache && \
+	$(PROD_COMPOSE) $(COMPOSE_PROFILES_ALL) up
+	@$(call print,$(GREEN_COLOR),✓ [DOCKER] $(NAME) production environment started successfully! 🥳🥳🥳)
+
 
 # ============================================================================ #
 #                                  DOCKER-CMDS                                 #
@@ -187,6 +229,7 @@ clean:
 # ============================================================================ #
 #                              MAKEFILE SETTING                                #
 # ============================================================================ #
+
 #not print command
 .SILENT:
 
