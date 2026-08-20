@@ -1,37 +1,39 @@
-## Getting Started
+# Local development guide
 
-### Frontend
+This guide is for running the frontend and backend services directly on your machine. For containerised development and production environments, see [README.docker.md](README.docker.md).
 
-The frontend dependencies must be installed before starting the development server.
+## Initial setup
 
-From the project root:
-
-```bash
-# Install frontend dependencies
-make frontend-install
-
-# Start the frontend development server
-make frontend
-```
-
-The first command installs the dependencies defined in `srcs/frontend/package.json` (including Vite). You only need to run it again when the frontend dependencies change or `node_modules` is removed.
-
-### Backend services
-
-Before running a backend service, create its `.env` file from the provided `.env.example`:
+Create the shared environment file and the configuration file for every service you plan to run:
 
 ```bash
+cp .env.example .env
 cp srcs/services/identity/.env.example srcs/services/identity/.env
 ```
-Then update the `.env` file with the appropriate values for your local environment.
 
-Backend services can be run individually by specifying the service name:
+Set `DATABASES_VOLUME_DIR` in `.env` to the location where local database data should persist. For a locally run backend service, provide the shared database connection values and `POSTGRES_PASSWORD` in its environment or service `.env` file.
+
+## Frontend
+
+From the repository root:
+
+```bash
+make frontend-install  # install dependencies
+make frontend          # start Vite
+make frontend-build    # build for production
+```
+
+The frontend listens on `FRONTEND_PORT` (default `5173`). For direct npm, testing, and linting commands, see [srcs/frontend/DEV_DOC.md](srcs/frontend/DEV_DOC.md).
+
+## Local backend services
+
+Start a backend service from the repository root:
 
 ```bash
 make run SERVICE=identity
 ```
 
-Other available service commands include:
+Available service commands include:
 
 ```bash
 make migration SERVICE=identity
@@ -41,43 +43,54 @@ make test SERVICE=identity
 make lint SERVICE=identity
 make typecheck SERVICE=identity
 make shell SERVICE=identity
-```
-
-To see the available services:
-
-```bash
 make list-services
 ```
 
-### Docker
+## Database containers for local services
 
-To start the complete stack with Docker Compose:
-
-```bash
-make build
-make up
-```
-
-Useful Docker commands:
+Backend services run locally, while PostgreSQL and pgvector run in containers. Start both database containers in the background with:
 
 ```bash
-make ps       # Show running containers
-make logs     # Follow logs for all services
-make logs SERVICE=identity  # Follow logs for one service
-make down     # Stop the stack
+make dev-databases
 ```
 
-### Quick start
+This command creates the database data directories below `DATABASES_VOLUME_DIR`, generates `shared/secrets/postgres_password` when it is missing, and starts `pgsql` and `pgvector`.
 
-For local frontend + backend development:
+The databases are available from the host at:
+
+- `pgsql`: `POSTGRES_PORT` (default `5432`)
+- `pgvector`: `AI_POSTGRES_PORT` (default `5433`)
+
+### Adminer
+
+Adminer runs as a container, so start it with:
 
 ```bash
-# Install frontend dependencies (first time only)
-make frontend-install
-
-# Start the frontend
-make frontend
-
-# In another terminal, start a backend service
-make run SERVICE=identity
+make dev-docker SERVICE=adminer
 ```
+
+Open `http://localhost:8086` (or `ADMINER_PORT`). Fill the form as follows:
+
+| Field | PostgreSQL | pgvector |
+| --- | --- | --- |
+| System | PostgreSQL | PostgreSQL |
+| Server | `pgsql` | `pgvector` |
+| Username | value of `POSTGRES_USER` | value of `POSTGRES_USER` |
+| Password | contents of `shared/secrets/postgres_password` | same |
+| Database | `postgres`, or `identity_db` after identity bootstrap | `postgres` |
+
+Inspect the database containers and their logs with:
+
+```bash
+make ps
+make logs SERVICE=pgsql
+make logs SERVICE=pgvector
+```
+
+Stop the Compose environment when you are finished:
+
+```bash
+make down
+```
+
+`make clean` also removes Compose volumes and images. The database files are bind-mounted below `DATABASES_VOLUME_DIR`; keep or remove that directory deliberately according to whether you need to retain local data.
