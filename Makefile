@@ -1,25 +1,107 @@
-# ============================================================
-# transcendence/Makefile
-# ------------------------------------------------------------
 # Pure dispatcher — no build logic lives here. Forwards whatever
 # target was invoked down to the chosen service's own Makefile.
-# ============================================================
 
-################################## VARIABLES ###################################
-
-FRONTEND_DIR := srcs/frontend
-SERVICES_DIR := srcs/services
-COMPOSE      := docker compose
-
-################################### INCLUDES ###################################
-
+include .env
 include shared/mk/colors.mk
 
-##################################### RULES ####################################
+NAME := Transcendence
+.DEFAULT_GOAL := help
 
-.PHONY: frontend frontend-install frontend-build status clear-cache \
-		sync run migration upgrade downgrade test lint typecheck shell list-services \
-		up down build ps logs
+# ============================================================================ #
+#                                     OS                                       #
+# ============================================================================ #
+OS := $(shell uname -s)
+
+# ============================================================================ #
+#                               VARIABLES & FLAGS                              #
+# ============================================================================ #
+
+MAKE_CMD ?= $(MAKE)
+COMPOSE := podman compose
+DEV_COMPOSE = $(COMPOSE) $(addprefix -f ,$(DEV_COMPOSE_FILE))
+PROD_COMPOSE = $(COMPOSE) $(addprefix -f ,$(PROD_COMPOSE_FILE))
+COMPOSE_PROFILES := frontend backend databases
+COMPOSE_PROFILES_ALL := $(addprefix --profile ,$(COMPOSE_PROFILES))
+COMPOSE_CLEAN_PROFILES_ALL := $(COMPOSE_PROFILES_ALL) --profile front-test
+
+# ============================================================================ #
+#                                DIRECTORIES                                   #
+# ============================================================================ #
+
+SRC_DIR := srcs
+SECRET_DIR := shared/secrets/
+FRONTEND_DIR := srcs/frontend
+SERVICES_DIR := srcs/services
+
+# ============================================================================ #
+#                                  SOURCES                                     #
+# ============================================================================ #
+
+PROD_COMPOSE_FILE := compose.yaml
+DEV_COMPOSE_FILE := compose.yaml compose.override.yaml
+ENV_FILE := .env
+
+#for mac OS
+ifeq ($(OS),Darwin)
+DEV_COMPOSE_FILE += compose.mac.yaml
+endif
+
+
+
+#============================================================================ #
+#                                  SECRETS                                     #
+# ============================================================================ #
+ 
+SECRET_FILES := \
+	$(SECRET_DIR)/postgres_password \
+ 
+# ============================================================================ #
+#                                  🫡HELP                                     #
+# ============================================================================ #
+
+help:
+	@printf "\n$(BLUE_COLOR)🚀 $(NAME) — available commands$(DEFAULT_COLOR)\n\n"
+	@printf "$(ROSE_COLOR)── 💻 Dev local ─────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
+	@printf "$(GREEN_COLOR)  Frontend$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) frontend                  $(CYAN_COLOR)Start the frontend locally$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) frontend-install          $(CYAN_COLOR)Install frontend dependencies$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) frontend-build            $(CYAN_COLOR)Build the frontend$(DEFAULT_COLOR)\n"
+	@printf "$(GREEN_COLOR)  Databases$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) dev-databases             $(CYAN_COLOR)Start PostgreSQL and pgvector containers$(DEFAULT_COLOR)\n"
+	@printf "$(GREEN_COLOR)  Backend$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) dev SERVICE=<name>        $(CYAN_COLOR)Run one backend service locally$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) test SERVICE=<name>        $(CYAN_COLOR)Run service tests locally$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) lint SERVICE=<name>        $(CYAN_COLOR)Lint a service locally$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) run SERVICE=<name>         $(CYAN_COLOR)Run a service locally$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) sync SERVICE=<name>        $(CYAN_COLOR)Synchronize service dependencies$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) typecheck SERVICE=<name>   $(CYAN_COLOR)Type-check a service locally$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) status SERVICE=<name>      $(CYAN_COLOR)Show service status$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) clear-cache SERVICE=<name> $(CYAN_COLOR)Clear service cache$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) migration SERVICE=<name>   $(CYAN_COLOR)Create a migration$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) upgrade SERVICE=<name>     $(CYAN_COLOR)Apply migrations$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) downgrade SERVICE=<name>   $(CYAN_COLOR)Revert migrations$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) list-services              $(CYAN_COLOR)List available backend services$(DEFAULT_COLOR)\n\n"
+	@printf "$(ROSE_COLOR)── 🐳 Dev Docker ─────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
+	@printf "$(GREEN_COLOR)  Frontend$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) dev-docker SERVICE=frontend $(CYAN_COLOR)Run only the frontend$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) frontend-test             $(CYAN_COLOR)Run frontend tests in Docker$(DEFAULT_COLOR)\n"
+	@printf "$(GREEN_COLOR)  Backend$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) dev-docker SERVICE=<name> $(CYAN_COLOR)Run one backend service with its database dependencies$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) dev-docker                $(CYAN_COLOR)Run the complete development stack (frontend, backends, and databases)$(DEFAULT_COLOR)\n\n"
+	@printf "$(ROSE_COLOR)── 🚀 Production ─────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)  make$(YELLOW_COLOR) prod                        $(CYAN_COLOR)Build and run the complete production stack$(DEFAULT_COLOR)\n\n"
+	@printf "$(ROSE_COLOR)── 📦 Shared container tools ────────────────────────────────────────────$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)  make$(YELLOW_COLOR) logs [SERVICE=<name>]        $(CYAN_COLOR)Follow container logs$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)  make$(YELLOW_COLOR) ps                           $(CYAN_COLOR)Show container status$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)  make$(YELLOW_COLOR) down                         $(CYAN_COLOR)Stop containers$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)  make$(YELLOW_COLOR) re                           $(CYAN_COLOR)Clean and rebuild the stack$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)  make$(YELLOW_COLOR) clean                        $(CYAN_COLOR)Stop containers, remove volumes and images$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)  make$(YELLOW_COLOR) secrets                      $(CYAN_COLOR)Create missing secrets$(DEFAULT_COLOR)\n\n"
+ 
+
+# ============================================================================ #
+#                                  LOCAL DEV (no Docker)                       #
+# ============================================================================ #
 
 # ---- Frontend dispatch ----
 frontend:
@@ -55,10 +137,6 @@ list-services:
 	@$(call print,$(BLUE_COLOR),[SERVICES] Available services:)
 	@ls $(SERVICES_DIR)
 
-# ---- Whole-stack orchestration (via docker compose) ----
-up:
-	@$(call print,$(GREEN_COLOR),[DOCKER] Starting all services...)
-	$(COMPOSE) up -d
 
 down:
 	@$(call print,$(YELLOW_COLOR),[DOCKER] Stopping all services...)
@@ -71,12 +149,52 @@ build:
 ps:
 	@$(call print,$(BLUE_COLOR),[DOCKER] Container status:)
 	$(COMPOSE) ps
+# ============================================================================ #
 
+# ============================================================================ #
+#                                  DOCKER-CMDS                                 #
+# ============================================================================ #
+
+#Follow logs
 logs:
 ifndef SERVICE
 	@$(call print,$(CYAN_COLOR),[DOCKER] Following logs for all services...)
-	$(COMPOSE) logs -f
+	$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) logs -f
 else
 	@$(call print,$(CYAN_COLOR),[DOCKER] Following logs for $(SERVICE)...)
-	$(COMPOSE) logs -f $(SERVICE)
+	$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) logs $(SERVICE) -f
 endif
+
+#Stop containers
+down:
+	@$(call print,$(CYAN_COLOR),[DOCKER] Stopping $(NAME)...)
+	@$(DEV_COMPOSE) $(COMPOSE_CLEAN_PROFILES_ALL) down
+	@$(call print,$(GREEN_COLOR),[DOCKER] $(NAME) is down.)
+
+ps:
+	@$(DEV_COMPOSE) ps
+
+re: clean dev-docker
+
+#Stop and remove the volumes and images
+clean:
+	@$(call print,$(CYAN_COLOR),[DOCKER] Stopping development stack and removing volumes/images...)
+	@$(DEV_COMPOSE) $(COMPOSE_CLEAN_PROFILES_ALL) \
+		down --volumes --rmi all
+	@$(call print,$(GREEN_COLOR),[DOCKER] Cleanup complete.)
+
+
+# ============================================================================ #
+#                              MAKEFILE SETTING                                #
+# ============================================================================ #
+#not print command
+.SILENT:
+
+#Delete target files if command fails
+.DELETE_ON_ERROR:
+
+.PHONY: clean logs down secrets \
+		frontend frontend-install frontend-build frontend-test \
+		dev dev-databases dev-docker sync run migration upgrade downgrade \
+		test lint typecheck shell list-services status clear-cache \
+		up build ps logs check-databases-volume
