@@ -120,6 +120,12 @@ frontend-test:
 	@$(call print,$(BLUE_COLOR),[FRONTEND] Running tests in Docker...)
 	@$(DEV_COMPOSE) --profile front-test up --build front-test
 
+# ---- Local services with containerized databases ----
+dev-databases: check-databases-volume secrets
+	@$(call print,$(GREEN_COLOR),[DATABASES] Starting PostgreSQL and pgvector...)
+	@$(DEV_COMPOSE) up -d pgsql pgvector
+	@$(call print,$(GREEN_COLOR),✓ [DATABASES] Local development databases are running.)
+
 list-frontend:
 	@$(call print,$(BLUE_COLOR),Frontend commands:)
 	@printf "  make frontend          Start development server\n"
