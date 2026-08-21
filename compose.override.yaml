@@ -1,3 +1,10 @@
+x-identity-dev-image-build: &identity-dev-image-build
+  build:
+    context: ./srcs/services/identity
+    dockerfile: Dockerfile.dev
+  volumes:
+    - ./srcs/services/identity:/app:Z
+
 services:
   frontend:
     build:
@@ -54,20 +61,12 @@ services:
       - "${AI_POSTGRES_PORT:?Variable not set}:5432"
 
   prestart-identity:
-    build:
-      context: ./srcs/services/identity
-      dockerfile: Dockerfile.dev
-    volumes:
-      - ./srcs/services/identity:/app:Z
+    <<: *identity-dev-image-build
 
   identity:
-    build:
-      context: ./srcs/services/identity
-      dockerfile: Dockerfile.dev
+    <<: *identity-dev-image-build
     ports:
       - "${IDENTITY_PORT:?Variable not set}:${SERVICE_CONTAINER_PORT:?Variable not set}"
-    volumes:
-      - ./srcs/services/identity:/app:Z
     environment:
       # Used by Uvicorn/watchfiles for backend --reload, independently of Vite.
       WATCHFILES_FORCE_POLLING: ${WATCHFILES_FORCE_POLLING:-false}

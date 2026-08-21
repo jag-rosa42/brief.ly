@@ -1,5 +1,48 @@
 name: "${DOMAIN}"
 
+# One-shot bootstrap: apply this service's migrations before the service starts.
+x-backend-prestart: &backend-prestart
+  pull_policy: build
+  restart: no
+  profiles: [backend]
+  environment:
+    POSTGRES_HOST: pgsql
+    POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
+    POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+  command:
+    ["sh", "-c", "python -m src.infrastructure.database.bootstrap && alembic upgrade head"]
+  secrets:
+    - postgres_password
+  depends_on:
+    pgsql:
+      condition: service_healthy
+
+# the service's container
+x-backend-service: &backend-service
+  pull_policy: build
+  restart: always
+  profiles: [backend]
+  environment:
+    - POSTGRES_HOST=pgsql
+    - POSTGRES_USER=${POSTGRES_USER:?Variable not set}
+    - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+  secrets:
+    - postgres_password
+  healthcheck:
+    test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+
+# reusable each service's image build
+x-identity-image-build: &identity-image-build
+  build:
+    context: ./srcs/services/identity
+    dockerfile: Dockerfile
+  image: identity
+  env_file:
+    - ./srcs/services/identity/.env
+
 services:
   #Frontend:
   frontend:
@@ -64,62 +107,17 @@ services:
     secrets:
       - postgres_password
 
-  # One-shot bootstrap: apply this service's migrations before the service starts.
   prestart-identity:
-    build:
-      context: ./srcs/services/identity
-      dockerfile: Dockerfile
-    image: identity
+    <<: [*identity-image-build, *backend-prestart]
     container_name: prestart-identity
-    pull_policy: build
-    profiles:
-      - backend
-    env_file:
-      - ./srcs/services/identity/.env
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER:?Variable not set}
-      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
-      - POSTGRES_HOST=pgsql
-    secrets:
-      - postgres_password
-    command:
-      ["sh", "-c", "python -m src.infrastructure.database.bootstrap && alembic upgrade head"]
-    restart: "no"
-    depends_on:
-      pgsql:
-        condition: service_healthy
 
-  #Business Services
   identity:
-    build:
-      context: ./srcs/services/identity
-      dockerfile: Dockerfile
-    image: identity
-    container_name: identity
-    pull_policy: build
-    restart: always
-    profiles:
-      - backend
+    <<: [*identity-image-build, *backend-service]
     depends_on:
       pgsql:
-        condition: service_healthy
-      pgvector:
         condition: service_healthy
       prestart-identity:
         condition: service_completed_successfully
-    env_file:
-      - ./srcs/services/identity/.env
-    environment:
-      - POSTGRES_HOST=pgsql
-      - POSTGRES_USER=${POSTGRES_USER:?Variable not set}
-      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
-    secrets:
-      - postgres_password
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   #personalization:
   #content_management:
