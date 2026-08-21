@@ -1,3 +1,38 @@
+# ---------------------------------------------------------------------------
+  # How to add a backend service
+  #
+  # Add every new backend service in this order:
+  #
+  # 1. Production — this compose.yaml file
+  #    - Create a top-level image-build anchor named
+  #      `x-<service>-image-build`.
+  #    - Set its production Dockerfile, build context, image name, and `.env`.
+  #    - Add `prestart-<service>` when it needs database creation/migrations:
+  #        <<: [*<service>-image-build, *backend-prestart]
+  #    - Add `<service>`:
+  #        <<: [*<service>-image-build, *backend-service]
+  #    - Explicitly define its database dependency:
+  #      `pgsql` for regular services, or `pgvector` for vector services.
+  #    - Add a host port only when the service must be reachable outside Compose.
+  #
+  # 2. Development — compose.override.yaml
+  #    - Create a top-level development image-build anchor named
+  #      `x-<service>-dev-image-build`.
+  #    - Use `Dockerfile.dev` and bind-mount the service source into `/app`.
+  #    - Merge this anchor into both `prestart-<service>` and `<service>`.
+  #    - Publish the service’s development port.
+  #    - Add `WATCHFILES_FORCE_POLLING` when the service uses Uvicorn reload.
+  #
+  # 3. macOS — compose.mac.yaml
+  #    - Add `WATCHFILES_FORCE_POLLING: "true"` for the new service so source
+  #      changes in the bind mount reliably trigger reloads.
+  #
+  # 4. Configuration
+  #    - Add the host port to `.env.example`.
+  #    - Create `<service>/.env.example` with its project/database settings.
+  #    - Ensure its database name and migration setup are correct.
+  # ---------------------------------------------------------------------------
+
 name: "${DOMAIN}"
 
 # One-shot bootstrap: apply this service's migrations before the service starts.
