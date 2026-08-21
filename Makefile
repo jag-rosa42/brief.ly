@@ -123,7 +123,7 @@ frontend-test:
 # ---- Local services with containerized databases ----
 dev-databases: check-databases-volume secrets
 	@$(call print,$(GREEN_COLOR),[DATABASES] Starting PostgreSQL and pgvector...)
-	@$(DEV_COMPOSE) up -d pgsql pgvector
+	@$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d pgsql pgvector
 	@$(call print,$(GREEN_COLOR),✓ [DATABASES] Local development databases are running.)
 
 list-frontend:
@@ -158,11 +158,11 @@ dev-docker: check-databases-volume secrets
 
 ifeq ($(strip $(SERVICE)),)
 	@$(call print,$(GREEN_COLOR),[DOCKER] Starting all services in dev mode...)
-	$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up --build
+	$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d --build
 
 else
 	@$(call print,$(GREEN_COLOR),[DOCKER] Starting $(SERVICE) and its dependencies in dev mode...)
-	@$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up --build $(SERVICE)
+	@$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d --build $(SERVICE)
 endif
 	@$(call print,$(GREEN_COLOR),✓ [DOCKER] $(NAME) development environment started successfully! 🥳🥳🥳)
 
@@ -220,7 +220,7 @@ down:
 	@$(call print,$(GREEN_COLOR),[DOCKER] $(NAME) is down.)
 
 ps:
-	@$(DEV_COMPOSE) ps
+	@$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) ps
 
 re: clean dev-docker
 

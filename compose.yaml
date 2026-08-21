@@ -38,7 +38,7 @@ name: "${DOMAIN}"
 # One-shot bootstrap: apply this service's migrations before the service starts.
 x-backend-prestart: &backend-prestart
   pull_policy: build
-  restart: no
+  restart: "no"
   profiles: [backend]
   environment:
     POSTGRES_HOST: pgsql
@@ -55,7 +55,7 @@ x-backend-prestart: &backend-prestart
 # the service's container
 x-backend-service: &backend-service
   pull_policy: build
-  restart: always
+  restart: "always"
   profiles: [backend]
   environment:
     - POSTGRES_HOST=pgsql
@@ -71,6 +71,7 @@ x-backend-service: &backend-service
 
 # reusable each service's image build
 x-identity-image-build: &identity-image-build
+  container_name: identity
   build:
     context: ./srcs/services/identity
     dockerfile: Dockerfile
@@ -100,7 +101,7 @@ services:
   pgsql:
     image: postgres:18
     container_name: pgsql
-    restart: always
+    restart: "always"
     profiles:
       - databases
     healthcheck:
@@ -123,7 +124,7 @@ services:
   pgvector:
     image: pgvector/pgvector:pg18
     container_name: pgvector
-    restart: always
+    restart: "always"
     profiles:
       - databases
     healthcheck:
