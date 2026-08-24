@@ -12,7 +12,7 @@ These tests verify that get_db:
 - closes the Session even when an exception occurs
 """
 
-from _collections_abc import Generator
+from collections.abc import Generator
 
 import pytest
 from sqlalchemy import Connection, text
