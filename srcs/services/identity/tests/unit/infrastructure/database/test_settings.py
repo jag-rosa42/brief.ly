@@ -1,10 +1,13 @@
 """
 Tests for Settings (src/infrastructure/database/config/settings.py).
 
-These don't touch the database at all: Settings is just a Pydantic model
-that reads environment variables and builds a connection URL string. We're
-verifying that construction logic in isolation, before anything tries to
-use it to actually connect.
+These tests verify that Settings:
+- loads database configuration from the environment
+- builds the expected SQLAlchemy database URI
+- protects the database password when represented as text
+- uses explicitly provided values when creating a Settings instance
+- adds the `_test` suffix to the database name
+- uses the synchronous PostgreSQL driver
 """
 
 from sqlalchemy.engine import make_url
@@ -69,3 +72,35 @@ def test_database_uri_reflects_explicit_overrides():
     assert url.host == "db.example.internal"
     assert url.port == 6543
     assert url.database == "test_db"
+
+def test_database_name_is_suffixed_with_test():
+    """
+    Without an explicit override, TEST_DATABASE_URI should point to
+    "<POSTGRES_DB_NAME>_test"
+    """
+    custom = Settings(
+            _env_file=None,
+            PROJECT_NAME="test-project",
+            POSTGRES_HOST="db.example.internal",
+            POSTGRES_PORT=6543,
+            POSTGRES_USER="tester",
+            POSTGRES_PASSWORD="s3cret",
+            POSTGRES_DB_NAME="my_app",
+        )
+    url = make_url(custom.TEST_DATABASE_URI)
+
+    assert url.database == "my_app_test"
+
+def test_database_uri_always_uses_sync_driver():
+    custom = Settings(
+        _env_file=None,
+        PROJECT_NAME="test-project",
+        POSTGRES_HOST="db.example.internal",
+        POSTGRES_PORT=6543,
+        POSTGRES_USER="tester",
+        POSTGRES_PASSWORD="s3cret",
+        POSTGRES_DB_NAME="my_app",
+        DATABASE_DRIVER="asyncpg"
+    )
+    url = make_url(custom.TEST_DATABASE_URI)
+    assert url.drivername == "postgresql+psycopg"

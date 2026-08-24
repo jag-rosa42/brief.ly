@@ -1,6 +1,5 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text
 
 from src.api.routers import api_routers
 from src.infrastructure.database.config import settings
@@ -17,24 +16,3 @@ app.add_middleware(
 )
 
 app.include_router(api_routers)
-
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-
-@app.get("/health")
-async def health_check(db: SessionDep):
-    """
-    Report whether the app can talk to the database.
-
-    Meant to back an orchestrator probe (Docker/Compose HEALTHCHECK,
-    Kubernetes liveness/readiness) the same way a container's own
-    HEALTHCHECK command verifies the process is actually working.
-    """
-    try:
-        db.execute(text("SELECT 1"))
-    except Exception as exc:
-        raise HTTPException(status_code=503, detail="database unavailable") from exc
-
-    return {"status": "ok", "database": "ok"}
