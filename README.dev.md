@@ -10,8 +10,8 @@ Create the shared environment file and the configuration file for every service 
 cp .env.example .env
 cp srcs/services/identity/.env.example srcs/services/identity/.env
 ```
-
-Set `DATABASES_VOLUME_DIR` in `.env` to the location where local database data should persist. For a locally run backend service, provide the shared database connection values and `POSTGRES_PASSWORD` in its environment or service `.env` file.
+<!-- TODO: remove this line if the named volume is confirmed -->
+Set `DATABASES_VOLUME_DIR` in `.env` to the location where local database data should persist. For a locally run backend service, provide the shared database connection values.
 
 ## Frontend
 

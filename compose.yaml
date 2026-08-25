@@ -166,6 +166,7 @@ secrets:
     file: ./shared/secrets/postgres_password
 
 volumes:
+ # TODO: study the usage of named volume instead -> see ticket #60
   pgsql:
     name: pgsql
     driver: local
