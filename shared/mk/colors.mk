@@ -4,7 +4,6 @@ GREEN_COLOR   := \033[0;92m
 YELLOW_COLOR  := \033[0;93m
 BLUE_COLOR    := \033[0;94m
 CYAN_COLOR    := \033[0;96m
-ROSE_COLOR    := \033[38;2;245;194;231m
 
 define print
 	printf "$(1)$(2)$(DEFAULT_COLOR)\n"

@@ -1,39 +1,37 @@
-# Local development guide
+## Getting Started
 
-This guide is for running the frontend and backend services directly on your machine. For containerised development and production environments, see [README.docker.md](README.docker.md).
+### Frontend
 
-## Initial setup
+The frontend dependencies must be installed before starting the development server.
 
-Create the shared environment file and the configuration file for every service you plan to run:
+From the project root:
 
 ```bash
-cp .env.example .env
+# Install frontend dependencies
+make frontend-install
+
+# Start the frontend development server
+make frontend
+```
+
+The first command installs the dependencies defined in `srcs/frontend/package.json` (including Vite). You only need to run it again when the frontend dependencies change or `node_modules` is removed.
+
+### Backend services
+
+Before running a backend service, create its `.env` file from the provided `.env.example`:
+
+```bash
 cp srcs/services/identity/.env.example srcs/services/identity/.env
 ```
+Then update the `.env` file with the appropriate values for your local environment.
 
-Set `DATABASES_VOLUME_DIR` in `.env` to the location where local database data should persist. For a locally run backend service, provide the shared database connection values and `POSTGRES_PASSWORD` in its environment or service `.env` file.
-
-## Frontend
-
-From the repository root:
-
-```bash
-make frontend-install  # install dependencies
-make frontend          # start Vite
-make frontend-build    # build for production
-```
-
-The frontend listens on `FRONTEND_PORT` (default `5173`). For direct npm, testing, and linting commands, see [srcs/frontend/DEV_DOC.md](srcs/frontend/DEV_DOC.md).
-
-## Local backend services
-
-Start a backend service from the repository root:
+Backend services can be run individually by specifying the service name:
 
 ```bash
 make run SERVICE=identity
 ```
 
-Available service commands include:
+Other available service commands include:
 
 ```bash
 make migration SERVICE=identity
@@ -43,54 +41,43 @@ make test SERVICE=identity
 make lint SERVICE=identity
 make typecheck SERVICE=identity
 make shell SERVICE=identity
+```
+
+To see the available services:
+
+```bash
 make list-services
 ```
 
-## Database containers for local services
+### Docker
 
-Backend services run locally, while PostgreSQL and pgvector run in containers. Start both database containers in the background with:
-
-```bash
-make dev-databases
-```
-
-This command creates the database data directories below `DATABASES_VOLUME_DIR`, generates `shared/secrets/postgres_password` when it is missing, and starts `pgsql` and `pgvector`.
-
-The databases are available from the host at:
-
-- `pgsql`: `POSTGRES_PORT` (default `5432`)
-- `pgvector`: `AI_POSTGRES_PORT` (default `5433`)
-
-### Adminer
-
-Adminer runs as a container, so start it with:
+To start the complete stack with Docker Compose:
 
 ```bash
-make dev-docker SERVICE=adminer
+make build
+make up
 ```
 
-Open `http://localhost:8086` (or `ADMINER_PORT`). Fill the form as follows:
-
-| Field | PostgreSQL | pgvector |
-| --- | --- | --- |
-| System | PostgreSQL | PostgreSQL |
-| Server | `pgsql` | `pgvector` |
-| Username | value of `POSTGRES_USER` | value of `POSTGRES_USER` |
-| Password | contents of `shared/secrets/postgres_password` | same |
-| Database | `postgres`, or `identity_db` after identity bootstrap | `postgres` |
-
-Inspect the database containers and their logs with:
+Useful Docker commands:
 
 ```bash
-make ps
-make logs SERVICE=pgsql
-make logs SERVICE=pgvector
+make ps       # Show running containers
+make logs     # Follow logs for all services
+make logs SERVICE=identity  # Follow logs for one service
+make down     # Stop the stack
 ```
 
-Stop the Compose environment when you are finished:
+### Quick start
+
+For local frontend + backend development:
 
 ```bash
-make down
-```
+# Install frontend dependencies (first time only)
+make frontend-install
 
-`make clean` also removes Compose volumes and images. The database files are bind-mounted below `DATABASES_VOLUME_DIR`; keep or remove that directory deliberately according to whether you need to retain local data.
+# Start the frontend
+make frontend
+
+# In another terminal, start a backend service
+make run SERVICE=identity
+```

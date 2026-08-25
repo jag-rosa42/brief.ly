@@ -9,16 +9,7 @@ from pydantic import (
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parents[4]
-_container_secrets = Path("/run/secrets")
 
-if _container_secrets.exists():
-    SECRETS_DIR = _container_secrets
-else:
-    ROOT_DIR = Path(__file__).resolve().parents[7]
-    SECRETS_DIR = ROOT_DIR / "shared" / "secrets"
-
-#TODO: debug prints to remove later
-print(f"SECRET_DIR={SECRETS_DIR}")
 
 class Settings(BaseSettings):
     """
@@ -30,9 +21,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
-        env_file_encoding="utf-8",
         extra="ignore",
-        secrets_dir=SECRETS_DIR,
     )
     DATABASE_DIALECT: Literal["postgresql"] = "postgresql"
     DATABASE_DRIVER: Literal["psycopg", "asyncpg"] = "psycopg"
@@ -80,12 +69,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-
-#TODO: debug prints to remove later
-print("DB HOST:", settings.POSTGRES_HOST)
-print("DB PORT:", settings.POSTGRES_PORT)
-print("DB USER:", settings.POSTGRES_USER)
-print("DB NAME:", settings.POSTGRES_DB_NAME)
-print("DB URI:", settings.SQLALCHEMY_DATABASE_URI.replace(
-    settings.POSTGRES_PASSWORD.get_secret_value(), "***"
-))
