@@ -1,0 +1,10 @@
+services:
+  frontend:
+    environment:
+      VITE_USE_POLLING: "true"
+
+  # Docker Desktop bind mounts on macOS may not relay native file events.
+  # Force Uvicorn's watchfiles-based reloader to poll the mounted backend source.
+  identity:
+    environment:
+      WATCHFILES_FORCE_POLLING: "true"

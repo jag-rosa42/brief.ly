@@ -1,118 +1,43 @@
-# Frontend commands
+# Frontend development
 
-Run these commands from the `frontend` directory.
+Run local frontend commands from the repository root:
 
 ```bash
-# Install dependencies
-npm install
-
-# Start the React development server with live reload
-npm run dev
-
-# Run tests continuously while coding
-npx vitest --watch
-
-# Lint the React and TypeScript code
-npm run lint
-
-# Check the production build
-npm run build
+make frontend-install  # install dependencies
+make frontend          # start the Vite development server
+make frontend-build    # create a production build
 ```
 
-## Podman Compose
+The development server listens on `FRONTEND_PORT` from the root `.env` file (default `5173`).
+
+These Make targets are convenience wrappers for the frontend package commands. You can also work directly in `srcs/frontend` when you only need frontend tooling:
 
 ```bash
-# Build all images
-podman compose build
-
-# Rebuild all images without using the cache
-podman compose build --no-cache
-
-# Start the development container
-podman compose up front-dev
-
-# Start the development container in the background
-podman compose up -d front-dev
-
-# Start the production container in the background
-podman compose up -d front-prod
-
-# Rebuild and restart one service
-podman compose up -d --build front-dev
-
-# List project containers
-podman compose ps
-
-# Follow all logs
-podman compose logs -f
-
-# Follow one service's logs
-podman compose logs -f front-dev
-
-# Open a shell in the running development container
-podman compose exec front-dev sh
-
-# Run a one-off shell in a new development container
-podman compose run --rm front-dev sh
-
-# Restart one service
-podman compose restart front-dev
-
-# Stop the project containers
-podman compose stop
-
-# Stop and remove the project containers and network
-podman compose down
-
-# Stop and remove containers, network, and project volumes
-podman compose down --volumes
-
-# Start the optional test service
-podman compose --profile front-test up front-test
+cd srcs/frontend
+npm install       # install dependencies declared in package.json
+npm run dev       # start Vite with live reload
+npx vitest --watch  # run tests continuously while coding
+npm run lint      # lint the React and TypeScript source
+npm run build     # verify the production build
 ```
 
-## Podman
+Run `npm install` after cloning the project, after frontend dependencies change, or if `node_modules` has been removed. Use `npm run dev` for a frontend-only local session; use `make dev-docker` when you need the containerised frontend together with backend services and databases.
+
+## Containerised frontend
+
+Use the root Make targets rather than invoking Compose against a frontend-specific compose file:
 
 ```bash
-# List running containers
-podman ps
+make dev-docker SERVICE=frontend  # build and run the frontend development container
+make frontend-test                # run Vitest in a development container
+make logs SERVICE=frontend        # view its logs
+make down                         # stop the development stack
+```
 
-# List all containers
-podman ps -a
+The development Compose override bind-mounts `srcs/frontend` into `/app` and keeps `node_modules` in a named volume. It configures Vite HMR for the host browser. On macOS, `compose.mac.yaml` enables polling to ensure file changes are detected through the bind mount.
 
-# List local images
-podman images
+For the full frontend, backend, and database development environment, run:
 
-# List volumes
-podman volume ls
-
-# Follow a container's logs
-podman logs -f <container-name-or-id>
-
-# Inspect a container
-podman inspect <container-name-or-id>
-
-# Show live container resource usage
-podman stats
-
-# Open a shell in a running container
-podman exec -it <container-name-or-id> sh
-
-# Stop a container
-podman stop <container-name-or-id>
-
-# Start a stopped container
-podman start <container-name-or-id>
-
-# Restart a container
-podman restart <container-name-or-id>
-
-# Remove a stopped container
-podman rm <container-name-or-id>
-
-# Remove an image
-podman rmi <image-name-or-id>
-
-# Remove unused containers, images, networks, and build cache
-podman system prune
+```bash
+make dev-docker
 ```

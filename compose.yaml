@@ -1,0 +1,187 @@
+# ---------------------------------------------------------------------------
+  # How to add a backend service
+  #
+  # Add every new backend service in this order:
+  #
+  # 1. Production — this compose.yaml file
+  #    - Create a top-level image-build anchor named
+  #      `x-<service>-image-build`.
+  #    - Set its production Dockerfile, build context, image name, and `.env`.
+  #    - Add `prestart-<service>` when it needs database creation/migrations:
+  #        <<: [*<service>-image-build, *backend-prestart]
+  #    - Add `<service>`:
+  #        <<: [*<service>-image-build, *backend-service]
+  #    - Explicitly define its database dependency:
+  #      `pgsql` for regular services, or `pgvector` for vector services.
+  #    - Add a host port only when the service must be reachable outside Compose.
+  #
+  # 2. Development — compose.override.yaml
+  #    - Create a top-level development image-build anchor named
+  #      `x-<service>-dev-image-build`.
+  #    - Use `Dockerfile.dev` and bind-mount the service source into `/app`.
+  #    - Merge this anchor into both `prestart-<service>` and `<service>`.
+  #    - Publish the service’s development port.
+  #    - Add `WATCHFILES_FORCE_POLLING` when the service uses Uvicorn reload.
+  #
+  # 3. macOS — compose.mac.yaml
+  #    - Add `WATCHFILES_FORCE_POLLING: "true"` for the new service so source
+  #      changes in the bind mount reliably trigger reloads.
+  #
+  # 4. Configuration
+  #    - Add the host port to `.env.example`.
+  #    - Create `<service>/.env.example` with its project/database settings.
+  #    - Ensure its database name and migration setup are correct.
+  # ---------------------------------------------------------------------------
+
+name: "${DOMAIN}"
+
+# One-shot bootstrap: apply this service's migrations before the service starts.
+x-backend-prestart: &backend-prestart
+  pull_policy: build
+  restart: "no"
+  profiles: [backend]
+  environment:
+    POSTGRES_HOST: pgsql
+    POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
+    POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+  command:
+    ["sh", "-c", "python -m src.infrastructure.database.bootstrap && alembic upgrade head"]
+  secrets:
+    - postgres_password
+  depends_on:
+    pgsql:
+      condition: service_healthy
+
+# the service's container
+x-backend-service: &backend-service
+  pull_policy: build
+  restart: "always"
+  profiles: [backend]
+  environment:
+    - POSTGRES_HOST=pgsql
+    - POSTGRES_USER=${POSTGRES_USER:?Variable not set}
+    - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+  secrets:
+    - postgres_password
+  healthcheck:
+    test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+
+# reusable each service's image build
+x-identity-image-build: &identity-image-build
+  container_name: identity
+  build:
+    context: ./srcs/services/identity
+    dockerfile: Dockerfile
+  image: identity
+  env_file:
+    - ./srcs/services/identity/.env
+
+services:
+  #Frontend:
+  frontend:
+    build:
+      context: ./srcs/frontend/
+      dockerfile: Dockerfile
+    image: front-react-ts
+    container_name: frontend
+    pull_policy: build
+    ports:
+      - 8080:${FRONTEND_PORT:?Variable not set}
+    profiles:
+      - frontend
+
+  #Reverse proxy
+
+  #api_gateway
+
+  #Databases
+  pgsql:
+    image: postgres:18
+    container_name: pgsql
+    restart: "always"
+    profiles:
+      - databases
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$$POSTGRES_USER" -d postgres']
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    volumes:
+      - pgsql:${PGDATA:?Variable not set}
+    environment:
+      - PGDATA=${PGDATA:?Variable not set}
+      - POSTGRES_USER=${POSTGRES_USER:?Variable not set}
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - POSTGRES_PORT=${POSTGRES_PORT:?Variable not set}
+      - POSTGRES_DB=postgres
+    secrets:
+      - postgres_password
+
+  pgvector:
+    image: pgvector/pgvector:pg18
+    container_name: pgvector
+    restart: "always"
+    profiles:
+      - databases
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$$POSTGRES_USER" -d postgres']
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    volumes:
+      - pgvector:${PGDATA:?Variable not set}
+    environment:
+      - PGDATA=${PGDATA:?Variable not set}
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+      - POSTGRES_USER=${POSTGRES_USER:?Variable not set}
+      - POSTGRES_DB=postgres
+    secrets:
+      - postgres_password
+
+  prestart-identity:
+    <<: [*identity-image-build, *backend-prestart]
+    container_name: prestart-identity
+
+  identity:
+    <<: [*identity-image-build, *backend-service]
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      prestart-identity:
+        condition: service_completed_successfully
+
+  #personalization:
+  #content_management:
+  #ai_processing:
+  #morning_briefing:
+  #administration:
+
+secrets:
+  postgres_password:
+    file: ./shared/secrets/postgres_password
+
+volumes:
+  pgsql:
+    name: pgsql
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "${DATABASES_VOLUME_DIR}/pgsql"
+  pgvector:
+    name: pgvector
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "${DATABASES_VOLUME_DIR}/pgvector"
+
+networks:
+  default:
+    name: ${DOMAIN}
+    driver: bridge

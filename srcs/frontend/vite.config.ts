@@ -3,12 +3,31 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+// Enables polling (repeated file-change checks) when VITE_USE_POLLING is "true".
+// It make sure that the live-reload works both on host and inside a container. 
+const usePolling = process.env.VITE_USE_POLLING === "true";
+// Optional host the browser uses to connect to Vite's live-reload (HMR) server.
+const hmrHost = process.env.VITE_HMR_HOST;
+
 export default defineConfig({
-  base: "/",
-  plugins: [react()],
-  server: {
-    host: true,
-    port: 5173,
-    strictPort: true,
-  },
+base: "/",
+plugins: [react()],
+server: {
+	host: true,
+	port: 5173,
+	strictPort: true,
+	...(hmrHost
+	? {
+		hmr: {
+			host: hmrHost,
+			protocol: "ws",
+			clientPort:
+			Number(process.env.VITE_HMR_CLIENT_PORT ?? 5173),
+		},
+		}
+	: {}),
+	watch: {
+	usePolling,
+	},
+},
 });
