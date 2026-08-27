@@ -63,7 +63,7 @@ def test_health_check_reports_503_when_database_is_down():
     app.dependency_overrides[get_db] = _broken_get_db
     try:
         with TestClient(app) as test_client:
-            response: Response = test_client.get("/api/health")
+            response: Response = test_client.get("health")
     finally:
         app.dependency_overrides.pop(get_db, None)
 

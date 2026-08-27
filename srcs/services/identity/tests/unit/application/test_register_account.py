@@ -2,6 +2,7 @@ import datetime
 from uuid import UUID, uuid4
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from src.application.register_account import RegisterAccount
 from src.domain.entities.account import Account
@@ -39,9 +40,10 @@ class FakeAccountRepository:
     def rollback(self) -> None:
         self.rolled_back = True
 
-    # Helper to simualte an infrastructure failure
+    # Helper to simulate an infrastructure failure
     def make_save_raise(self, exception: Exception) -> None:
-        self._failure_to_raise_on_save = exception
+        """Configure save() to raise the given exception."""
+        self._failure_to_raise_on_save: Exception = exception
 
 
 class FakePasswordHasher:
@@ -93,7 +95,6 @@ class TestRegisterAccount:
         assert account.password_hash.value == f"hashed::{plaintext_password}"
         assert isinstance(account.id, UUID)
 
-
     def test_persists_and_commits_new_account(
         self,
         register_account: RegisterAccount,
@@ -109,13 +110,12 @@ class TestRegisterAccount:
         assert account_repository.committed is True
         assert account_repository.rolled_back is False
 
-
     def test_raises_when_email_is_already_registered(
         self,
         register_account: RegisterAccount,
         account_repository: FakeAccountRepository,
         password_hasher: FakePasswordHasher,
-    ):
+    ) -> None:
         email: str = "john.doe@example.com"
         plaintext_password: str = "secure-password"
 
@@ -129,13 +129,34 @@ class TestRegisterAccount:
         with pytest.raises(EmailAlreadyRegisteredError):
             register_account.execute(email, f"{plaintext_password}-2")
 
+    def test_rollback_and_raises_on_unicity_email_constraint_violation(
+        self,
+        register_account: RegisterAccount,
+        account_repository: FakeAccountRepository,
+    ) -> None:
+        email: str = "john.doe@example.com"
+        plaintext_password: str = "secure-password"
+
+        # simulate a DB-level failure ( lost connetcion, constraint violation, etc.)
+        account_repository.make_save_raise(
+            IntegrityError(
+                "duplicate key value violates unique constraint",
+                None,
+                Exception("uq_accounts_email"),
+            )
+        )
+        with pytest.raises(EmailAlreadyRegisteredError):
+            register_account.execute(email, plaintext_password)
+
+        assert account_repository.rolled_back is True
+        assert account_repository.committed is False
 
     def test_does_not_touch_repository_when_email_is_already_registered(
         self,
         register_account: RegisterAccount,
         account_repository: FakeAccountRepository,
         password_hasher: FakePasswordHasher,
-    ):
+    ) -> None:
         email: str = "john.doe@example.com"
         plaintext_password: str = "secure-password"
 
@@ -151,12 +172,11 @@ class TestRegisterAccount:
 
         assert account_repository.committed is False
 
-
     def test_rollback_and_raises_when_saved_failed(
         self,
         register_account: RegisterAccount,
         account_repository: FakeAccountRepository,
-    ):
+    ) -> None:
         email: str = "john.doe@example.com"
         plaintext_password: str = "secure-password"
 
@@ -168,7 +188,6 @@ class TestRegisterAccount:
         assert account_repository.rolled_back is True
         assert account_repository.committed is False
 
-
     @pytest.mark.parametrize(
         argnames="email, password",
         argvalues=[
@@ -178,10 +197,7 @@ class TestRegisterAccount:
         ],
     )
     def test_registers_several_distinct_accounts(
-        self,
-        register_account: RegisterAccount,
-        email: str,
-        password: str
-    ):
+        self, register_account: RegisterAccount, email: str, password: str
+    ) -> None:
         account: Account = register_account.execute(email, password)
         assert account.email.value == email

@@ -13,7 +13,7 @@ from httpx2 import Response
 
 @pytest.mark.integration
 def test_health_check_reports_ok_when_database_is_reachable(client: TestClient):
-    response: Response = client.get("/api/health")
+    response: Response = client.get("/health")
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok", "database": "ok"}

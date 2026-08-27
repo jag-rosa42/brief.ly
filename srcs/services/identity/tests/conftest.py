@@ -24,7 +24,7 @@ from alembic.config import Config
 from fastapi.testclient import TestClient
 from sqlalchemy import Connection, Engine, RootTransaction, create_engine, text
 from sqlalchemy.engine import URL, make_url
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.sql.compiler import IdentifierPreparer
 
 from src.api.dependencies import get_db
@@ -231,3 +231,32 @@ def client(db_session: Session) -> Generator[TestClient]:
             yield test_client
     finally:
         app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def concurrent_clients(engine: Engine) -> Generator[tuple[TestClient, TestClient]]:
+    """
+    Two TestClients using independent database sessions.
+
+    Each request receives a new SQLAlchemy session backed by the shared
+    test database engine, allowing concurrent requests to run in separate
+    database transactions.
+    """
+    SessionLocal: sessionmaker[Session] = sessionmaker(
+        bind=engine, expire_on_commit=False
+    )
+
+    def override_get_db() -> Generator[Session]:
+        session: Session = SessionLocal()
+        try:
+            yield session
+        finally:
+            session.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    try:
+        with TestClient(app) as client_a, TestClient(app) as client_b:
+            yield client_a, client_b
+    finally:
+        app.dependency_overrides.pop(get_db, None)

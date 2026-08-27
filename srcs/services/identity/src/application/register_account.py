@@ -1,6 +1,8 @@
 import datetime
 from uuid import uuid4
 
+from sqlalchemy.exc import IntegrityError
+
 from src.application.password_hasher import PasswordHasher
 from src.domain.entities.account import Account
 from src.domain.exception import EmailAlreadyRegisteredError
@@ -43,6 +45,9 @@ class RegisterAccount:
         try:
             self._account_repository.save(account)
             self._account_repository.commit()
+        except IntegrityError as exc:
+            self._account_repository.rollback()
+            raise EmailAlreadyRegisteredError from exc
         except Exception:
             self._account_repository.rollback()
             raise
