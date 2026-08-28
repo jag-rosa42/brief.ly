@@ -27,7 +27,7 @@ from src.infrastructure.database.config import settings
 from src.main import app
 
 
-def test_app_title_matches_settings():
+def test_app_title_matches_settings() -> None:
     assert app.title == settings.PROJECT_NAME
 
 
@@ -54,7 +54,7 @@ def _broken_get_db() -> Generator:
     yield _BrokenSession()
 
 
-def test_health_check_reports_503_when_database_is_down():
+def test_health_check_reports_503_when_database_is_down() -> None:
     """
     We can't easily kill the real Postgres container mid-test, so this
     swaps out the get_db dependency for one that raises, purely to check

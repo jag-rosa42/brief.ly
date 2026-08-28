@@ -12,15 +12,51 @@ from src.infrastructure.database.models.base import Base
 # access to the values within the .ini file in use.
 config = context.config
 
-config.set_main_option(
-    "sqlalchemy.url",
-    settings.SQLALCHEMY_DATABASE_URI,
-)
+# ---------------------------------------------------------------------------
+# Database URL
+# ---------------------------------------------------------------------------
+#
+# There are two ways Alembic gets its database URL:
+#
+# 1. Pytest explicitly sets:
+#
+#       alembic_config.set_main_option(
+#           "sqlalchemy.url",
+#           database_url,
+#       )
+#
+#    In that case, we MUST preserve that URL.
+#
+# 2. Normal CLI usage:
+#
+#       alembic upgrade head
+#
+#    In that case, alembic.ini has an empty sqlalchemy.url, so we fall back
+#    to the application's Settings object.
+#
+# This allows the same env.py to work for both normal migrations and tests.
+# ---------------------------------------------------------------------------
+
+database_url: str | None = config.get_main_option("sqlalchemy.url")
+
+if not database_url:
+    config.set_main_option(
+        "sqlalchemy.url",
+        settings.SQLALCHEMY_DATABASE_URI,
+    )
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# ---------------------------------------------------------------------------
+# SQLAlchemy metadata
+# ---------------------------------------------------------------------------
 
 # add your model's MetaData object here
 # for 'autogenerate' support
@@ -32,6 +68,10 @@ target_metadata = Base.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+
+# ---------------------------------------------------------------------------
+# Offline migrations
+# ---------------------------------------------------------------------------
 
 
 def run_migrations_offline() -> None:
@@ -58,6 +98,11 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+# ---------------------------------------------------------------------------
+# Online migrations
+# ---------------------------------------------------------------------------
+
+
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
@@ -65,6 +110,7 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    """Run migrations using a live database connection."""
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
@@ -77,6 +123,10 @@ def run_migrations_online() -> None:
         with context.begin_transaction():
             context.run_migrations()
 
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
 
 if context.is_offline_mode():
     run_migrations_offline()
