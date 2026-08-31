@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* Identité visuelle du site — un seul endroit à modifier.
+   Tailwind v4 génère automatiquement les classes utilitaires
+   correspondantes : bg-primary, text-primary, border-primary,
+   bg-secondary, text-accent, etc. */
+@theme {
+	--color-primary: #16a34a;
+	--color-secondary: #0f766e;
+	--color-accent: black;
+    --color-background: white;
+}

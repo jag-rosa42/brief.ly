@@ -1,10 +1,12 @@
-function App() {
+import { BrowserRouter } from "react-router-dom";
+import { AppRouter } from "./app/router";
 
-  return (
-    <>
-	  <h1>Transcendance</h1>
-    </>
-  )
+function App() {
+	return (
+		<BrowserRouter>
+			<AppRouter />
+		</BrowserRouter>
+	);
 }
 
-export default App
+export default App;

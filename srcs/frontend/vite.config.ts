@@ -2,6 +2,7 @@
 
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 
 // Enables polling (repeated file-change checks) when VITE_USE_POLLING is "true".
 // It make sure that the live-reload works both on host and inside a container. 
@@ -11,7 +12,7 @@ const hmrHost = process.env.VITE_HMR_HOST;
 
 export default defineConfig({
 base: "/",
-plugins: [react()],
+plugins: [react(), tailwindcss()],
 server: {
 	host: true,
 	port: 5173,
