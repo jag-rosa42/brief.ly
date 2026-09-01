@@ -11,7 +11,11 @@ echo "========================================"
 echo "Checking .env files"
 echo "========================================"
 
+# TODO: Change this quickfix later. This create the root/.env file (line 18)
+ROOT_RELATIVE_PATH=../../
+
 SERVICES=(
+  $ROOT_RELATIVE_PATH
   identity
   personalization
   content_management
