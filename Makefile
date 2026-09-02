@@ -94,8 +94,10 @@ help:
 	@printf "$(BLUE_COLOR)  make$(YELLOW_COLOR) logs [SERVICE=<name>]        $(CYAN_COLOR)Follow container logs$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)  make$(YELLOW_COLOR) ps                           $(CYAN_COLOR)Show container status$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)  make$(YELLOW_COLOR) down                         $(CYAN_COLOR)Stop containers$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)  make$(YELLOW_COLOR) reset-db                     $(CYAN_COLOR)Reset database data 🚨$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)  make$(YELLOW_COLOR) clean                        $(CYAN_COLOR)Stop containers and remove project images$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)  make$(YELLOW_COLOR) re                           $(CYAN_COLOR)Clean and rebuild the stack$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)  make$(YELLOW_COLOR) clean                        $(CYAN_COLOR)Stop containers, remove volumes and images$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)  make$(YELLOW_COLOR) fclean                       $(CYAN_COLOR)Reset database data and remove project images 🚨$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)  make$(YELLOW_COLOR) secrets                      $(CYAN_COLOR)Create missing secrets$(DEFAULT_COLOR)\n\n"
  
 
@@ -217,12 +219,29 @@ ps:
 
 re: clean dev-docker
 
-#Stop and remove the volumes and images
+#Stop and remove the images
 clean:
-	@$(call print,$(CYAN_COLOR),[DOCKER] Stopping development stack and removing volumes/images...)
+	@$(call print,$(CYAN_COLOR),[DOCKER] Stopping development stack and removing images...)
 	@$(DEV_COMPOSE) $(COMPOSE_CLEAN_PROFILES_ALL) \
-		down --volumes --rmi all
-	@$(call print,$(GREEN_COLOR),[DOCKER] Cleanup complete.)
+		down --rmi all
+	@$(call print,$(GREEN_COLOR),[DOCKER] Project images removing complete.)
+
+#Remove persistent database volumes
+reset-db:
+	@$(call print,$(CYAN_COLOR),[DOCKER] Resetting database volumes...)
+	@$(DEV_COMPOSE) $(COMPOSE_CLEAN_PROFILES_ALL) \
+		down --volumes
+	@$(call print,$(GREEN_COLOR),[DOCKER] Database resetting complete.)
+
+#Confirm before removing only the database volumes and project images.
+fclean:
+	@printf "‼️🚨‼️Reset PostgreSQL and pgvector data, and remove project images? [y/N] "; read -r confirm; \
+	case "$$confirm" in \
+		[yY]|[yY][eE][sS]) \
+			$(DEV_COMPOSE) $(COMPOSE_CLEAN_PROFILES_ALL) down --volumes --rmi all; \
+			$(call print,$(GREEN_COLOR),[DOCKER] Database data and project images removed.) ;; \
+		*) $(call print,$(YELLOW_COLOR),[DOCKER] Cleanup cancelled.) ;; \
+	esac
 
 
 # ============================================================================ #
@@ -235,7 +254,7 @@ clean:
 #Delete target files if command fails
 .DELETE_ON_ERROR:
 
-.PHONY: clean logs down secrets \
+.PHONY: clean fclean logs down reset-db secrets \
 		frontend frontend-install frontend-build frontend-test \
 		dev dev-databases dev-docker sync run migration upgrade downgrade \
 		test lint typecheck shell list-services status clear-cache \
