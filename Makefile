@@ -121,7 +121,7 @@ frontend-test:
 	@$(DEV_COMPOSE) --profile front-test up --build front-test
 
 # ---- Local services with containerized databases ----
-dev-databases: check-databases-volume secrets
+dev-databases: secrets
 	@$(call print,$(GREEN_COLOR),[DATABASES] Starting PostgreSQL and pgvector...)
 	@$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d pgsql pgvector
 	@$(call print,$(GREEN_COLOR),✓ [DATABASES] Local development databases are running.)
@@ -154,7 +154,7 @@ list-services:
 
 # Without SERVICE, start the complete development stack. With SERVICE, Compose
 # starts only that service and its declared `depends_on` graph (its databases).
-dev-docker: check-databases-volume secrets
+dev-docker: secrets
 
 ifeq ($(strip $(SERVICE)),)
 	@$(call print,$(GREEN_COLOR),[DOCKER] Starting all services in dev mode...)
@@ -166,13 +166,6 @@ else
 endif
 	@$(call print,$(GREEN_COLOR),✓ [DOCKER] $(NAME) development environment started successfully! 🥳🥳🥳)
 
-#check if DATABASES_VOLUME_DIR presents in .env file
-check-databases-volume:
-	@if [ -z "$(DATABASES_VOLUME_DIR)" ]; then \
-		printf "DATABASES_VOLUME_DIR is not set. Add it to .env before starting containers.\\n" >&2; \
-		exit 2; \
-	fi
-	@mkdir -p "$(DATABASES_VOLUME_DIR)/pgsql" "$(DATABASES_VOLUME_DIR)/pgvector"
 
 #Generate missing secrets files
 secrets:
@@ -192,7 +185,7 @@ secrets:
 #                                  PROD-DOCKER#
 # ============================================================================ #
 
-prod: check-databases-volume secrets
+prod: secrets
 	@$(call print,$(GREEN_COLOR),[DOCKER] Starting all services in production mode...)
 	$(PROD_COMPOSE) $(COMPOSE_PROFILES_ALL) build --no-cache && \
 	$(PROD_COMPOSE) $(COMPOSE_PROFILES_ALL) up
@@ -246,4 +239,4 @@ clean:
 		frontend frontend-install frontend-build frontend-test \
 		dev dev-databases dev-docker sync run migration upgrade downgrade \
 		test lint typecheck shell list-services status clear-cache \
-		up build ps logs check-databases-volume
+		up build ps logs

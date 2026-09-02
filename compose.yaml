@@ -166,21 +166,8 @@ secrets:
     file: ./shared/secrets/postgres_password
 
 volumes:
- # TODO: study the usage of named volume instead -> see ticket #60
   pgsql:
-    name: pgsql
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: "${DATABASES_VOLUME_DIR}/pgsql"
   pgvector:
-    name: pgvector
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: "${DATABASES_VOLUME_DIR}/pgvector"
 
 networks:
   default:
