@@ -10,8 +10,6 @@ Create the shared environment file and the configuration file for every service 
 cp .env.example .env
 cp srcs/services/identity/.env.example srcs/services/identity/.env
 ```
-<!-- TODO: remove this line if the named volume is confirmed -->
-Set `DATABASES_VOLUME_DIR` in `.env` to the location where local database data should persist. For a locally run backend service, provide the shared database connection values.
 
 ## Frontend
 
@@ -54,8 +52,6 @@ Backend services run locally, while PostgreSQL and pgvector run in containers. S
 make dev-databases
 ```
 
-This command creates the database data directories below `DATABASES_VOLUME_DIR`, generates `shared/secrets/postgres_password` when it is missing, and starts `pgsql` and `pgvector`.
-
 The databases are available from the host at:
 
 - `pgsql`: `POSTGRES_PORT` (default `5432`)
@@ -77,7 +73,7 @@ Open `http://localhost:8086` (or `ADMINER_PORT`). Fill the form as follows:
 | Server | `pgsql` | `pgvector` |
 | Username | value of `POSTGRES_USER` | value of `POSTGRES_USER` |
 | Password | contents of `shared/secrets/postgres_password` | same |
-| Database | `postgres`, or `identity_db` after identity bootstrap | `postgres` |
+| Database | `postgres`, or `identity_db` after identity bootstrap | same |
 
 Inspect the database containers and their logs with:
 
@@ -93,4 +89,12 @@ Stop the Compose environment when you are finished:
 make down
 ```
 
-`make clean` also removes Compose volumes and images. The database files are bind-mounted below `DATABASES_VOLUME_DIR`; keep or remove that directory deliberately according to whether you need to retain local data.
+pgsql and pgvector use named volumes, so their data persists across
+container stops and restarts. Use the following cleanup commands deliberately:
+
+```bash
+make clean    # stop containers and remove project images; preserve database data
+make reset-db # stop containers and remove Compose-managed volumes
+make fclean   # confirm before removing database data and project images
+```
+
