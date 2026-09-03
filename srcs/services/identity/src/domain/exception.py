@@ -2,14 +2,41 @@
 Domain Layer errors.
 """
 
+from enum import StrEnum
+
+
+class ErrorCode(StrEnum):
+    INVALID_EMAIL = "INVALID_EMAIL"
+    INVALID_PASSWORD_HASH = "INVALID_PASSWORD_HASH"
+    EMAIL_ALREADY_REGISTERED = "EMAIL_ALREADY_REGISTERED"
+
+
 class DomainError(Exception):
-    pass
+    code: ErrorCode
+
+    def __init__(self, message: str):
+        super().__init__(message)
+
 
 class InvalidEmail(DomainError):
-    pass
+    code = ErrorCode.INVALID_EMAIL
+
+    def __init__(self):
+        super().__init__("Invalid email address")
+
+
 
 class InvalidPasswordHash(DomainError):
-    pass
+    code = ErrorCode.INVALID_PASSWORD_HASH
+
+    def __init__(self):
+        super().__init__("Invalid password hash")
+
+
 
 class EmailAlreadyRegisteredError(DomainError):
-    pass
+    code = ErrorCode.EMAIL_ALREADY_REGISTERED
+
+    def __init__(self):
+        super().__init__("Email already registered")
+

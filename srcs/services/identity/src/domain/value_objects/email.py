@@ -16,7 +16,7 @@ class Email:
                 self.value, check_deliverability=False
             )
         except EmailNotValidError as e:
-            raise InvalidEmail("Invalid email address") from e
+            raise InvalidEmail() from e
 
         object.__setattr__(
             self,

@@ -5,6 +5,7 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
+from shared_errors import ErrorResponse
 
 from src.api.routers.auth.router import get_register_account
 from src.domain.entities.account import Account
@@ -95,7 +96,8 @@ class TestAuthRegisterRouter:
         )
 
         assert response.status_code == 409
-        assert response.json() == {"detail": "Email already registered"}
+        body: ErrorResponse = ErrorResponse.model_validate(response.json())
+        assert body.error.code == "EMAIL_ALREADY_REGISTERED"
 
     @pytest.mark.parametrize(
         "body",

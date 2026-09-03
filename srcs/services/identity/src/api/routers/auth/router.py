@@ -1,12 +1,11 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from src.api.dependencies import SessionDep
 from src.api.schemas.account import AccountRegisterRequest, AccountRegisterResponse
 from src.application.register_account import RegisterAccount
 from src.domain.entities.account import Account
-from src.domain.exception import EmailAlreadyRegisteredError
 from src.infrastructure.database.repositories.sqlalchemy_account_repository import (
     SqlAlchemyAccountRepository,
 )
@@ -44,15 +43,9 @@ def register(
     body: AccountRegisterRequest,
     register_account: RegisterAccountDep
 ) -> AccountRegisterResponse:
-    try:
-        account: Account = register_account.execute(
-            email=body.email, password=body.password.get_secret_value()
-        )
-    except EmailAlreadyRegisteredError:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered",
-        ) from None
+    account: Account = register_account.execute(
+        email=body.email, password=body.password.get_secret_value()
+    )
     return AccountRegisterResponse(
         id=account.id,
         email=account.email.value,
