@@ -28,7 +28,7 @@ class RegisterAccount:
         )
 
         if existing_account is not None:
-            raise EmailAlreadyRegisteredError
+            raise EmailAlreadyRegisteredError()
 
         password_hash: PasswordHash = self._password_hasher.hash(password)
 
@@ -47,7 +47,7 @@ class RegisterAccount:
             self._account_repository.commit()
         except IntegrityError as exc:
             self._account_repository.rollback()
-            raise EmailAlreadyRegisteredError from exc
+            raise EmailAlreadyRegisteredError() from exc
         except Exception:
             self._account_repository.rollback()
             raise

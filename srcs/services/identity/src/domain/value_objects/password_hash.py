@@ -9,4 +9,4 @@ class PasswordHash:
 
     def __post_init__(self):
         if not self.value:
-            raise InvalidPasswordHash("Password can not be empty")
+            raise InvalidPasswordHash()
