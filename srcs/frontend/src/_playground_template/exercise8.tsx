@@ -1,4 +1,5 @@
-// Exercice 8 — Tailwind avancé : thème du projet & responsive
+// EXERCICE 8 — TAILWIND AVANCÉ : THÈME DU PROJET & RESPONSIVE
+//
 //
 // L'exercice 6 t'a fait pratiquer Tailwind avec la palette générique
 // (bg-blue-600, text-gray-600...). Mais le vrai projet a son propre thème,

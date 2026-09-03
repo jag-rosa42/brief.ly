@@ -1,4 +1,5 @@
-// Exercice 7 — Formulaires, validation et appels API asynchrones
+// EXERCICE 7 — FORMULAIRES, VALIDATION ET APPELS API ASYNCHRONES
+//
 //
 // C'est l'exercice qui te donne tout ce qu'il manque avant d'attaquer le
 // vrai formulaire d'inscription (ticket V-021) : soumettre un formulaire,

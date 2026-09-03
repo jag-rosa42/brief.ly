@@ -1,4 +1,5 @@
-// Exercice 1 — JavaScript moderne (ES6+)
+// EXERCICE 1 — JAVASCRIPT MODERNE (ES6+)
+//
 //
 // Complète chaque fonction ci-dessous. Ignore la syntaxe `: number[]` etc.
 // pour l'instant (c'est du TypeScript, on l'expliquera à l'exercice 2) —

@@ -1,4 +1,5 @@
-// Exercice 5 — React Router : navigation entre pages
+// EXERCICE 5 — REACT ROUTER : NAVIGATION ENTRE PAGES
+//
 //
 // Dans une SPA (Single Page Application), il n'y a qu'une seule vraie page
 // HTML. React Router intercepte les clics sur les liens internes et change

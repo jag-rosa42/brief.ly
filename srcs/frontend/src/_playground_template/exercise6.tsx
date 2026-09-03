@@ -1,4 +1,5 @@
-// Exercice 6 — Tailwind CSS
+// EXERCICE 6 — TAILWIND CSS
+//
 //
 // Tailwind n'a pas de fichier .css séparé par composant : tu stylises
 // directement en JSX, via la prop `className`, avec des classes utilitaires

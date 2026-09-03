@@ -1,4 +1,5 @@
-// Exercice 4 — State & événements React
+// EXERCICE 4 — STATE & ÉVÉNEMENTS REACT
+//
 //
 // Jusqu'ici, tes composants étaient "statiques" : ils affichaient juste ce
 // qu'on leur donnait en props, sans jamais changer eux-mêmes. On introduit

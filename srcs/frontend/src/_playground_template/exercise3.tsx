@@ -1,4 +1,5 @@
-// Exercice 3 — Composants React & props
+// EXERCICE 3 — COMPOSANTS REACT & PROPS
+//
 //
 // Un composant React, c'est juste une fonction qui prend des "props"
 // (un objet) et retourne du JSX (qui ressemble à du HTML mais c'est du

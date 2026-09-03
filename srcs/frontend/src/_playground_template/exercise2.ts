@@ -1,4 +1,5 @@
-// Exercice 2 — TypeScript de base
+// EXERCICE 2 — TYPESCRIPT DE BASE
+//
 //
 // TypeScript ajoute des types par-dessus JavaScript. Le code s'exécute
 // toujours en JS (les types sont juste vérifiés puis effacés), mais ça te
