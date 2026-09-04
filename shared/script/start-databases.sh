@@ -12,7 +12,7 @@ echo "Checking .env files"
 echo "========================================"
 
 # TODO: Change this quickfix later. This create the root/.env file (line 18)
-ROOT_RELATIVE_PATH=../../
+ROOT_RELATIVE_PATH=../..
 
 SERVICES=(
   $ROOT_RELATIVE_PATH
@@ -79,7 +79,7 @@ echo "✓ All .env files are present."
 # Create postgresql container
 # ========================================
 POSTGRES_CONTAINER="postgres-dev"
-POSTGRES_IMAGE="pgvector/pgvector:pg18"
+POSTGRES_IMAGE="docker.io/pgvector/pgvector:pg18"
 
 POSTGRES_USER="transcendence"
 POSTGRES_PASSWORD="app_password"
