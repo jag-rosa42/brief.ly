@@ -1,6 +1,3 @@
-from logging.config import fileConfig
-
-# from src.database.models.user import User
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
@@ -45,14 +42,6 @@ if not database_url:
         settings.SQLALCHEMY_DATABASE_URI,
     )
 
-# ---------------------------------------------------------------------------
-# Logging
-# ---------------------------------------------------------------------------
-
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
 
 # ---------------------------------------------------------------------------
 # SQLAlchemy metadata
