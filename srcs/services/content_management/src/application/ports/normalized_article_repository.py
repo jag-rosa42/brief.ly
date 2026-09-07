@@ -1,20 +1,20 @@
 from typing import Protocol
 from uuid import UUID
 
-from src.domain.entities.extracted_article import ExtractedArticle
+from src.domain.entities import NormalizedArticle
 
 
-class ArticleRepository(Protocol):
+class NormalizedArticleRepository(Protocol):
     def exists(
             self,
             source_id: UUID,
-            external_id: str,
+            discovered_article_external_id: str,
             ) -> bool:
         ...
 
     def save(
             self,
             source_id: UUID,
-            article: ExtractedArticle,
+            normalized_article: NormalizedArticle,
             ) -> None:
         ...

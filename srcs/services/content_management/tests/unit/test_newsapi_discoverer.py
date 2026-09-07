@@ -1,8 +1,8 @@
 from datetime import UTC, datetime
 from unittest.mock import Mock
 
-from src.infrastructure.article_discovery.newsapi_discoverer import (
-        NewsApiDiscoverer,
+from src.infrastructure.clients.article_discovery.newsapi_article_discoverer import (
+        NewsApiArticleDiscoverer,
         )
 
 
@@ -10,7 +10,7 @@ def test_discover_queries_newsapi_with_the_source_configuration(source):
     client = Mock()
     client.get_top_headlines.return_value = {"articles": []}
 
-    NewsApiDiscoverer(client).discover(source)
+    NewsApiArticleDiscoverer(client).discover(source)
 
     client.get_top_headlines.assert_called_once_with(
         category="science",
@@ -32,13 +32,13 @@ def test_discover_maps_newsapi_metadata_and_external_identity(source):
         ]
     }
 
-    articles = NewsApiDiscoverer(client).discover(source)
+    articles = NewsApiArticleDiscoverer(client).discover(source)
 
     assert len(articles) == 1
     article = articles[0]
     assert article.external_id == "https://example.test/articles/42"
     assert article.url == "https://example.test/articles/42"
-    assert article.editor == "Le journal des sciences"
+    assert article.publisher_name == "Le journal des sciences"
     assert article.description == "Le résumé"
     assert article.authors == ["Ada Lovelace"]
     assert article.category == source.category
@@ -59,7 +59,7 @@ def test_discover_ignores_items_without_a_url(source):
         ]
     }
 
-    articles = NewsApiDiscoverer(client).discover(source)
+    articles = NewsApiArticleDiscoverer(client).discover(source)
 
     assert [article.url for article in articles] == [
         "https://example.test/complete"
@@ -78,7 +78,7 @@ def test_discover_keeps_optional_metadata_optional(source):
         ]
     }
 
-    article = NewsApiDiscoverer(client).discover(source)[0]
+    article = NewsApiArticleDiscoverer(client).discover(source)[0]
 
     assert article.description is None
     assert article.authors is None

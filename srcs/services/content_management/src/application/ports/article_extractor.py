@@ -1,11 +1,7 @@
 from typing import Protocol
 
-from src.domain.entities.discovered_article import DiscoveredArticle
-from src.domain.entities.extracted_article import ExtractedArticle
+from src.domain.entities import DiscoveredArticle, NormalizedArticle
 
 
 class ArticleExtractor(Protocol):
-    def extract(self,
-                discovered: DiscoveredArticle
-                ) -> ExtractedArticle:
-        ...
+    def extract(self, discovered: DiscoveredArticle) -> NormalizedArticle: ...
