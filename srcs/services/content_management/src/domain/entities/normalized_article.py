@@ -4,11 +4,11 @@ from uuid import UUID
 
 
 @dataclass(frozen=True)
-class ExtractedArticle:
+class NormalizedArticle:
     id: UUID
-    external_id: str
+    discovered_article_external_id: str
     url: str
-    editor: str
+    publisher_name: str
     title: str
     description: str | None
     content: str

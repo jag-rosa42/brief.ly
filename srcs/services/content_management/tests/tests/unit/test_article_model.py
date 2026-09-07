@@ -1,15 +1,15 @@
 from sqlalchemy import UniqueConstraint, inspect
 
-from src.infrastructure.database.models import ArticleModel
+from src.infrastructure.database.models import NormalizedArticleModel
 
 
-def test_article_model_declares_the_required_persistence_contract():
-    table = inspect(ArticleModel).local_table
+def test_normalized_article_model_declares_the_required_persistence_contract():
+    table = inspect(NormalizedArticleModel).local_table
 
     assert {
         "id",
         "source_id",
-        "external_id",
+        "discovered_article_external_id",
         "title",
         "content",
         "authors",
@@ -28,4 +28,4 @@ def test_article_model_declares_the_required_persistence_contract():
         for constraint in table.constraints
         if isinstance(constraint, UniqueConstraint)
     }
-    assert ("source_id", "external_id") in unique_column_sets
+    assert ("source_id", "discovered_article_external_id") in unique_column_sets

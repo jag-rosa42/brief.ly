@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
-from src.domain.entities.source import Source
+from src.domain.entities import Source
 
 
 class SourceRepository(Protocol):
