@@ -156,9 +156,9 @@ services:
         condition: service_completed_successfully
 
   #personalization:
-  #content_management:
-  #ai_processing:
-  #morning_briefing:
+  #content-management:
+  #ai-processing:
+  #morning-briefing:
   #administration:
 
 secrets:
