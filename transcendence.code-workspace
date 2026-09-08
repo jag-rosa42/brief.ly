@@ -4,18 +4,18 @@
     { "name": "frontend", "path": "srcs/frontend" },
     { "name": "identity", "path": "srcs/services/identity" },
     { "name": "personalization", "path": "srcs/services/personalization" },
-    { "name": "content_management", "path": "srcs/services/content_management" },
-    { "name": "ai_processing", "path": "srcs/services/ai_processing" },
-    { "name": "morning_briefing", "path": "srcs/services/morning_briefing" },
+    { "name": "content-management", "path": "srcs/services/content-management" },
+    { "name": "ai-processing", "path": "srcs/services/ai-processing" },
+    { "name": "morning-briefing", "path": "srcs/services/morning-briefing" },
   ],
   "settings": {
     "files.exclude": {
       "srcs/frontend": true,
       "srcs/services/identity": true,
       "srcs/services/personalization": true,
-      "srcs/services/content_management": true,
-      "srcs/services/ai_processing": true,
-      "srcs/services/morning_briefing": true,
+      "srcs/services/content-management": true,
+      "srcs/services/ai-processing": true,
+      "srcs/services/morning-briefing": true,
     }
   },
   "extensions": {
