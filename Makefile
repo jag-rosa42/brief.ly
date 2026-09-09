@@ -70,9 +70,9 @@ help:
 	@printf "$(GREEN_COLOR)  Databases$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) dev-databases               $(CYAN_COLOR)Start PostgreSQL and pgvector containers$(DEFAULT_COLOR)\n"
 	@printf "$(GREEN_COLOR)  Backend$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) test SERVICE=<name>         $(CYAN_COLOR)Run service tests locally$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) test SERVICE=<name>         $(CYAN_COLOR)Run service tests locally with test database$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) lint SERVICE=<name>         $(CYAN_COLOR)Lint a service locally$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) run SERVICE=<name>          $(CYAN_COLOR)Run a service locally$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) run SERVICE=<name>          $(CYAN_COLOR)Run a service locally with database$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) sync SERVICE=<name>         $(CYAN_COLOR)Synchronize service dependencies$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) typecheck SERVICE=<name>    $(CYAN_COLOR)Type-check a service locally$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) status SERVICE=<name>       $(CYAN_COLOR)Show service status$(DEFAULT_COLOR)\n"
@@ -140,12 +140,29 @@ dev-databases: secrets
 	done
 	@$(call print,$(GREEN_COLOR),✓ [DATABASES] Local development databases are running and healthy👩🏻‍⚕️.)
 
+# ---- Per-service dispatch (local dev, via uv) ----
+check-service:
 ifndef SERVICE
 	$(error SERVICE is not set. Usage: make $@ SERVICE=<service-name>)
 endif
 ifeq ($(wildcard $(SERVICES_DIR)/$(SERVICE)),)
 	$(error Unknown service '$(SERVICE)'. Available: $(notdir $(wildcard $(SERVICES_DIR)/*)))
 endif
+
+migration upgrade downgrade run: check-service dev-databases
+
+	@$(call print,$(CYAN_COLOR),[SERVICE] $(SERVICE) -> make $@)
+	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) ensure-databases -s
+	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) $@ -s
+
+test: check-service dev-databases
+
+	@$(call print,$(CYAN_COLOR),[SERVICE] $(SERVICE) -> make $@)
+	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) $@ -s
+
+
+sync lint typecheck shell status clear-cache: check-service
+
 	@$(call print,$(CYAN_COLOR),[SERVICE] $(SERVICE) -> make $@)
 	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) $@ -s
 
