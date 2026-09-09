@@ -2,12 +2,60 @@
   "folders": [
     { "name": "transcendence", "path": "." },
     { "name": "frontend", "path": "srcs/frontend" },
-    { "name": "shared_errors", "path": "shared/packages/shared_errors" },
-    { "name": "identity", "path": "srcs/services/identity" },
-    { "name": "personalization", "path": "srcs/services/personalization" },
-    { "name": "content-management", "path": "srcs/services/content-management" },
-    { "name": "ai-processing", "path": "srcs/services/ai-processing" },
-    { "name": "morning-briefing", "path": "srcs/services/morning-briefing" },
+    //############################# Shared_errors ##############################
+    {
+      "name": "shared_errors",
+      "path": "shared/packages/shared_errors",
+      "settings": {
+        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+        "ty.interpreter": ["${workspaceFolder}/.venv/bin/python"]
+      }
+    },
+    //################################ identity ################################
+    {
+      "name": "identity",
+      "path": "srcs/services/identity",
+      "settings": {
+        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+        "ty.interpreter": ["${workspaceFolder}/.venv/bin/python"],
+      }
+    },
+    //############################ personalization #############################
+    {
+      "name": "personalization",
+      "path": "srcs/services/personalization",
+      "settings": {
+        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+        "ty.interpreter": ["${workspaceFolder}/.venv/bin/python"]
+      }
+    },
+    //########################### content_management ###########################
+    {
+      "name": "content-management",
+      "path": "srcs/services/content-management",
+      "settings": {
+        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+        "ty.interpreter": ["${workspaceFolder}/.venv/bin/python"]
+      }
+    },
+    //############################# AI_Processing #############################
+    {
+      "name": "ai-processing",
+      "path": "srcs/services/ai-processing",
+      "settings": {
+        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+        "ty.interpreter": ["${workspaceFolder}/.venv/bin/python"]
+      }
+    },
+    //############################ Morning_briefing ############################
+    {
+      "name": "morning-briefing",
+      "path": "srcs/services/morning-briefing",
+      "settings": {
+        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+        "ty.interpreter": ["${workspaceFolder}/.venv/bin/python"]
+      }
+    },
   ],
   "settings": {
     "files.exclude": {
@@ -18,7 +66,13 @@
       "srcs/services/content-management": true,
       "srcs/services/ai-processing": true,
       "srcs/services/morning-briefing": true,
-    }
+    },
+    // ============================================================
+    // ty - Python type checker
+    // ============================================================
+    // Resolve ty and its dependencies from the project's environment.
+    "ty.importStrategy": "fromEnvironment",
+    "ty.diagnosticMode": "openFilesOnly",
   },
   "extensions": {
     "recommendations": [
