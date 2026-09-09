@@ -47,6 +47,10 @@ sync: check-env
 	$(UV) sync
 	@$(call print,$(GREEN_COLOR),[SYNC] Dependencies synchronized for $(PROJECT_NAME).)
 
+ensure-databases: check-env
+	@$(call, print,$(CYAN_COLOR),[DATABASE] Ensuring $(POSTGRES_DB_NAME) database exists...)
+	@$(RUN) python -m src.infrastructure.database.bootstrap
+
 migration: check-env
 ifndef MESSAGE
 	$(error MESSAGE is not set. Usage: make migration SERVICE=identity MESSAGE="add users table")
