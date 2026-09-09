@@ -18,6 +18,7 @@ OS := $(shell uname -s)
 
 MAKE_CMD ?= $(MAKE)
 COMPOSE := podman compose
+CONTAINER_CMD := podman
 DEV_COMPOSE = $(COMPOSE) $(addprefix -f ,$(DEV_COMPOSE_FILE))
 PROD_COMPOSE = $(COMPOSE) $(addprefix -f ,$(PROD_COMPOSE_FILE))
 COMPOSE_PROFILES := frontend backend databases
@@ -121,20 +122,23 @@ frontend-test:
 	@$(call print,$(BLUE_COLOR),[FRONTEND] Running tests in Docker...)
 	@$(DEV_COMPOSE) --profile front-test up --build front-test
 
-# ---- Local services with containerized databases ----
-dev-databases: secrets
-	@$(call print,$(GREEN_COLOR),[DATABASES] Starting PostgreSQL and pgvector...)
-	@$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d pgsql pgvector
-	@$(call print,$(GREEN_COLOR),✓ [DATABASES] Local development databases are running.)
-
 list-frontend:
 	@$(call print,$(BLUE_COLOR),Frontend commands:)
 	@printf "  make frontend          Start development server\n"
 	@printf "  make frontend-install  Install dependencies\n"
 	@printf "  make frontend-build    Build for production\n"
 
-# ---- Per-service dispatch (local dev, via uv) ----
-run sync migration upgrade downgrade test lint typecheck shell status clear-cache:
+# ---- Local services with containerized databases ----
+dev-databases: secrets
+	@$(call print,$(GREEN_COLOR),[DATABASES] Starting PostgreSQL and pgvector...)
+	@$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d pgsql pgvector
+	@until $(CONTAINER_CMD) exec pgsql pg_isready -U "$(POSTGRES_USER)" -d postgres; \
+		do sleep 1; \
+	done
+	@until $(CONTAINER_CMD) exec pgvector pg_isready -U "$(POSTGRES_USER)" -d postgres; \
+		do sleep 1; \
+	done
+	@$(call print,$(GREEN_COLOR),✓ [DATABASES] Local development databases are running and healthy👩🏻‍⚕️.)
 
 ifndef SERVICE
 	$(error SERVICE is not set. Usage: make $@ SERVICE=<service-name>)
