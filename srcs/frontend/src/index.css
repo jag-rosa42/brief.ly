@@ -5,8 +5,19 @@
    correspondantes : bg-primary, text-primary, border-primary,
    bg-secondary, text-accent, etc. */
 @theme {
-	--color-primary: #16a34a;
+
+    --color-primary: #16a34a;
 	--color-secondary: #0f766e;
-	--color-accent: black;
+	--color-accent: grey;
     --color-background: white;
+
+	--color-primary-light: color-mix(in srgb, var(--color-primary) 60%, white);
+	--color-primary-dark: color-mix(in srgb, var(--color-primary) 80%, black);
+	--color-secondary-light: color-mix(in srgb, var(--color-secondary) 60%, white);
+	--color-secondary-dark: color-mix(in srgb, var(--color-secondary) 80%, black);
+	--color-accent-light: color-mix(in srgb, var(--color-accent) 60%, white);
+	--color-accent-dark: color-mix(in srgb, var(--color-accent) 80%, black);
+	--color-background-light: color-mix(in srgb, var(--color-background) 60%, white);
+	--color-background-dark: color-mix(in srgb, var(--color-background) 80%, black);
+
 }

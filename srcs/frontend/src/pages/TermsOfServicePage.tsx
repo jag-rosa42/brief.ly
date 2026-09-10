@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
-export function AboutPage() {
+export function TermsOfServicePage() {
 	return (
 		<main className="max-w-2xl mx-auto px-6 py-16">
-			<h1 className="text-4xl font-bold text-primary mb-6">About Us</h1>
+			<h1 className="text-4xl font-bold text-primary mb-6">Terms of Service</h1>
 			<p className="text-lg text-accent mb-4">
 				We believe that building healthy habits shouldn't feel like a
 				chore. Our mission is to make everyday wellness simple, personal,

@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 
-export function PrivacyPage() {
+export function PrivacyPolicyPage() {
 	return (
 		<main className="max-w-2xl mx-auto px-6 py-16">
-			<h1 className="text-4xl font-bold text-primary mb-6">Privacy</h1>
+			<h1 className="text-4xl font-bold text-primary mb-6">
+				Privacy Policy
+			</h1>
 			<p className="text-lg text-gray-700 mb-10">
 				Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
 				eiusmod tempor incididunt ut labore et dolore magna aliqua.
@@ -44,7 +46,7 @@ export function PrivacyPage() {
 				</p>
 			</section>
 
-			<section>
+			<section className="mb-8">
 				<h2 className="text-2xl font-semibold text-secondary mb-3">
 					Contact Us
 				</h2>

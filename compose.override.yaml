@@ -22,6 +22,8 @@ services:
       VITE_USE_POLLING: ${VITE_USE_POLLING:-false}
       VITE_HMR_HOST: localhost
       VITE_HMR_CLIENT_PORT: ${FRONTEND_PORT:?Variable not set}
+      # Called directly from the browser — no gateway in front of identity yet.
+      VITE_IDENTITY_API_URL: http://localhost:${IDENTITY_PORT:?Variable not set}
 
   front-test:
     build:

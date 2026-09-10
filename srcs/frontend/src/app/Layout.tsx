@@ -19,9 +19,9 @@ interface LayoutProps {
 
 export function Layout(props: LayoutProps) {
 	return (
-		<div className="bg-background min-h-screen">
+		<div className="bg-background min-h-screen flex flex-col">
 			<Header />
-			{props.children}
+			<main className="flex-1">{props.children}</main>
 			<Footer />
 		</div>
 	);
