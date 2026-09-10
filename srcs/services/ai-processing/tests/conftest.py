@@ -71,9 +71,10 @@ def _create_test_database_if_needed(url: str) -> None:
         raise RuntimeError(f"Test database URL has no database name: {url!r}")
 
     # We can not connect to the test database if it does not exist.
-    # Connect to an existing database first so we check wether the test database exists
+    # Connect to the defaut existing postgres db first
+    # so we can check wether the test database exists
     # and create it if necessary
-    existing_db_url: URL = target_url.set(database=settings.AI_POSTGRES_DB_NAME)
+    existing_db_url: URL = target_url.set(database="postgres")
     engine: Engine = create_engine(existing_db_url, isolation_level="AUTOCOMMIT")
     try:
         with engine.connect() as connection:
@@ -99,6 +100,18 @@ def _create_test_database_if_needed(url: str) -> None:
     finally:
         engine.dispose()
 
+def _enable_pgvector_extension_if_configured(url: str) -> None:
+    """active PostgresSQL's pgvector extension"""
+    engine: Engine = create_engine(url, isolation_level="AUTOCOMMIT")
+    try:
+        with engine.connect() as connection:
+            connection.execute(
+                text("CREATE EXTENSION IF NOT EXISTS vector")
+            )
+    finally:
+        engine.dispose()
+
+
 
 # ---------------------------------------------------------------------------
 # Database URL
@@ -118,6 +131,7 @@ def database_url() -> str:
     url: str = settings.TEST_DATABASE_URI
     _assert_test_database(url)
     _create_test_database_if_needed(url)
+    _enable_pgvector_extension_if_configured(url)
     return url
 
 

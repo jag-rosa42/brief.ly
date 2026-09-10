@@ -16,10 +16,10 @@ def test_engine_is_configured_for_the_right_database():
     assert engine.url.drivername == (
         f"{settings.DATABASE_DIALECT}+{settings.DATABASE_DRIVER}"
     )
-    assert engine.url.host == settings.AI_POSTGRES_HOST
-    assert engine.url.port == settings.AI_POSTGRES_PORT
-    assert engine.url.database == settings.AI_POSTGRES_DB_NAME
-    assert engine.url.username == settings.AI_POSTGRES_USER
+    assert engine.url.host == settings.POSTGRES_HOST
+    assert engine.url.port == settings.POSTGRES_PORT
+    assert engine.url.database == settings.POSTGRES_DB_NAME
+    assert engine.url.username == settings.POSTGRES_USER
 
 
 def test_engine_pool_settings():
