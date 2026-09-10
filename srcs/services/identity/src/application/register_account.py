@@ -3,7 +3,7 @@ from uuid import uuid4
 
 from sqlalchemy.exc import IntegrityError
 
-from src.application.password_hasher import PasswordHasher
+from src.application.port.password_hasher import PasswordHasher
 from src.domain.entities.account import Account
 from src.domain.exception import EmailAlreadyRegisteredError
 from src.domain.repositories.account_repository import AccountRepository
