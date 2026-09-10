@@ -6,7 +6,7 @@ from shared_errors.handlers import respond
 from shared_errors.schemas import ErrorBody
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
-from src.api.errors.codes import DOMAIN_ERROR_STATUS_MAP
+from src.api.errors.codes import DOMAIN_ERROR_STATUS_MAP, HttpErrorConfig
 from src.domain.exception import DomainError
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -38,12 +38,17 @@ def domain_error_handler(_request: Request, exception: Exception) -> JSONRespons
     # instead, which has no runtime footprint either way.
     assert isinstance(exception, DomainError)
 
-    status_code: int | None = DOMAIN_ERROR_STATUS_MAP.get(exception.code)
+    config: HttpErrorConfig | None = DOMAIN_ERROR_STATUS_MAP.get(exception.code)
 
-    if status_code is None:
+    if config is None:
         logger.error("No HTTP status mapped for DomainError code: %s", exception.code)
-        status_code: int = HTTP_500_INTERNAL_SERVER_ERROR
-    return respond(status_code, ErrorBody(code=exception.code, message=str(exception)))
+        # config.status_code: int = HTTP_500_INTERNAL_SERVER_ERROR
+        config = HttpErrorConfig(status_code=HTTP_500_INTERNAL_SERVER_ERROR)
+    return respond(
+        config.status_code,
+        ErrorBody(code=exception.code, message=str(exception)),
+        headers=config.headers
+    )
 
 
 def register_domain_handlers(app: FastAPI) -> None:
