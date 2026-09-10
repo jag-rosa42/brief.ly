@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
-import { useAuth } from "../app/AuthContext";
+import { useAuth } from "@/app/AuthContext";
 
 export function LoginPage() {
 
@@ -44,6 +44,13 @@ export function LoginPage() {
 		setWaiting(false);
 	}
 
+	async function oauth(){
+		setWaiting(true);
+		login();
+		navigate("/");
+		setWaiting(false);
+	}
+
 	return (
 	<main className="max-w-md mx-auto px-6 py-16">
 		<h1 className="text-3xl font-bold text-primary mb-6">Log in</h1>
@@ -59,6 +66,7 @@ export function LoginPage() {
 			{result}
 			<button type="submit" className="bg-primary text-background rounded px-4 py-2 hover:bg-primary-dark disabled:opacity-50" disabled={waiting}>Log in</button>
 		</form>
+			<button onClick={oauth} type="button" className="bg-primary text-background rounded px-4 py-2 hover:bg-primary-dark disabled:opacity-50" disabled={waiting}>OAuth</button>
 		</main>
 	);
 }

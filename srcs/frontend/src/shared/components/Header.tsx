@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../app/AuthContext"
+import { useAuth } from "@/app/AuthContext"
 
 
 export function Header() {

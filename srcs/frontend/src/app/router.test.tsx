@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { AppRouter } from "./router";
-import { AuthProvider } from "./AuthContext";
+import { AppRouter } from "@/app/router";
+import { AuthProvider } from "@/app/AuthContext";
 
 describe("AppRouter", () => {
 	it("shows the landing page at /", () => {
