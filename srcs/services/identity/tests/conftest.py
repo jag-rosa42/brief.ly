@@ -27,7 +27,7 @@ from sqlalchemy.engine import URL, make_url
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.sql.compiler import IdentifierPreparer
 
-from src.api.dependencies import get_db
+from src.api.dependencies.database import get_db
 from src.infrastructure.database.config import settings
 from src.main import app
 

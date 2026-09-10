@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from httpx2 import Response
 from shared_errors import ErrorResponse
 
-from src.api.routers.auth.router import get_register_account
+from src.api.dependencies.account import get_register_account
 from src.domain.entities.account import Account
 from src.domain.exception import DomainError, EmailAlreadyRegisteredError
 from src.domain.value_objects.email import Email
