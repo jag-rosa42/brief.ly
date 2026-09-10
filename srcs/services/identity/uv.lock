@@ -1002,7 +1002,7 @@ wheels = [
 
 [[package]]
 name = "shared-errors"
-version = "0.1.0"
+version = "0.1.1"
 source = { directory = "../../../shared/packages/shared_errors" }
 dependencies = [
     { name = "fastapi", extra = ["standard"] },

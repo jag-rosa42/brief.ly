@@ -1,15 +1,34 @@
 import uuid
+from datetime import datetime
+from typing import Self
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr
+from pydantic import BaseModel, EmailStr
 
-
-class AccountRegisterRequest(BaseModel):
-    email: EmailStr = Field(max_length=255)
-    password: SecretStr = Field(min_length=8, max_length=255)
+from src.domain.entities.account import Account
 
 
 class AccountRegisterResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     email: EmailStr
+
+    @classmethod
+    def from_domain(cls, account: Account) -> Self:
+        return cls(
+            id=account.id,
+            email=account.email.value,
+        )
+
+
+class AccountResponse(BaseModel):
+    id: uuid.UUID
+    email: EmailStr
+    created_at: datetime
+
+    @classmethod
+    def from_domain(cls, account: Account) -> Self:
+        return cls(
+            id=account.id,
+            email=account.email.value,
+            created_at=account.created_at,
+        )

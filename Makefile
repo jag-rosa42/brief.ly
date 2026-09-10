@@ -3,6 +3,7 @@
 
 include .env
 include shared/mk/colors.mk
+include shared/mk/secrets.mk
 
 NAME := Transcendence
 .DEFAULT_GOAL := help
@@ -30,7 +31,6 @@ COMPOSE_CLEAN_PROFILES_ALL := $(COMPOSE_PROFILES_ALL) --profile front-test
 # ============================================================================ #
 
 SRC_DIR := srcs
-SECRET_DIR := shared/secrets/
 FRONTEND_DIR := srcs/frontend
 SERVICES_DIR := srcs/services
 
@@ -47,15 +47,6 @@ ENV_EXAMPLE_FILES := .env.example $(wildcard $(SERVICES_DIR)/*/.env.example)
 ifeq ($(OS),Darwin)
 DEV_COMPOSE_FILE += compose.mac.yaml
 endif
-
-
-
-#============================================================================= #
-#                                  SECRETS                                     #
-# ============================================================================ #
-
-SECRET_FILES := \
-	$(SECRET_DIR)/postgres_password \
 
 # ============================================================================ #
 #                                  🫡HELP                                      #
@@ -102,7 +93,6 @@ help:
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) re                          $(CYAN_COLOR)Clean and rebuild the stack$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) fclean                      $(CYAN_COLOR)Reset database data and remove project images 🚨$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) secrets                     $(CYAN_COLOR)Create missing secrets$(DEFAULT_COLOR)\n\n"
-
 
 
 # ============================================================================ #
@@ -209,20 +199,6 @@ else
 endif
 	@$(call print,$(GREEN_COLOR),✓ [DOCKER] $(NAME) development environment started successfully! 🥳🥳🥳)
 
-
-#Generate missing secrets files
-secrets:
-	@printf "$(CYAN_COLOR)🔍🔍🔍 Verifying and generating secrets at current directory 🕵️$(DEFAULT_COLOR)\n"
-	mkdir -p $(SECRET_DIR); \
-	for secret in $(SECRET_FILES); do \
-		if [ ! -s $$secret ]; then \
-			printf "$(YELLOW_COLOR)㊙️ Generating $$secret...$(DEFAULT_COLOR)\n"; \
-			openssl rand -base64 32 | tr -d '=+/' | head -c 32 > $$secret; \
-			printf "$(GREEN_COLOR)✓ $$secret generated$(DEFAULT_COLOR)\n"; \
-		else \
-			printf "$(GREEN_COLOR)✓ $$secret already exists, skipping ㊙️$(DEFAULT_COLOR)\n"; \
-		fi \
-	done
 
 # ============================================================================ #
 #                                  PROD-DOCKER#

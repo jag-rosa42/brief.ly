@@ -96,6 +96,8 @@ known-first-party = ["src"]
 # Add options here if the project grows and needs them.
 [tool.ty.rules]
 possibly-unresolved-reference = "warn"
+possibly-missing-import = "error"
+
 
 # ============================================================================
 # pytest

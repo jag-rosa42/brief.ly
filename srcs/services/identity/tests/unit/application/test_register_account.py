@@ -22,6 +22,7 @@ from src.domain.value_objects.password_hash import PasswordHash
 class FakeAccountRepository:
     def __init__(self) -> None:
         self._accounts_by_email: dict[str, Account] = {}
+        self._accounts_by_id: dict[UUID, Account] = {}
         self.committed = False
         self.rolled_back = False
         self._failure_to_raise_on_save: Exception | None = None
@@ -30,9 +31,13 @@ class FakeAccountRepository:
         if self._failure_to_raise_on_save is not None:
             raise self._failure_to_raise_on_save
         self._accounts_by_email[account.email.value] = account
+        self._accounts_by_id[account.id] = account
 
     def find_by_email(self, email: Email) -> Account | None:
         return self._accounts_by_email.get(email.value)
+
+    def find_by_id(self, account_id: UUID) -> Account | None:
+        return self._accounts_by_id.get(account_id)
 
     def commit(self) -> None:
         self.committed = True

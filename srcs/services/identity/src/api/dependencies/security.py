@@ -1,9 +1,12 @@
 from typing import Annotated
 
 from fastapi import Depends
+from fastapi.security import OAuth2PasswordBearer
 
 from src.application.port.password_hasher import PasswordHasher
+from src.application.port.token.service import TokenService
 from src.infrastructure.security.password_hasher import PwdlibPasswordHasher
+from src.infrastructure.security.token.token_service import JWTTokenService
 
 
 # ---------------------------------------------------------------------------
@@ -14,3 +17,22 @@ def get_password_hasher() -> PasswordHasher:
 
 
 PasswordHasherDep = Annotated[PasswordHasher, Depends(get_password_hasher)]
+
+
+# ---------------------------------------------------------------------------
+# Token Service
+# ---------------------------------------------------------------------------
+def get_token_service() -> TokenService:
+    return JWTTokenService()
+
+
+TokenServiceDep = Annotated[TokenService, Depends(get_token_service)]
+
+
+# ---------------------------------------------------------------------------
+# Access Token
+# ---------------------------------------------------------------------------
+ACCESS_TOKEN_URL: str = "/auth/login"
+bearer_token_scheme = OAuth2PasswordBearer(tokenUrl=ACCESS_TOKEN_URL)
+
+AccessTokenDep = Annotated[str, Depends(bearer_token_scheme)]

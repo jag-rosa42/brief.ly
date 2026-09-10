@@ -65,6 +65,19 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: list[str] = []
 
     # -----------------------------------------------------------------------
+    # JWT
+    # -----------------------------------------------------------------------
+
+    # HS256: shared secret is required by every service that signs or verifies tokens.
+    # RS256: only the identity service needs the private key; other services can verify
+    # tokens using the public key.
+    JWT_ALGORITHM: Literal["HS256", "RS256"] = "RS256"
+    JWT_PRIVATE_KEY: SecretStr
+    JWT_PUBLIC_KEY: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+
+    # -----------------------------------------------------------------------
     # Database URL builder
     # -----------------------------------------------------------------------
 
