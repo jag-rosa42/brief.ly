@@ -18,8 +18,8 @@ import pytest
 from sqlalchemy import Connection, text
 from sqlalchemy.orm import Session
 
-from src.api import dependencies
-from src.api.dependencies import get_db
+from src.api.dependencies import database
+from src.api.dependencies.database import get_db
 
 
 @pytest.fixture
@@ -38,7 +38,7 @@ def bind_get_db_to_test_connection(
     def test_session_factory() -> Session:
         return Session(bind=db_connection, join_transaction_mode="create_savepoint")
 
-    monkeypatch.setattr(dependencies, "SessionFactory", test_session_factory)
+    monkeypatch.setattr(database, "SessionFactory", test_session_factory)
 
 
 def test_get_db_yields_a_working_session(bind_get_db_to_test_connection) -> None:
