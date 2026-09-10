@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from src.application.register_account import RegisterAccount
+from src.application.use_cases.register_account import RegisterAccount
 from src.domain.entities.account import Account
 from src.domain.exception import EmailAlreadyRegisteredError
 from src.domain.value_objects.email import Email
