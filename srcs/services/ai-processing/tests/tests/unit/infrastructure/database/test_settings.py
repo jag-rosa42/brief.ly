@@ -18,10 +18,10 @@ from src.infrastructure.database.config.settings import Settings, settings
 def test_settings_loads_values_from_environment():
     """The module-level `settings` instance should have picked up .env."""
     assert settings.PROJECT_NAME
-    assert settings.AI_POSTGRES_HOST
-    assert settings.AI_POSTGRES_USER
-    assert settings.AI_POSTGRES_DB_NAME
-    assert settings.AI_POSTGRES_PORT == 5432
+    assert settings.POSTGRES_HOST
+    assert settings.POSTGRES_USER
+    assert settings.POSTGRES_DB_NAME
+    assert settings.POSTGRES_PORT == 5433
 
 
 def test_database_uri_has_expected_shape():
@@ -32,10 +32,10 @@ def test_database_uri_has_expected_shape():
     uri = settings.SQLALCHEMY_DATABASE_URI
 
     assert uri.startswith("postgresql+psycopg://")
-    assert settings.AI_POSTGRES_USER in uri
-    assert settings.AI_POSTGRES_HOST in uri
-    assert settings.AI_POSTGRES_DB_NAME in uri
-    assert str(settings.AI_POSTGRES_PORT) in uri
+    assert settings.POSTGRES_USER in uri
+    assert settings.POSTGRES_HOST in uri
+    assert settings.POSTGRES_DB_NAME in uri
+    assert str(settings.POSTGRES_PORT) in uri
 
 
 def test_password_is_not_leaked_in_repr():
@@ -44,9 +44,9 @@ def test_password_is_not_leaked_in_repr():
     or logging the settings object doesn't accidentally expose the raw
     password (e.g. in a stack trace or debug log).
     """
-    real_password = settings.AI_POSTGRES_PASSWORD.get_secret_value()
+    real_password = settings.POSTGRES_PASSWORD.get_secret_value()
 
-    assert real_password not in repr(settings.AI_POSTGRES_PASSWORD)
+    assert real_password not in repr(settings.POSTGRES_PASSWORD)
     assert real_password not in repr(settings)
 
 
@@ -59,11 +59,11 @@ def test_database_uri_reflects_explicit_overrides():
     custom = Settings(
         _env_file=None,
         PROJECT_NAME="test-project",
-        AI_POSTGRES_HOST="db.example.internal",
-        AI_POSTGRES_PORT=6543,
-        AI_POSTGRES_USER="tester",
-        AI_POSTGRES_PASSWORD="s3cret",
-        AI_POSTGRES_DB_NAME="test_db",
+        POSTGRES_HOST="db.example.internal",
+        POSTGRES_PORT=6543,
+        POSTGRES_USER="tester",
+        POSTGRES_PASSWORD="s3cret",
+        POSTGRES_DB_NAME="test_db",
     )
     url = make_url(custom.SQLALCHEMY_DATABASE_URI)
     assert url.drivername == "postgresql+psycopg"
@@ -81,11 +81,11 @@ def test_database_name_is_suffixed_with_test():
     custom = Settings(
             _env_file=None,
             PROJECT_NAME="test-project",
-            AI_POSTGRES_HOST="db.example.internal",
-            AI_POSTGRES_PORT=6543,
-            AI_POSTGRES_USER="tester",
-            AI_POSTGRES_PASSWORD="s3cret",
-            AI_POSTGRES_DB_NAME="my_app",
+            POSTGRES_HOST="db.example.internal",
+            POSTGRES_PORT=6543,
+            POSTGRES_USER="tester",
+            POSTGRES_PASSWORD="s3cret",
+            POSTGRES_DB_NAME="my_app",
         )
     url = make_url(custom.TEST_DATABASE_URI)
 
@@ -95,12 +95,24 @@ def test_database_uri_always_uses_sync_driver():
     custom = Settings(
         _env_file=None,
         PROJECT_NAME="test-project",
-        AI_POSTGRES_HOST="db.example.internal",
-        AI_POSTGRES_PORT=6543,
-        AI_POSTGRES_USER="tester",
-        AI_POSTGRES_PASSWORD="s3cret",
-        AI_POSTGRES_DB_NAME="my_app",
+        POSTGRES_HOST="db.example.internal",
+        POSTGRES_PORT=6543,
+        POSTGRES_USER="tester",
+        POSTGRES_PASSWORD="s3cret",
+        POSTGRES_DB_NAME="my_app",
         DATABASE_DRIVER="asyncpg"
     )
     url = make_url(custom.TEST_DATABASE_URI)
     assert url.drivername == "postgresql+psycopg"
+
+def test_vector_extension_setting_is_parsed_as_boolean():
+    settings_with_vector = Settings(
+        _env_file=None,
+        PROJECT_NAME="test-project",
+        POSTGRES_HOST="localhost",
+        POSTGRES_USER="tester",
+        POSTGRES_PASSWORD="s3cret",
+        POSTGRES_DB_NAME="test_db",
+        POSTGRES_ENABLE_VECTOR_EXTENSION="true",
+     )
+    assert settings_with_vector.POSTGRES_ENABLE_VECTOR_EXTENSION is True

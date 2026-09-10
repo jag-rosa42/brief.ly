@@ -9,7 +9,16 @@ from pydantic import (
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parents[4]
+_container_secrets = Path("/run/secrets")
 
+if _container_secrets.exists():
+    SECRETS_DIR = _container_secrets
+else:
+    ROOT_DIR = Path(__file__).resolve().parents[7]
+    SECRETS_DIR = ROOT_DIR / "shared" / "secrets"
+
+# TODO: debug prints to remove later
+print(f"SECRET_DIR={SECRETS_DIR}")
 
 class Settings(BaseSettings):
     """
@@ -23,6 +32,7 @@ class Settings(BaseSettings):
         env_file=BASE_DIR / ".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        secrets_dir=SECRETS_DIR,
     )
 
     # -----------------------------------------------------------------------
@@ -34,14 +44,15 @@ class Settings(BaseSettings):
     # Driver used by the application.
     DATABASE_DRIVER: Literal["psycopg", "asyncpg"] = "psycopg"
     PROJECT_NAME: str
-    AI_POSTGRES_HOST: str
-    AI_POSTGRES_PORT: int = 5432
-    AI_POSTGRES_USER: str
+    POSTGRES_HOST: str
+    POSTGRES_PORT: int = 5432
+    POSTGRES_USER: str
     # SecretStr prevents the password from being accidentally printed
     # or included in logs.
-    AI_POSTGRES_PASSWORD: SecretStr
-    AI_POSTGRES_DB_NAME: str
-    AI_POSTGRES_TEST_DB_NAME: str | None = None
+    POSTGRES_PASSWORD: SecretStr
+    POSTGRES_DB_NAME: str
+    POSTGRES_TEST_DB_NAME: str | None = None
+    POSTGRES_ENABLE_VECTOR_EXTENSION: bool = False
 
     # Synchronous SQLAlchemy / Alembic driver.
     _SYNC_DRIVER: ClassVar[str] = "psycopg"
@@ -70,10 +81,10 @@ class Settings(BaseSettings):
         return str(
             PostgresDsn.build(
                 scheme=f"{self.DATABASE_DIALECT}+{driver}",
-                username=self.AI_POSTGRES_USER,
-                password=self.AI_POSTGRES_PASSWORD.get_secret_value(),
-                host=self.AI_POSTGRES_HOST,
-                port=self.AI_POSTGRES_PORT,
+                username=self.POSTGRES_USER,
+                password=self.POSTGRES_PASSWORD.get_secret_value(),
+                host=self.POSTGRES_HOST,
+                port=self.POSTGRES_PORT,
                 path=database,
             )
         )
@@ -99,7 +110,7 @@ class Settings(BaseSettings):
         postgresql+psycopg://user:password@localhost:5432/my_database
         """
         return self._build_database_uri(
-            database=self.AI_POSTGRES_DB_NAME, driver=self.DATABASE_DRIVER
+            database=self.POSTGRES_DB_NAME, driver=self.DATABASE_DRIVER
         )
 
     # -----------------------------------------------------------------------
@@ -121,7 +132,7 @@ class Settings(BaseSettings):
 
             identity_db_test
         """
-        test_db_name = self.AI_POSTGRES_TEST_DB_NAME or f"{self.AI_POSTGRES_DB_NAME}_test"
+        test_db_name = self.POSTGRES_TEST_DB_NAME or f"{self.POSTGRES_DB_NAME}_test"
         return self._build_database_uri(database=test_db_name, driver=self._SYNC_DRIVER)
 
     # -----------------------------------------------------------------------
@@ -141,4 +152,12 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-print(f"url={settings.SQLALCHEMY_DATABASE_URI}")
+
+# TODO: debug prints to remove later
+print("DB HOST:", settings.POSTGRES_HOST)
+print("DB PORT:", settings.POSTGRES_PORT)
+print("DB USER:", settings.POSTGRES_USER)
+print("DB NAME:", settings.POSTGRES_DB_NAME)
+print("DB URI:", settings.SQLALCHEMY_DATABASE_URI.replace(
+    settings.POSTGRES_PASSWORD.get_secret_value(), "***"
+))
