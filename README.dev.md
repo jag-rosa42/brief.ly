@@ -4,10 +4,18 @@ This guide is for running the frontend and backend services directly on your mac
 
 ## Initial setup
 
-Create the shared environment file and the configuration file for every service you plan to run:
+Generate the shared environment file and configuration files for all services:
 
 ```bash
-cp .env.example .env
+make env
+```
+
+`make env` copies every `.env.example` file to its matching `.env` file.
+It **overwrites existing `.env` files**, so do not run it after adding local
+configuration or secrets unless you have backed them up. To configure a single
+service manually, copy its template instead; for example:
+
+```bash
 cp srcs/services/identity/.env.example srcs/services/identity/.env
 ```
 
@@ -31,6 +39,11 @@ Start a backend service from the repository root:
 make run SERVICE=identity
 ```
 
+This command starts the PostgreSQL containers if needed, waits until they are
+healthy, and creates the selected service's database when it does not already
+exist. The same database setup is performed before `migration`, `upgrade`, and
+`downgrade` commands.
+
 Available service commands include:
 
 ```bash
@@ -44,9 +57,14 @@ make shell SERVICE=identity
 make list-services
 ```
 
+`make test SERVICE=<name>` also starts the database containers when needed.
+The test suite creates its test database and applies migrations automatically.
+
 ## Database containers for local services
 
-Backend services run locally, while PostgreSQL and pgvector run in containers. Start both database containers in the background with:
+Backend services run locally, while PostgreSQL and pgvector run in containers.
+Database-aware backend commands start both containers automatically. Start them
+explicitly when you want the databases available without running a service:
 
 ```bash
 make dev-databases
@@ -97,4 +115,3 @@ make clean    # stop containers and remove project images; preserve database dat
 make reset-db # stop containers and remove Compose-managed volumes
 make fclean   # confirm before removing database data and project images
 ```
-
