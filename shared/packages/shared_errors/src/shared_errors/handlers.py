@@ -25,12 +25,15 @@ logger: logging.Logger = logging.getLogger(__name__)
 # ============================================================================
 # Response Helpers
 # ============================================================================
-def respond(status_code: int, body: ErrorBody) -> JSONResponse:
+def respond(
+    status_code: int, body: ErrorBody, headers: dict[str, str] | None = None
+) -> JSONResponse:
     """Build a JSON response using the shared error-response schema.
 
     Args:
         status_code: HTTP status code to return.
         body: Structured error information to include in the response.
+        headers: Optional HTTP response headers.
 
     Returns:
         A JSONResponse containing the serialized ErrorResponse.
@@ -38,6 +41,7 @@ def respond(status_code: int, body: ErrorBody) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
         content=ErrorResponse(error=body).model_dump(exclude_none=True),
+        headers=headers,
     )
 
 
