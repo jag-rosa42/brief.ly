@@ -41,6 +41,7 @@ SERVICES_DIR := srcs/services
 PROD_COMPOSE_FILE := compose.yaml
 DEV_COMPOSE_FILE := compose.yaml compose.override.yaml
 ENV_FILE := .env
+ENV_EXAMPLE_FILES := .env.example $(wildcard $(SERVICES_DIR)/*/.env.example)
 
 #for mac OS
 ifeq ($(OS),Darwin)
@@ -70,6 +71,7 @@ help:
 	@printf "$(GREEN_COLOR)  Databases$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) dev-databases               $(CYAN_COLOR)Start PostgreSQL and pgvector containers$(DEFAULT_COLOR)\n"
 	@printf "$(GREEN_COLOR)  Backend$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) env                         $(CYAN_COLOR)Force generating .env files from their .env.example templates$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) test SERVICE=<name>         $(CYAN_COLOR)Run service tests locally with test database$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) lint SERVICE=<name>         $(CYAN_COLOR)Lint a service locally$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) run SERVICE=<name>          $(CYAN_COLOR)Run a service locally with database$(DEFAULT_COLOR)\n"
@@ -101,6 +103,7 @@ help:
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) secrets                     $(CYAN_COLOR)Create missing secrets$(DEFAULT_COLOR)\n\n"
  
 
+
 # ============================================================================ #
 #                                  LOCAL DEV (no Docker)                       #
 # ============================================================================ #
@@ -128,6 +131,20 @@ list-frontend:
 	@printf "  make frontend-install  Install dependencies\n"
 	@printf "  make frontend-build    Build for production\n"
 
+# ---- Backend per-service dispatch (local dev, via uv) ----
+
+# ---- Environment setup ----
+env:
+	@$(call print,$(GREEN_COLOR),[ENV] Forcing generation of .env files from templates...)
+	@for path_to_env_example in $(ENV_EXAMPLE_FILES); do \
+		env_file="$${path_to_env_example%.example}"; \
+		if [ -e "$$env_file" ]; then \
+			printf "$(YELLOW_COLOR)✓ $$env_file already exists, overwritting$(DEFAULT_COLOR)\\n"; \
+		fi; \
+		cp "$$path_to_env_example" "$$env_file"; \
+		printf "$(GREEN_COLOR)✓ Created $$env_file$(DEFAULT_COLOR)\\n"; \
+	done
+
 # ---- Local services with containerized databases ----
 dev-databases: secrets
 	@$(call print,$(GREEN_COLOR),[DATABASES] Starting PostgreSQL and pgvector...)
@@ -140,7 +157,6 @@ dev-databases: secrets
 	done
 	@$(call print,$(GREEN_COLOR),✓ [DATABASES] Local development databases are running and healthy👩🏻‍⚕️.)
 
-# ---- Per-service dispatch (local dev, via uv) ----
 check-service:
 ifndef SERVICE
 	$(error SERVICE is not set. Usage: make $@ SERVICE=<service-name>)
@@ -278,4 +294,4 @@ fclean:
 		frontend frontend-install frontend-build frontend-test \
 		dev dev-databases dev-docker sync run migration upgrade downgrade \
 		test lint typecheck shell list-services status clear-cache \
-		up build ps logs
+		up build ps logs env
