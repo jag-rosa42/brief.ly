@@ -50,15 +50,15 @@ endif
 
 
 
-#============================================================================ #
+#============================================================================= #
 #                                  SECRETS                                     #
 # ============================================================================ #
- 
+
 SECRET_FILES := \
 	$(SECRET_DIR)/postgres_password \
- 
+
 # ============================================================================ #
-#                                  🫡HELP                                     #
+#                                  🫡HELP                                      #
 # ============================================================================ #
 
 help:
@@ -83,6 +83,7 @@ help:
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) upgrade SERVICE=<name>      $(CYAN_COLOR)Apply migrations$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) downgrade SERVICE=<name>    $(CYAN_COLOR)Revert migrations$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) list-services               $(CYAN_COLOR)List available backend services$(DEFAULT_COLOR)\n\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) reinstall SERVICE=<name>    $(CYAN_COLOR)Reinstall dependencies for a service$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── 🐳 Dev Docker ─────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
 	@printf "$(GREEN_COLOR)  Frontend$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) dev-docker SERVICE=frontend $(CYAN_COLOR)Run only the frontend$(DEFAULT_COLOR)\n"
@@ -101,7 +102,7 @@ help:
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) re                          $(CYAN_COLOR)Clean and rebuild the stack$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) fclean                      $(CYAN_COLOR)Reset database data and remove project images 🚨$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) secrets                     $(CYAN_COLOR)Create missing secrets$(DEFAULT_COLOR)\n\n"
- 
+
 
 
 # ============================================================================ #
@@ -181,7 +182,7 @@ test: check-service dev-databases
 
 
 #service development tools
-sync lint typecheck shell status clear-cache: check-service
+sync lint typecheck shell status clear-cache reinstall: check-service
 
 	@$(call print,$(CYAN_COLOR),[SERVICE] $(SERVICE) -> make $@)
 	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) $@ -s
@@ -297,5 +298,5 @@ fclean:
 .PHONY: clean fclean logs down reset-db secrets \
 		frontend frontend-install frontend-build frontend-test \
 		dev dev-databases dev-docker sync run migration upgrade downgrade \
-		test lint typecheck shell list-services status clear-cache \
+		test lint typecheck shell list-services status clear-cache reinstall \
 		up build ps logs init-env

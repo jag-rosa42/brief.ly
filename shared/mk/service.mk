@@ -36,7 +36,8 @@ check-env:
 
 ##################################### RULES ####################################
 
-.PHONY: run sync migration upgrade downgrade test lint typecheck shell status clear-cache
+.PHONY: run sync migration upgrade downgrade test lint typecheck shell status \
+		clear-cache reinstall
 
 run: check-env
 	@$(call print,$(GREEN_COLOR),[RUN] Starting $(PROJECT_NAME)...)
@@ -66,6 +67,10 @@ clear-cache: check-env
 		\( -name '.venv' -o -name '.ruff_cache' -o -name '.pytest_cache' -o -name '__pycache__' \) \
 		-type d -prune -exec rm -rf {} +
 	@$(call print,$(GREEN_COLOR),[CACHE] Caches cleared for $(PROJECT_NAME).)
+
+reinstall: check-env
+	@uv sync --reinstall
+	@$(call print,$(GREEN_COLOR),[UV] Dependencies reinstalled for $(PROJECT_NAME).)
 
 upgrade: check-env
 	@$(call print,$(GREEN_COLOR),[UPGRADE] Applying migrations for $(PROJECT_NAME)...)
