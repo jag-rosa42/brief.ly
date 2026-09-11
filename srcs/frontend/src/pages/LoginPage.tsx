@@ -2,12 +2,13 @@ import { useState } from "react";
 import type { SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/app/AuthContext";
 
 export function LoginPage() {
 
 
-	const [pass, setP1] = useState("");
+	const [pass, setPass] = useState("");
 	const [email, setEmail] = useState("");
 	const [waiting, setWaiting] = useState(false);
 	const navigate = useNavigate();
@@ -62,17 +63,21 @@ export function LoginPage() {
 				Email:
 			<input type="email" className="border border-ui rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary" onChange={(e) => setEmail(e.target.value)} />
 			</label>
-			<label className="flex flex-col gap-2">
-				Password:
-			<input type="password" className="border border-ui rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary" onChange={(e) => setP1(e.target.value)}
-			/>
+			<label className="flex flex-col gap-1">
+				Password
+			<input type="password" className="focus:outline-none focus:ring-2 focus:ring-primary" onChange={(e) => setPass(e.target.value)}></input>
 			</label>
 			{result}
 			</div>
 			<button type="submit" className="w-full bg-primary text-background rounded px-4 py-2 hover:text-secondary disabled:opacity-50" disabled={waiting}>Log in</button>
 		</form>
-			<button onClick={oauth} type="button" className="w-full bg-primary text-background rounded px-4 py-2 hover:text-secondary disabled:opacity-50" disabled={waiting}>OAuth</button>
-			</div>
+			<button onClick={oauth} type="button" className="bg-primary text-background rounded px-4 py-2 hover:bg-primary-dark disabled:opacity-50" disabled={waiting}>OAuth</button>
+			<Link to="/"
+				className="bg-primary text-white rounded px-4 py-2 self-start"
+			>
+				Back
+			</Link>
+		</div>
 		</main>
 	);
 }

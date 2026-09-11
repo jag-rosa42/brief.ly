@@ -1,10 +1,11 @@
-import { Link } from "react-router-dom";
+import { Button } from "@/shared/components/Button";
+
 export function Footer() {
 	return (
-		<footer className="p-6 flex flex-col">
-			<nav className="font-serif flex gap-6 text-accent-dark">
-				<Link to="/terms">Terms of Service</Link>
-				<Link to="/privacy">Privacy Policy</Link>
+		<footer className="bg-secondary p-6 flex flex-col">
+			<nav  className="flex gap-6">
+				<Button type="link" link="/terms" style ="Footer">Terms of Service</Button>
+				<Button type="link" link="/privacy" style="Footer">Privacy Policy</Button>
 			</nav>
 		</footer>
 	)

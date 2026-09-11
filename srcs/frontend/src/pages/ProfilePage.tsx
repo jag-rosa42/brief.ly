@@ -1,19 +1,35 @@
 import { useState } from "react";
-import type { FormEvent } from "react";
+import type { ChangeEvent, SyntheticEvent } from "react";
 import { Link } from "react-router-dom";
 
 
 export function ProfilePage() {
-	const [firstName, setFirstName] = useState("");
-	const [preference1, setPreference1] = useState("");
-	const [preference2, setPreference2] = useState("");
-	const [preference3, setPreference3] = useState("");
+	const [profile, setProfile] = useState({
+    firstName: "",
+    preference1: "",
+    preference2: "",
+    preference3: "",
+    interest1: "",
+    interest2: "",
+    interest3: "",
+    focusTime: "",
+    password: "",
+    confirmPassword: "",
+	});
 	const [saved, setSaved] = useState(false);
-
-	function handleSave(e: FormEvent) {
+	function handleSave(e: SyntheticEvent) {
 		e.preventDefault();
 		setSaved(true);
 	}
+
+	const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    setProfile((prev) => ({
+        ...prev,
+        [name]: value,
+    }));
+};
 
 	return (
 		<main className="max-w-2xl mx-auto px-6 py-16">
@@ -24,8 +40,9 @@ export function ProfilePage() {
 					Last name:
 					<input
 						type="text"
-						value={firstName}
-						onChange={(e) => setFirstName(e.target.value)}
+						name="firstName"
+						value={profile.firstName}
+						onChange={handleChange}
 						className="border rounded px-3 py-2"
 					/>
 				</label>
@@ -34,8 +51,9 @@ export function ProfilePage() {
 					First name:
 					<input
 						type="text"
-						value={preference1}
-						onChange={(e) => setPreference1(e.target.value)}
+						name="preference1"
+						value={profile.preference1}
+						onChange={handleChange}
 						className="border rounded px-3 py-2"
 					/>
 				</label>
@@ -44,8 +62,9 @@ export function ProfilePage() {
 					Email:
 					<input
 						type="text"
-						value={preference2}
-						onChange={(e) => setPreference2(e.target.value)}
+						name="preference2"
+						value={profile.preference2}
+						onChange={handleChange}
 						className="border rounded px-3 py-2"
 					/>
 				</label>
@@ -54,8 +73,9 @@ export function ProfilePage() {
 					Birthday:
 					<input
 						type="text"
-						value={preference3}
-						onChange={(e) => setPreference3(e.target.value)}
+						name="preference3"
+						value={profile.preference3}
+						onChange={handleChange}
 						className="border rounded px-3 py-2"
 					/>
 				</label>
@@ -65,8 +85,9 @@ export function ProfilePage() {
 					Interest 1:
 					<input
 						type="text"
-						value={preference3}
-						onChange={(e) => setPreference3(e.target.value)}
+						name="interest1"
+						value={profile.interest1}
+						onChange={handleChange}
 						className="border rounded px-3 py-2"
 					/>
 				</label>
@@ -76,19 +97,21 @@ export function ProfilePage() {
 					Interest 2:
 					<input
 						type="text"
-						value={preference3}
-						onChange={(e) => setPreference3(e.target.value)}
+						name="interest2"
+						value={profile.interest2}
+						onChange={handleChange}
 						className="border rounded px-3 py-2"
 					/>
 				</label>
 				</div>
-				<div>				
+				<div>
 				<label className="flex flex-col gap-1">
 					Interest 3:
 					<input
 						type="text"
-						value={preference3}
-						onChange={(e) => setPreference3(e.target.value)}
+						name="interest3"
+						value={profile.interest3}
+						onChange={handleChange}
 						className="border rounded px-3 py-2"
 					/>
 				</label>
@@ -105,32 +128,33 @@ export function ProfilePage() {
 				<label className="flex flex-col gap-1">
 					Focus time:
 					<input
-					
-
 						type="text"
-						value={preference3}
-						onChange={(e) => setPreference3(e.target.value)}
+						name="focusTime"
+						value={profile.focusTime}
+						onChange={handleChange}
 						className="border rounded px-3 py-2"
 					/>
 				</label>
 				<label className="flex flex-col gap-1">
 					Password:
 					<input
-						type="text"
-						value={preference3}
-						onChange={(e) => setPreference3(e.target.value)}
+						type="password"
+						name="password"
+						value={profile.password}
+						onChange={handleChange}
 						className="border rounded px-3 py-2"
 					/>
 				</label>
 				<label className="flex flex-col gap-1">
 					Confirm password:
 					<input
-						type="text"
-						value={preference3}
-						onChange={(e) => setPreference3(e.target.value)}
+						type="password"
+						name="confirmPassword"
+						value={profile.confirmPassword}
+						onChange={handleChange}
 						className="border rounded px-3 py-2"
 					/>
-				</label>				
+				</label>
 				<button
 					type="submit"
 					className="bg-primary text-white rounded px-4 py-2 self-start"
@@ -138,7 +162,6 @@ export function ProfilePage() {
 					Save
 				</button>
 				<Link to="/"
-					type="submit"
 					className="bg-primary text-white rounded px-4 py-2 self-start"
 				>
 					Back
