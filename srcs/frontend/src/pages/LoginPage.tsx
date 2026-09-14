@@ -53,20 +53,26 @@ export function LoginPage() {
 
 	return (
 	<main className="max-w-md mx-auto px-6 py-16">
-		<h1 className="text-3xl font-bold text-primary mb-6">Log in</h1>
-		<form  onSubmit={handleSubmit}className="flex rounded bg-accent flex-col gap-4">
-			<label className="flex flex-col gap-1">
-				Email
-			<input type="string" className="focus:outline-none focus:ring-2 focus:ring-primary" onChange={(e) => setEmail(e.target.value)}></input>
+		<h1 className="text-center font-serif text-4xl font-bold text-accent-dark mb-16">Welcome back!</h1>
+		<h2 className="font-sans text-3xl font-bold text-accent-dark mb-6">Log in</h2>
+		<div className="flex flex-col gap-3">
+		<form  onSubmit={handleSubmit}className="flex rounded flex-col gap-4">
+			<div className="bg-white border border-ui rounded-xl p-6">
+			<label className="flex flex-col gap-2">
+				Email:
+			<input type="email" className="border border-ui rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary" onChange={(e) => setEmail(e.target.value)} />
 			</label>
-			<label className="flex flex-col gap-1">
-				Password
-			<input type="password" className="focus:outline-none focus:ring-2 focus:ring-primary" onChange={(e) => setP1(e.target.value)}></input>
+			<label className="flex flex-col gap-2">
+				Password:
+			<input type="password" className="border border-ui rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary" onChange={(e) => setP1(e.target.value)}
+			/>
 			</label>
 			{result}
-			<button type="submit" className="bg-primary text-background rounded px-4 py-2 hover:bg-primary-dark disabled:opacity-50" disabled={waiting}>Log in</button>
+			</div>
+			<button type="submit" className="w-full bg-primary text-background rounded px-4 py-2 hover:text-secondary disabled:opacity-50" disabled={waiting}>Log in</button>
 		</form>
-			<button onClick={oauth} type="button" className="bg-primary text-background rounded px-4 py-2 hover:bg-primary-dark disabled:opacity-50" disabled={waiting}>OAuth</button>
+			<button onClick={oauth} type="button" className="w-full bg-primary text-background rounded px-4 py-2 hover:text-secondary disabled:opacity-50" disabled={waiting}>OAuth</button>
+			</div>
 		</main>
 	);
 }

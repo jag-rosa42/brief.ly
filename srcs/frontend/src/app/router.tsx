@@ -8,7 +8,8 @@ import { LoginPage } from "@/pages/LoginPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
-import { useAuth } from "@/app/AuthContext"
+import { useAuth } from "@/app/AuthContext";
+
 
 export function AppRouter() {
 	const { isLoggedIn } = useAuth();
@@ -24,10 +25,16 @@ export function AppRouter() {
 				<Route path="/signup"
 					element={isLoggedIn ? <Navigate to="/" replace /> : <SignupPage />}/>
 				<Route path="/login"
-					element={isLoggedIn ? <Navigate to="/" replace /> : <LoginPage />}/>
+					element={isLoggedIn ? <Navigate to="/" replace /> : <LoginPage />}
+				/>
+				<Route path="/dashboard"
+					element={isLoggedIn ? <DashboardPage /> : <Navigate to="/login" replace />}
+				/>
 				<Route path="/profile"
-					element={isLoggedIn ? <ProfilePage /> : <Navigate to="/signup" replace />}/>
-				<Route path="*"
+					element={isLoggedIn ? <ProfilePage /> : <Navigate to="/login" replace />}
+				/>
+				<Route
+					path="*"
 					element={<NotFoundPage />}/>
 			</Route>
 		</Routes>
