@@ -13,7 +13,7 @@ describe("AppRouter", () => {
 				</AuthProvider>
 			</MemoryRouter>
 		);
-		expect(screen.getByRole("link", { name: "Terms Of Service" })).toBeInTheDocument();
+		expect(screen.getByRole("link", { name: "Terms of Service" })).toBeInTheDocument();
 	});
 
 	it("navigates to Terms of Service via the footer link", () => {

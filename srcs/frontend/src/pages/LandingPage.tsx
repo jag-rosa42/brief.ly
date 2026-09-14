@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { FeatureCard } from "../shared/components/FeatureCard";
+import { FeatureCard } from "@/shared/components/FeatureCard";
 
 
 export function LandingPage() {
