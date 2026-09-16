@@ -74,7 +74,7 @@ def _create_test_database_if_needed(url: str) -> None:
     # Connect to the defaut existing postgres db first
     # so we can check wether the test database exists
     # and create it if necessary
-    existing_db_url: URL = target_url.set(database="postgres")
+    existing_db_url: URL = target_url.set(database=settings.POSTGRES_DEFAULT_DB_NAME)
     engine: Engine = create_engine(existing_db_url, isolation_level="AUTOCOMMIT")
     try:
         with engine.connect() as connection:

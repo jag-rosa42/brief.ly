@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: SecretStr
     POSTGRES_DB_NAME: str
     POSTGRES_TEST_DB_NAME: str | None = None
+    POSTGRES_DEFAULT_DB_NAME: str
 
     # Synchronous SQLAlchemy / Alembic driver.
     _SYNC_DRIVER: ClassVar[str] = "psycopg"

@@ -32,7 +32,7 @@ def ensure_database() -> None:
             port=settings.POSTGRES_PORT,
             user=settings.POSTGRES_USER,
             password=settings.POSTGRES_PASSWORD.get_secret_value(),
-            dbname="postgres",
+            dbname=settings.POSTGRES_DEFAULT_DB_NAME,
             autocommit=True,
         ) as connection,
         connection.cursor() as cursor,
