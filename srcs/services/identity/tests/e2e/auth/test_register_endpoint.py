@@ -6,18 +6,20 @@ from fastapi.testclient import TestClient
 from httpx2 import Response
 
 
-class TestAuthRegisterEndpoint:
+class TestRegisterEndpoint:
     def test_duplicate_registration_is_rejected(self, client: TestClient) -> None:
         email: str = "john.doe@example.com"
+
         register_response: Response = client.post(
-            "/api/auth/register", json={"email": email, "password": "super-secret"}
+            url="/api/auth/register",
+            json={"email": email, "password": "super-secret"},
         )
 
         assert register_response.status_code == 201
         assert register_response.json()["email"] == email
 
         duplicated_response = client.post(
-            "/api/auth/register",
+            url="/api/auth/register",
             json={"email": email, "password": "another-super-secret"},
         )
 
