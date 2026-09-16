@@ -9,35 +9,14 @@ from shared_errors import ErrorResponse
 
 from src.api.dependencies.account import get_register_account
 from src.domain.entities.account import Account
-from src.domain.exception import DomainError, EmailAlreadyRegisteredError
+from src.domain.exception import EmailAlreadyRegisteredError
 from src.domain.value_objects.email import Email
 from src.domain.value_objects.password_hash import PasswordHash
 from src.main import app
+from tests.fixtures.accounts import FakeRegisterAccount
 
 VALID_EMAIL: str = "john.doe@example.com"
 VALID_PASSWORD: str = "super-secret"
-
-
-class FakeRegisterAccount:
-    def __init__(self, account: Account, error: DomainError | None = None) -> None:
-        self._account: Account = account
-        self._error: DomainError | None = error
-        self.execute_called_with: tuple[str, str] | None = None
-
-    def execute(self, email: str, password: str) -> Account:
-        self.execute_called_with: tuple[str, str] = email, password
-        if self._error is not None:
-            raise self._error
-        return self._account
-
-
-def _build_account(email: str = VALID_EMAIL, password: str = VALID_PASSWORD) -> Account:
-    return Account(
-        id=uuid4(),
-        email=Email(email),
-        password_hash=PasswordHash(password),
-        created_at=datetime.datetime.now(datetime.UTC),
-    )
 
 
 @pytest.fixture
@@ -62,36 +41,52 @@ def use_register_account() -> Generator:
 
 
 class TestAuthRegisterRouter:
+    def _build_account(
+        self,
+        email: str = VALID_EMAIL,
+        password: str = VALID_PASSWORD,
+    ) -> Account:
+        return Account(
+            id=uuid4(),
+            email=Email(email),
+            password_hash=PasswordHash(password),
+            created_at=datetime.datetime.now(datetime.UTC),
+        )
+
     def test_returns_201_on_register_account_success(
-        self, client: TestClient, use_register_account
+        self,
+        client: TestClient,
+        use_register_account,
     ) -> None:
-        account: Account = _build_account()
+        account: Account = self._build_account()
         fake_register_account: FakeRegisterAccount = FakeRegisterAccount(account)
         use_register_account(fake_register_account)
 
         response: Response = client.post(
-            "/api/auth/register",
+            url="/api/auth/register",
             json={"email": VALID_EMAIL, "password": VALID_PASSWORD},
         )
 
         assert response.status_code == 201
         assert response.json() == {"id": str(account.id), "email": VALID_EMAIL}
-        assert fake_register_account.execute_called_with == (
+        assert fake_register_account._execute_called_with == (
             VALID_EMAIL,
             VALID_PASSWORD,
         )
 
     def test_returns_409_when_email_already_registered(
-        self, client: TestClient, use_register_account
+        self,
+        client: TestClient,
+        use_register_account,
     ) -> None:
-        account: Account = _build_account()
+        account: Account = self._build_account()
         fake_register_account: FakeRegisterAccount = FakeRegisterAccount(
-            account, EmailAlreadyRegisteredError()
+            account, error=EmailAlreadyRegisteredError()
         )
         use_register_account(fake_register_account)
 
         response: Response = client.post(
-            "/api/auth/register",
+            url="/api/auth/register",
             json={"email": VALID_EMAIL, "password": VALID_PASSWORD},
         )
 
@@ -109,7 +104,9 @@ class TestAuthRegisterRouter:
         ],
     )
     def test_returns_422_on_invalid_request_body(
-        self, client: TestClient, body: dict[str, str]
+        self,
+        client: TestClient,
+        body: dict[str, str],
     ) -> None:
         response: Response = client.post("/api/auth/register", json=body)
 
