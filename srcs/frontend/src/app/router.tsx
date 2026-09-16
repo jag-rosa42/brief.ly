@@ -8,6 +8,7 @@ import { LoginPage } from "@/pages/LoginPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
+import { DesignSystem } from "@/pages/DesignSystem";
 import { useAuth } from "@/app/AuthContext";
 
 
@@ -33,6 +34,8 @@ export function AppRouter() {
 				<Route path="/profile"
 					element={isLoggedIn ? <ProfilePage /> : <Navigate to="/login" replace />}
 				/>
+				<Route path="/designsystem"
+					element={<DesignSystem />}/>
 				<Route
 					path="*"
 					element={<NotFoundPage />}/>

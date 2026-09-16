@@ -1,12 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/AuthContext"
 import { Button } from "@/shared/components/Button"
+import { Link } from "@/shared/components/Link"
 
 export function Header(){
     const { isLoggedIn } = useAuth();
 	return (
     <header className="flex justify-between items-center px-6 py-4">
-        <Button type="link" link="/" style="Title">The Focus Times</Button>
+        <Link to="/" variant="title">The Focus Times</Link>
         {isLoggedIn ? <HeaderLogged /> : <HeaderUnlogged />}
     </header>
 	)
@@ -23,8 +24,8 @@ export function HeaderLogged(){
 
     return (
         <div className="flex gap-4">
-            <Button type="button" onClick={handleLogout} style="Header1">Log out</Button>
-            <Button type="link" link="/profile" style="Header2">Profile</Button>
+            <Button type="button" onClick={handleLogout} variant="primary">Log out</Button>
+            <Link to="/profile" variant="secondary">Profile</Link>
         </div>
     );
 }
@@ -32,8 +33,8 @@ export function HeaderLogged(){
 export function HeaderUnlogged(){
     return (
         <div className="flex gap-4">
-            <Button type="link" link="/login" style="Header1">Log in</Button>
-            <Button type="link" link="/signup" style="Header2">Sign up</Button>
+            <Link to="/login" variant="primary">Log in</Link>
+            <Link to="/signup" variant="secondary">Sign up</Link>
         </div>
     );
 }

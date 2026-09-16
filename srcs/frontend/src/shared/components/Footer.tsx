@@ -1,11 +1,11 @@
-import { Button } from "@/shared/components/Button";
+import { Link } from "@/shared/components/Link";
 
 export function Footer() {
 	return (
 		<footer className="bg-secondary p-6 flex flex-col">
 			<nav  className="flex gap-6">
-				<Button type="link" link="/terms" style ="Footer">Terms of Service</Button>
-				<Button type="link" link="/privacy" style="Footer">Privacy Policy</Button>
+				<Link to="/terms" variant="text">Terms of Service</Link>
+				<Link to="/privacy" variant="text">Privacy Policy</Link>
 			</nav>
 		</footer>
 	)

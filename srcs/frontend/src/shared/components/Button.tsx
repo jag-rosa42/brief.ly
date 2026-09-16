@@ -1,49 +1,43 @@
-import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+export const buttonVariants = ["primary", "secondary", "text", "title"] as const;
+export type ButtonVariant = typeof buttonVariants[number];
 
-interface ButtonProps {
-    style: string;
-    type: "link" | "submit" | "button";
-    onClick?: () => void
-    link?: string;
-    disabled?: boolean;
-    children: ReactNode;
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+    variant: ButtonVariant;
 }
+
 
 export function getButtonStyle(style: string): string
 {
     switch(style) {
-        case "Header1":
+        case "primary":
             return ("text-primary px-4 py-2 border-1 rounded border-primary \
                 hover:border-primary-dark hover:text-primary-dark");
-        case "Header2":
+        case "secondary":
             return("bg-primary text-background px-4 py-2 rounded \
                 hover:bg-primary-dark");
-        case "Footer":
+        case "text":
             return("text-background");
-        case "Title":
+        case "title":
             return("font-bold text-xl text-primary");
         default:
-                return("") ;
+        return("") ;
     }
 }
 
-export function Button(prop: ButtonProps) {
-    var style: string;
+export function Button({
+    variant,
+    children,
+    className,
+    ...props
+}: ButtonProps) {
+    const style = getButtonStyle(variant);
 
-    style = getButtonStyle(prop.style);
-    switch (prop.type) {
-	case "link":
-        return(
-            <Link to={prop.link ?? "/"} className={style}>{prop.children}</Link>
-        );
-	case "submit":
-        return(
-            <button type="submit" className={style} disabled={prop.disabled}>{prop.children}</button>
-        );
-	case "button":
-        return(
-            <button type="button" className={style} onClick={prop.onClick}>{prop.children}</button>
-        );
-    }
+    return (
+        <button
+            {...props}
+            className={`${style} ${className ?? ""}`}
+        >
+            {children}
+        </button>
+    );
 }
