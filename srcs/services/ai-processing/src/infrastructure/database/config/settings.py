@@ -53,6 +53,7 @@ class Settings(BaseSettings):
     POSTGRES_DB_NAME: str
     POSTGRES_TEST_DB_NAME: str | None = None
     POSTGRES_ENABLE_VECTOR_EXTENSION: bool = False
+    POSTGRES_DEFAULT_DB_NAME: str
 
     # Synchronous SQLAlchemy / Alembic driver.
     _SYNC_DRIVER: ClassVar[str] = "psycopg"
