@@ -116,7 +116,7 @@ services:
       - PGDATA=${PGDATA:?Variable not set}
       - POSTGRES_USER=${POSTGRES_USER:?Variable not set}
       - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
-      - POSTGRES_DB=postgres
+      - POSTGRES_DB=${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
     secrets:
       - postgres_password
 
@@ -138,7 +138,7 @@ services:
       - PGDATA=${PGDATA:?Variable not set}
       - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
       - POSTGRES_USER=${POSTGRES_USER:?Variable not set}
-      - POSTGRES_DB=postgres
+      - POSTGRES_DB=${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
     secrets:
       - postgres_password
 
