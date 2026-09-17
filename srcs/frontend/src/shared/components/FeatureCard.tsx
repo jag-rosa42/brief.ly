@@ -1,3 +1,5 @@
+
+
 type FeatureCardProps = {
 	title: string;
 	description: string;
@@ -9,13 +11,13 @@ export function FeatureCard({
 }: FeatureCardProps) {
 	return (
 		<div className="bg-white border border-ui rounded-xl p-6">
-			<h2 className="font-sans font-semibold text-xl text-accent-dark mb-3">
+			<Text variant="heading" className="mb-3">
 				{title}
-			</h2>
+			</Text>
 
-			<p className="text-accent leading-relaxed">
+			<Text variant="body">
 				{description}
-			</p>
+			</Text>
 		</div>
 	);
 }

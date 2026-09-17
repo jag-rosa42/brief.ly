@@ -1,12 +1,14 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/AuthContext"
+import { Link } from "@/shared/components/Link"
+import { Button } from "@/shared/components/Button"
 
 
 export function Header() {
     const { isLoggedIn } = useAuth();
 	return (
     <header className="flex justify-between items-center px-6 py-4">
-        <Link to="/" className="font-serif font-bold text-xl text-primary">Flagrant Daily</Link>
+        <Link to="/" variant="title">Flagrant Daily</Link>
         {isLoggedIn ? <HeaderLogged /> : <HeaderUnlogged />}
     </header>
 	)
@@ -20,8 +22,8 @@ export function HeaderLogged(){
     return (
 
         <div className="flex gap-4">
-            <button type="submit" onClick={() => { logout(); navigate("/"); }} className="text-primary px-4 py-2 hover:text-secondary">Log out</button>
-            <Link to="/profile" className="bg-primary text-background px-4 py-2 rounded hover:text-secondary">Profile</Link>
+            <Button type="submit" onClick={() => { logout(); navigate("/"); }} variant="primary">Log out</Button>
+            <Link to="/profile" variant="secondary">Profile</Link>
         </div>
     );
 }
@@ -29,8 +31,8 @@ export function HeaderLogged(){
 export function HeaderUnlogged(){
     return (
         <div className="flex gap-4">
-            <Link to="/login" className="text-accent-dark px-4 py-2 hover:text-secondary">Log in</Link>
-            <Link to="/signup" className="bg-primary text-background px-4 py-2 rounded hover:text-secondary">Sign up</Link>
+            <Link to="/login" variant="primary">Log in</Link>
+            <Link to="/signup" variant="secondary">Sign up</Link>
         </div>
     );
 
