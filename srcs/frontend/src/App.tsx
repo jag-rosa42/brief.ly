@@ -1,8 +1,10 @@
+import { DesignSystem } from "@/pages/DesignSystem";
+
 function App() {
 
   return (
     <>
-	  <h1>Transcendance</h1>
+	  <DesignSystem />
     </>
   )
 }
