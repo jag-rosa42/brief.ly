@@ -2,6 +2,7 @@ import { Button, buttonVariants } from "@/shared/components/Button";
 import { Link } from "@/shared/components/Link";
 import { Text, textVariants } from "@/shared/components/Text";
 import { Division, divVariants } from "@/shared/components/Division";
+import { Header } from "@/shared/components/Header";
 
 
 export function DesignSystem() {
@@ -38,6 +39,10 @@ export function DesignSystem() {
                         {variant} division with some sample content inside to check the layout.
                     </Division>
                 ))}
+            </div>
+            <h2 className="text-lg font-bold">Header</h2>
+            <div className="flex flex-col gap-2 bg-background">
+                <Header />
             </div>
         </div>
     );
