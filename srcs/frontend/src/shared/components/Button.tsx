@@ -6,7 +6,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 
-export function getButtonStyle(style: string): string
+export function getButtonStyle(style: ButtonVariant): string
 {
     switch(style) {
         case "primary":
