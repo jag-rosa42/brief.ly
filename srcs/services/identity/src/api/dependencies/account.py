@@ -68,7 +68,9 @@ def get_current_account(
     token_service: TokenServiceDep,
     access_token: AccessTokenDep,
 ) -> Account:
-    return GetCurrentAccount(account_repository, token_service).execute(access_token)
+    return GetCurrentAccount(account_repository, token_service).execute(
+        access_token.credentials
+    )
 
 
 CurrentAccountDep = Annotated[Account, Depends(get_current_account)]

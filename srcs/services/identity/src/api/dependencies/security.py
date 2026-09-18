@@ -1,7 +1,10 @@
 from typing import Annotated
 
 from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import (
+    HTTPAuthorizationCredentials,
+    HTTPBearer,
+)
 
 from src.application.port.password_hasher import PasswordHasher
 from src.application.port.token.service import TokenService
@@ -32,7 +35,6 @@ TokenServiceDep = Annotated[TokenService, Depends(get_token_service)]
 # ---------------------------------------------------------------------------
 # Access Token
 # ---------------------------------------------------------------------------
-ACCESS_TOKEN_URL: str = "/auth/login"
-bearer_token_scheme = OAuth2PasswordBearer(tokenUrl=ACCESS_TOKEN_URL)
+bearer_token_scheme = HTTPBearer()
 
-AccessTokenDep = Annotated[str, Depends(bearer_token_scheme)]
+AccessTokenDep = Annotated[HTTPAuthorizationCredentials, Depends(bearer_token_scheme)]
