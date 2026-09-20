@@ -1,12 +1,12 @@
 FROM python:3.14-slim
 
-WORKDIR /app
+WORKDIR /app/srcs/services/identity
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 
-COPY . .
+COPY ./srcs/services/identity ./
 
 RUN uv sync --frozen
 
