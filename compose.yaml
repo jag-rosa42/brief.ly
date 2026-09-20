@@ -33,9 +33,14 @@
   #    - Ensure its database name and migration setup are correct.
   # ---------------------------------------------------------------------------
 
+# NOTE: the prestart system doesnt work with podman compose
+# TODO: Fix the condition service_completed_successfully or use a VM for docker
 name: "${DOMAIN}"
 
+# =====================================================================================================
 # One-shot bootstrap: apply this service's migrations before the service starts.
+# =====================================================================================================
+
 x-backend-prestart: &backend-prestart
   pull_policy: build
   restart: "no"
@@ -44,6 +49,7 @@ x-backend-prestart: &backend-prestart
     POSTGRES_HOST: pgsql
     POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
     POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    POSTGRES_DEFAULT_DB_NAME: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
   command:
     ["sh", "-c", "python -m src.infrastructure.database.bootstrap && alembic upgrade head"]
   secrets:
@@ -52,7 +58,10 @@ x-backend-prestart: &backend-prestart
     pgsql:
       condition: service_healthy
 
-# the service's container
+# =====================================================================================================
+# The service's backend container
+# =====================================================================================================
+
 x-backend-service: &backend-service
   pull_policy: build
   restart: "always"
@@ -61,6 +70,8 @@ x-backend-service: &backend-service
     - POSTGRES_HOST=pgsql
     - POSTGRES_USER=${POSTGRES_USER:?Variable not set}
     - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+    - POSTGRES_DEFAULT_DB_NAME=${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
+
   secrets:
     - postgres_password
   healthcheck:
@@ -69,7 +80,31 @@ x-backend-service: &backend-service
     timeout: 5s
     retries: 5
 
-# reusable each service's image build
+# =====================================================================================================
+# Reusable each service's image build
+# =====================================================================================================
+
+# Ai-processing
+x-ai-processing-image-build: &ai-processing-image-build
+  container_name: ai-processing
+  build:
+    context: .
+    dockerfile: srcs/services/ai-processing/Dockerfile
+  image: ai-processing
+  env_file:
+    - ./srcs/services/ai-processing/.env
+
+# Content-management
+x-content-management-image-build: &content-management-image-build
+  container_name: content-management
+  build:
+    context: .
+    dockerfile: srcs/services/content-management/Dockerfile
+  image: content-management
+  env_file:
+    - ./srcs/services/content-management/.env
+
+# Identity
 x-identity-image-build: &identity-image-build
   container_name: identity
   build:
@@ -79,8 +114,33 @@ x-identity-image-build: &identity-image-build
   env_file:
     - ./srcs/services/identity/.env
 
+# Morning-briefing
+x-morning-briefing-image-build: &morning-briefing-image-build
+  container_name: morning-briefing
+  build:
+    context: .
+    dockerfile: srcs/services/morning-briefing/Dockerfile
+  image: morning-briefing
+  env_file:
+    - ./srcs/services/morning-briefing/.env
+
+# Personalization
+x-personalization-image-build: &personalization-image-build
+  container_name: personalization
+  build:
+    context: .
+    dockerfile: srcs/services/personalization/Dockerfile
+  image: personalization
+  env_file:
+    - ./srcs/services/personalization/.env
+
+
+# =====================================================================================================
+# Services
+# =====================================================================================================
+
 services:
-  #Frontend:
+  # FRONTEND
   frontend:
     build:
       context: ./srcs/frontend/
@@ -93,11 +153,11 @@ services:
     profiles:
       - frontend
 
-  #Reverse proxy
+  # REVERSE PROXY
 
-  #api_gateway
+  # API_GATEWAY
 
-  #Databases
+  # DATABASES
   pgsql:
     image: docker.io/library/postgres:18
     container_name: pgsql
@@ -142,6 +202,43 @@ services:
     secrets:
       - postgres_password
 
+  # BACKEND
+
+  # Ai-processing
+  prestart-ai-processing:
+    <<: [*ai-processing-image-build, *backend-prestart]
+    environment:
+      POSTGRES_HOST: pgvector
+      POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_DEFAULT_DB_NAME: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
+    depends_on:
+      pgvector:
+        condition: service_healthy
+    container_name: prestart-ai-processing
+
+  ai-processing:
+    <<: [*ai-processing-image-build, *backend-service]
+    depends_on:
+      pgvector:
+        condition: service_healthy
+      prestart-ai-processing:
+        condition: service_completed_successfully
+
+  # Content-management
+  prestart-content-management:
+    <<: [*content-management-image-build, *backend-prestart]
+    container_name: prestart-content-management
+
+  content-management:
+    <<: [*content-management-image-build, *backend-service]
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      prestart-content-management:
+        condition: service_completed_successfully
+
+  # Identity
   prestart-identity:
     <<: [*identity-image-build, *backend-prestart]
     container_name: prestart-identity
@@ -160,11 +257,34 @@ services:
       - jwt_private_key
       - jwt_public_key
 
-  #personalization:
-  #content-management:
-  #ai-processing:
-  #morning-briefing:
-  #administration:
+  # Morning-briefing
+  prestart-morning-briefing:
+    <<: [*morning-briefing-image-build, *backend-prestart]
+    container_name: prestart-morning-briefing
+
+  morning-briefing:
+    <<: [*morning-briefing-image-build, *backend-service]
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      prestart-morning-briefing:
+        condition: service_completed_successfully
+
+  # Personalization
+  prestart-personalization:
+    <<: [*personalization-image-build, *backend-prestart]
+    container_name: prestart-personalization
+
+  personalization:
+    <<: [*personalization-image-build, *backend-service]
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      prestart-personalization:
+        condition: service_completed_successfully
+
+
+  # ADMINISTRATION
 
 secrets:
   postgres_password:

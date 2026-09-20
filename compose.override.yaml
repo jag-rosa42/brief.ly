@@ -1,3 +1,21 @@
+
+# Ai-processing
+x-ai-processing-dev-image-build: &ai-processing-dev-image-build
+  build:
+    context: .
+    dockerfile: srcs/services/ai-processing/Dockerfile.dev
+  volumes:
+    - ./srcs/services/ai-processing:/app:Z
+
+# Content-management
+x-content-management-dev-image-build: &content-management-dev-image-build
+  build:
+    context: .
+    dockerfile: srcs/services/content-management/Dockerfile.dev
+  volumes:
+    - ./srcs/services/content-management:/app:Z
+
+# Identity
 x-identity-dev-image-build: &identity-dev-image-build
   build:
     context: .
@@ -5,6 +23,22 @@ x-identity-dev-image-build: &identity-dev-image-build
   volumes:
     - ./srcs/services/identity:/app/srcs/services/identity:Z
     - ./shared/packages/shared_errors:/app/shared/packages/shared_errors:Z
+
+# Morning-briefing
+x-morning-briefing-dev-image-build: &morning-briefing-dev-image-build
+  build:
+    context: .
+    dockerfile: srcs/services/morning-briefing/Dockerfile.dev
+  volumes:
+    - ./srcs/services/morning-briefing:/app:Z
+
+# Personalization
+x-personalization-dev-image-build: &personalization-dev-image-build
+  build:
+    context: .
+    dockerfile: srcs/services/personalization/Dockerfile.dev
+  volumes:
+    - ./srcs/services/personalization:/app:Z
 
 services:
   frontend:
@@ -61,6 +95,33 @@ services:
     ports:
       - "${AI_POSTGRES_PORT:?Variable not set}:5432"
 
+
+  # Ai-processing
+  prestart-ai-processing:
+    <<: *ai-processing-dev-image-build
+
+  ai-processing:
+    <<: *ai-processing-dev-image-build
+    ports:
+      - "${AI_PROCESSING_PORT:?Variable not set}:${SERVICE_CONTAINER_PORT:?Variable not set}"
+    environment:
+      POSTGRES_HOST: pgvector
+      # Used by Uvicorn/watchfiles for backend --reload, independently of Vite.
+      WATCHFILES_FORCE_POLLING: ${WATCHFILES_FORCE_POLLING:-false}
+
+  # Content-management
+  prestart-content-management:
+    <<: *content-management-dev-image-build
+
+  content-management:
+    <<: *content-management-dev-image-build
+    ports:
+      - "${CONTENT_MANAGEMENT_PORT:?Variable not set}:${SERVICE_CONTAINER_PORT:?Variable not set}"
+    environment:
+      # Used by Uvicorn/watchfiles for backend --reload, independently of Vite.
+      WATCHFILES_FORCE_POLLING: ${WATCHFILES_FORCE_POLLING:-false}
+
+  # Identity
   prestart-identity:
     <<: *identity-dev-image-build
 
@@ -68,6 +129,30 @@ services:
     <<: *identity-dev-image-build
     ports:
       - "${IDENTITY_PORT:?Variable not set}:${SERVICE_CONTAINER_PORT:?Variable not set}"
+    environment:
+      # Used by Uvicorn/watchfiles for backend --reload, independently of Vite.
+      WATCHFILES_FORCE_POLLING: ${WATCHFILES_FORCE_POLLING:-false}
+
+  # Morning-briefing
+  prestart-morning-briefing:
+    <<: *morning-briefing-dev-image-build
+
+  morning-briefing:
+    <<: *morning-briefing-dev-image-build
+    ports:
+      - "${MORNING_BRIEFING_PORT:?Variable not set}:${SERVICE_CONTAINER_PORT:?Variable not set}"
+    environment:
+      # Used by Uvicorn/watchfiles for backend --reload, independently of Vite.
+      WATCHFILES_FORCE_POLLING: ${WATCHFILES_FORCE_POLLING:-false}
+
+  # Personalization
+  prestart-personalization:
+    <<: *personalization-dev-image-build
+
+  personalization:
+    <<: *personalization-dev-image-build
+    ports:
+      - "${PERSONALIZATION_PORT:?Variable not set}:${SERVICE_CONTAINER_PORT:?Variable not set}"
     environment:
       # Used by Uvicorn/watchfiles for backend --reload, independently of Vite.
       WATCHFILES_FORCE_POLLING: ${WATCHFILES_FORCE_POLLING:-false}
