@@ -7,6 +7,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 
 COPY ./srcs/services/identity ./
+COPY ./shared/packages/shared_errors /app/shared/packages/shared_errors/
 
 RUN uv sync --frozen
 

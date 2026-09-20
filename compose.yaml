@@ -73,8 +73,8 @@ x-backend-service: &backend-service
 x-identity-image-build: &identity-image-build
   container_name: identity
   build:
-    context: ./srcs/services/identity
-    dockerfile: Dockerfile
+    context: .
+    dockerfile: srcs/services/identity/Dockerfile
   image: identity
   env_file:
     - ./srcs/services/identity/.env

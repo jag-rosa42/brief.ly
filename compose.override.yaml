@@ -1,9 +1,10 @@
 x-identity-dev-image-build: &identity-dev-image-build
   build:
-    context: ./srcs/services/identity
-    dockerfile: Dockerfile.dev
+    context: .
+    dockerfile: srcs/services/identity/Dockerfile.dev
   volumes:
-    - ./srcs/services/identity:/app:Z
+    - ./srcs/services/identity:/app/srcs/services/identity:Z
+    - ./shared/packages/shared_errors:/app/shared/packages/shared_errors:Z
 
 services:
   frontend:
