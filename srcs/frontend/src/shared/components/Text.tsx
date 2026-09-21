@@ -22,8 +22,6 @@ export function getTextStyle(style: TextVariant): string
             return("text-accent leading-relaxed");
         case "intro":
             return("font-serif text-lg md:text-xl text-accent-dark");
-        default:
-        return("");
     }
 }
 

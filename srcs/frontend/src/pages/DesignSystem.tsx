@@ -4,6 +4,7 @@ import { Text, textVariants } from "@/shared/components/Text";
 import { Division, divVariants } from "@/shared/components/Division";
 import { Header } from "@/shared/components/Header";
 import { Card } from "@/shared/components/Card"
+import { Footer } from "@/shared/components/Footer";
 
 const interests = [
     {
@@ -67,7 +68,7 @@ export function DesignSystem() {
             <div className="flex flex-col gap-2 bg-background">
                 <Header />
             </div>
-        
+            <h2 className="text-lg font-bold">Card</h2>
             <section>
                 <div className="flex flex-col gap-8">
                     {interests.map((interest) => (
@@ -88,8 +89,12 @@ export function DesignSystem() {
                             </div>
                         </div>
                     ))}
-                    </div>
-                </section>
+                </div>
+            </section>
+            <h2 className="text-lg font-bold">Footer</h2>
+            <div className="flex flex-col gap-2 bg-background">
+                <Footer />
             </div>
+        </div>
     );
 }
