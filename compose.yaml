@@ -99,7 +99,7 @@ services:
 
   #Databases
   pgsql:
-    image: postgres:18
+    image: docker.io/library/postgres:18
     container_name: pgsql
     restart: "always"
     profiles:
@@ -121,7 +121,7 @@ services:
       - postgres_password
 
   pgvector:
-    image: pgvector/pgvector:pg18
+    image: docker.io/pgvector/pgvector:pg18
     container_name: pgvector
     restart: "always"
     profiles:
@@ -153,6 +153,12 @@ services:
         condition: service_healthy
       prestart-identity:
         condition: service_completed_successfully
+    environment:
+      - JWT_PRIVATE_KEY_FILE=/run/secrets/jwt_private_key
+      - JWT_PUBLIC_KEY_FILE=/run/secrets/jwt_public_key
+    secrets:
+      - jwt_private_key
+      - jwt_public_key
 
   #personalization:
   #content-management:
@@ -163,6 +169,10 @@ services:
 secrets:
   postgres_password:
     file: ./shared/secrets/postgres_password
+  jwt_private_key:
+    file: ./shared/secrets/jwt_private_key
+  jwt_public_key:
+    file: ./shared/secrets/jwt_public_key
 
 volumes:
   pgsql:
