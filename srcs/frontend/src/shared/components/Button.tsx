@@ -1,4 +1,4 @@
-export const buttonVariants = ["primary", "secondary", "simple", "title"] as const;
+export const buttonVariants = ["primary", "secondary", "simple", "title", "main"] as const;
 export type ButtonVariant = typeof buttonVariants[number];
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -18,6 +18,8 @@ export function getButtonStyle(style: ButtonVariant): string
             return("font-serif text-accent-dark");
         case "title":
             return("font-bold text-xl text-primary");
+        case "main":
+            return("bg-accent-dark text-background px-5 py-2.5 rounded hover:bg-accent");
     }
 }
 

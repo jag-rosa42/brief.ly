@@ -6,28 +6,11 @@ import { Header } from "@/shared/components/Header";
 import { Card } from "@/shared/components/Card"
 import { Footer } from "@/shared/components/Footer";
 
-const interests = [
-    {
-        interestTitle: "Intelligence artificielle",
-        articles: [
-            {
-                title: "Les LLM en 2026 : où en est-on",
-                description:
-                    "Un tour d'horizon des avancées récentes en matière de modèles de langage et leurs limites actuelles.",
-            },
-            {
-                title: "Apprentissage par renforcement expliqué",
-                description:
-                    "Comment les agents apprennent à prendre des décisions par essais et erreurs.",
-            },
-            {
-                title: "Vers une IA plus sobre",
-                description:
-                    "Les efforts de l'industrie pour réduire le coût énergétique des modèles.",
-            },
-        ],
-    },
-];
+const article = {
+    title: "Les LLM en 2026 : où en est-on",
+    description:
+        "Un tour d'horizon des avancées récentes en matière de modèles de langage et leurs limites actuelles.",
+};
 
 export function DesignSystem() {
     return (
@@ -70,26 +53,11 @@ export function DesignSystem() {
             </div>
             <h2 className="text-lg font-bold">Card</h2>
             <section>
-                <div className="flex flex-col gap-8">
-                    {interests.map((interest) => (
-                        <div key={interest.interestTitle}>
-                            <h3 className="mb-3 text-lg font-medium">
-                                {interest.interestTitle}
-                            </h3>
-
-                            <div className="flex flex-wrap gap-4">
-                                {interest.articles.map((article) => (
-                                    <Card
-                                        key={article.title}
-                                        title={article.title}
-                                        description={article.description}
-                                        className="w-full max-w-sm"
-                                        />
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                <Card
+                    title={article.title}
+                    description={article.description}
+                    className="w-full max-w-sm"
+                />
             </section>
             <h2 className="text-lg font-bold">Footer</h2>
             <div className="flex flex-col gap-2 bg-background">

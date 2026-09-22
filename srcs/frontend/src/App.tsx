@@ -1,12 +1,12 @@
-import { DesignSystem } from "@/pages/DesignSystem";
+import { BrowserRouter } from "react-router-dom";
+import { AppRouter } from "./app/router";
 
 function App() {
-
-  return (
-    <>
-	  <DesignSystem />
-    </>
-  )
+	return (
+		<BrowserRouter>
+			<AppRouter />
+		</BrowserRouter>
+	);
 }
 
-export default App
+export default App;

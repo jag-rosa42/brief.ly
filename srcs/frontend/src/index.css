@@ -1,9 +1,24 @@
 @import "tailwindcss";
 
-/* Identité visuelle du site — un seul endroit à modifier.
-   Tailwind v4 génère automatiquement les classes utilitaires
-   correspondantes : bg-primary, text-primary, border-primary,
-   bg-secondary, text-accent, etc. */
+
+/* @theme {
+
+    --color-primary: #16a34a;
+	--color-secondary: #115E59;
+	--color-accent: #475569;
+    --color-background: #F8FAFC;
+
+	--color-primary-light: #DCFCE7;
+	--color-primary-dark: #15803D;
+	--color-secondary-light: #CCFBF1;
+	--color-secondary-dark: #115E59;
+	--color-accent-light: #CBD5E1;
+	--color-accent-dark: #334155;
+	--color-background-light: #FFFFFF;
+	--color-background-dark: #F1F5F9;
+
+} */
+
 @theme {
 
 	--font-sans: "Inter", sans-serif;
@@ -22,5 +37,23 @@
 	--color-accent-dark: color-mix(in srgb, var(--color-accent) 76%, black);
 	--color-background-light: color-mix(in srgb, var(--color-background) 5%, white);
 	--color-background-dark: color-mix(in srgb, var(--color-background) 96%, black);
+
+}
+
+/* @theme {
+
+    --color-primary: #16a34a;
+	--color-secondary: #0f766e;
+	--color-accent: grey;
+    --color-background: white;
+
+	--color-primary-light: color-mix(in srgb, var(--color-primary) 60%, white);
+	--color-primary-dark: color-mix(in srgb, var(--color-primary) 80%, black);
+	--color-secondary-light: color-mix(in srgb, var(--color-secondary) 60%, white);
+	--color-secondary-dark: color-mix(in srgb, var(--color-secondary) 80%, black);
+	--color-accent-light: color-mix(in srgb, var(--color-accent) 60%, white);
+	--color-accent-dark: color-mix(in srgb, var(--color-accent) 80%, black);
+	--color-background-light: color-mix(in srgb, var(--color-background) 60%, white);
+	--color-background-dark: color-mix(in srgb, var(--color-background) 80%, black);
 
 }
