@@ -25,7 +25,8 @@ describe("AppRouter", () => {
 			</MemoryRouter>
 		);
 		fireEvent.click(screen.getByRole("link", { name: "Terms of Service" }));
-		expect(screen.getByRole("heading", { name: "Terms of Service" })).toBeInTheDocument();
+		const main = screen.getAllByRole("main")[1];
+		expect(main).toHaveTextContent("Terms of Service");
 	});
 
 	it("navigates to Privacy Policy via the footer link", () => {
@@ -37,7 +38,8 @@ describe("AppRouter", () => {
 			</MemoryRouter>
 		);
 		fireEvent.click(screen.getByRole("link", { name: "Privacy Policy" }));
-		expect(screen.getByRole("heading", { name: "Privacy Policy" })).toBeInTheDocument();
+		const main = screen.getAllByRole("main")[1];
+		expect(main).toHaveTextContent("Privacy Policy");
 	});
 
 	it("shows a 404 page for an unknown URL", () => {

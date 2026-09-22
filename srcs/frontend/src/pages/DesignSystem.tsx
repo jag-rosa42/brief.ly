@@ -2,9 +2,21 @@ import { Button, buttonVariants } from "@/shared/components/Button";
 import { Link } from "@/shared/components/Link";
 import { Text, textVariants } from "@/shared/components/Text";
 import { Division, divVariants } from "@/shared/components/Division";
+import { Dropdown } from "@/shared/components/Dropdown";
+import { useState, type ChangeEvent } from "react";
 
 
 export function DesignSystem() {
+        const [profile, setProfile] = useState({
+        interest1: "",
+        interest2: "",
+        interest3: "",
+    });
+
+    const handleChange = (e: ChangeEvent<HTMLSelectElement>) => {
+        const {name,value} = e.target;
+        setProfile((prev) => ({ ...prev, [name]: value}));
+    };
     return (
         <div className="bg-gray-300 min-h-screen flex flex-col gap-4 p-4">
             <div className="flex gap-2">
@@ -35,6 +47,48 @@ export function DesignSystem() {
                     </Division>
                 ))}
             </div>
-        </div>
+            <div className="flex flex-col gap-1">
+                Interest1:
+                <Dropdown
+                    variant="main"
+                    name="interest1"
+                    value={profile.interest1}
+                    onChange={handleChange}
+                    options={[
+                        {value: "AI", label: "AI"},
+                        {value: "Finance", label: "Finance"},
+                        {value: "Nature", label: "Nature"},
+                    ]}
+                />
+                </div>
+                <div className="flex flex-col gap-1">
+                Interest2:
+                <Dropdown
+                    variant="main"
+                    name="interest2"
+                    value={profile.interest2}
+                    onChange={handleChange}
+                    options={[
+                        {value: "AI", label: "AI"},
+                        {value: "Finance", label: "Finance"},
+                        {value: "Nature", label: "Nature"},
+                    ]}
+                />
+                </div>
+                <div className="flex flex-col gap-1">
+                Interest3:
+                <Dropdown
+                    variant="main"
+                    name="interest3"
+                    value={profile.interest3}
+                    onChange={handleChange}
+                    options={[
+                        {value: "AI", label: "AI"},
+                        {value: "Finance", label: "Finance"},
+                        {value: "Nature", label: "Nature"},
+                    ]}
+                />
+                </div>
+            </div>
     );
 }
