@@ -33,13 +33,12 @@
   #    - Ensure its database name and migration setup are correct.
   # ---------------------------------------------------------------------------
 
-# NOTE: the prestart system doesnt work with podman compose
 # TODO: Fix the condition service_completed_successfully or use a VM for docker
 name: "${DOMAIN}"
 
-# =====================================================================================================
+# ==============================================================================
 # One-shot bootstrap: apply this service's migrations before the service starts.
-# =====================================================================================================
+# ==============================================================================
 
 x-backend-prestart: &backend-prestart
   pull_policy: build
@@ -58,19 +57,19 @@ x-backend-prestart: &backend-prestart
     pgsql:
       condition: service_healthy
 
-# =====================================================================================================
+# ==============================================================================
 # The service's backend container
-# =====================================================================================================
+# ==============================================================================
 
 x-backend-service: &backend-service
   pull_policy: build
   restart: "always"
   profiles: [backend]
   environment:
-    - POSTGRES_HOST=pgsql
-    - POSTGRES_USER=${POSTGRES_USER:?Variable not set}
-    - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
-    - POSTGRES_DEFAULT_DB_NAME=${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
+    POSTGRES_HOST: pgsql
+    POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
+    POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    POSTGRES_DEFAULT_DB_NAME: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
 
   secrets:
     - postgres_password
@@ -80,16 +79,18 @@ x-backend-service: &backend-service
     timeout: 5s
     retries: 5
 
-# =====================================================================================================
+# ==============================================================================
 # Reusable each service's image build
-# =====================================================================================================
+# ==============================================================================
 
 # Ai-processing
 x-ai-processing-image-build: &ai-processing-image-build
   container_name: ai-processing
   build:
-    context: .
-    dockerfile: srcs/services/ai-processing/Dockerfile
+    context: ./srcs/services/ai-processing
+    dockerfile: Dockerfile
+    additional_contexts:
+      shared_errors: ./shared/packages/shared_errors
   image: ai-processing
   env_file:
     - ./srcs/services/ai-processing/.env
@@ -98,8 +99,10 @@ x-ai-processing-image-build: &ai-processing-image-build
 x-content-management-image-build: &content-management-image-build
   container_name: content-management
   build:
-    context: .
-    dockerfile: srcs/services/content-management/Dockerfile
+    context: ./srcs/services/content-management
+    dockerfile: Dockerfile
+    additional_contexts:
+      shared_errors: ./shared/packages/shared_errors
   image: content-management
   env_file:
     - ./srcs/services/content-management/.env
@@ -108,8 +111,10 @@ x-content-management-image-build: &content-management-image-build
 x-identity-image-build: &identity-image-build
   container_name: identity
   build:
-    context: .
-    dockerfile: srcs/services/identity/Dockerfile
+    context: ./srcs/services/identity
+    dockerfile: Dockerfile
+    additional_contexts:
+      shared_errors: ./shared/packages/shared_errors
   image: identity
   env_file:
     - ./srcs/services/identity/.env
@@ -118,8 +123,10 @@ x-identity-image-build: &identity-image-build
 x-morning-briefing-image-build: &morning-briefing-image-build
   container_name: morning-briefing
   build:
-    context: .
-    dockerfile: srcs/services/morning-briefing/Dockerfile
+    context: ./srcs/services/morning-briefing
+    dockerfile: Dockerfile
+    additional_contexts:
+      shared_errors: ./shared/packages/shared_errors
   image: morning-briefing
   env_file:
     - ./srcs/services/morning-briefing/.env
@@ -128,16 +135,18 @@ x-morning-briefing-image-build: &morning-briefing-image-build
 x-personalization-image-build: &personalization-image-build
   container_name: personalization
   build:
-    context: .
-    dockerfile: srcs/services/personalization/Dockerfile
+    context: ./srcs/services/personalization
+    dockerfile: Dockerfile
+    additional_contexts:
+      shared_errors: ./shared/packages/shared_errors
   image: personalization
   env_file:
     - ./srcs/services/personalization/.env
 
 
-# =====================================================================================================
+# ==============================================================================
 # Services
-# =====================================================================================================
+# ==============================================================================
 
 services:
   # FRONTEND
@@ -173,10 +182,10 @@ services:
     volumes:
       - pgsql:${PGDATA:?Variable not set}
     environment:
-      - PGDATA=${PGDATA:?Variable not set}
-      - POSTGRES_USER=${POSTGRES_USER:?Variable not set}
-      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
-      - POSTGRES_DB=${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
+      PGDATA: ${PGDATA:?Variable not set}
+      POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_DB: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
     secrets:
       - postgres_password
 
@@ -195,10 +204,10 @@ services:
     volumes:
       - pgvector:${PGDATA:?Variable not set}
     environment:
-      - PGDATA=${PGDATA:?Variable not set}
-      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
-      - POSTGRES_USER=${POSTGRES_USER:?Variable not set}
-      - POSTGRES_DB=${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
+      PGDATA: ${PGDATA:?Variable not set}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
+      POSTGRES_DB: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
     secrets:
       - postgres_password
 
@@ -242,6 +251,17 @@ services:
   prestart-identity:
     <<: [*identity-image-build, *backend-prestart]
     container_name: prestart-identity
+    environment:
+      POSTGRES_HOST: pgsql
+      POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_DEFAULT_DB_NAME: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
+      JWT_PRIVATE_KEY_FILE: /run/secrets/jwt_private_key
+      JWT_PUBLIC_KEY_FILE: /run/secrets/jwt_public_key
+    secrets:
+      - jwt_private_key
+      - jwt_public_key
+      - postgres_password
 
   identity:
     <<: [*identity-image-build, *backend-service]
@@ -251,11 +271,16 @@ services:
       prestart-identity:
         condition: service_completed_successfully
     environment:
-      - JWT_PRIVATE_KEY_FILE=/run/secrets/jwt_private_key
-      - JWT_PUBLIC_KEY_FILE=/run/secrets/jwt_public_key
+      POSTGRES_HOST: pgsql
+      POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_DEFAULT_DB_NAME: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
+      JWT_PRIVATE_KEY_FILE: /run/secrets/jwt_private_key
+      JWT_PUBLIC_KEY_FILE: /run/secrets/jwt_public_key
     secrets:
       - jwt_private_key
       - jwt_public_key
+      - postgres_password
 
   # Morning-briefing
   prestart-morning-briefing:
