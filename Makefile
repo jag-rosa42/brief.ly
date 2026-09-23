@@ -18,7 +18,7 @@ OS := $(shell uname -s)
 # ============================================================================ #
 
 MAKE_CMD ?= $(MAKE)
-COMPOSE := podman compose
+COMPOSE := podman-compose
 CONTAINER_CMD := podman
 DEV_COMPOSE = $(COMPOSE) $(addprefix -f ,$(DEV_COMPOSE_FILE))
 PROD_COMPOSE = $(COMPOSE) $(addprefix -f ,$(PROD_COMPOSE_FILE))

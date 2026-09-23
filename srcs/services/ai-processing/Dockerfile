@@ -1,14 +1,19 @@
 FROM python:3.14-slim
 
-WORKDIR /app
+WORKDIR /app/srcs/services/ai-processing
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+COPY --from=ghcr.io/astral-sh/uv:0.12.15 /uv /uvx /usr/local/bin/
 
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 
-COPY ./srcs/services/ai-processing ./
+COPY ./pyproject.toml ./
+COPY ./uv.lock ./
 
-RUN uv sync --frozen
+COPY --from=shared_errors / /app/shared/packages/shared_errors/
+
+RUN uv sync --frozen --no-install-project
+
+COPY . ./
 
 ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1
