@@ -4,7 +4,52 @@ import { Text, textVariants } from "@/shared/components/Text";
 import { Division, divVariants } from "@/shared/components/Division";
 import { Dropdown } from "@/shared/components/Dropdown";
 import { useState, type ChangeEvent } from "react";
+import {Tabs, type TabItem} from "@/shared/components/Tabs";
 
+const tabs: TabItem[] = [
+	{
+        value: "mockarticle",
+		label: "Tab A",
+		content: (
+			<ItemList
+			items={[
+				{ title: "Title 1", text: "Some text for Item 1."},
+				{ title: "Title 2", text: "Some text for item 2"},
+			]}
+			/>
+		),
+	},
+	{
+        value: "mockarticle",
+		label: "Tab B",
+		content: (
+			<ItemList
+			items={[
+				{ title: "Title 3", text: "Some text for Item 3."},
+				{ title: "Title 4", text: "Some text for Item 4"},
+			]}
+			/>
+		),
+	},
+];
+
+interface ListItem {
+	title: string;
+	text: string;
+}
+
+function ItemList({ items }: { items: ListItem[] }) {
+	return (
+		<ul className="flex flex-col gap-4">
+			{items.map((item) => (
+				<li key={item.title}>
+					<h3 className="font-semibold text-secondary">{item.title}</h3>
+					<p className="text-accent">{item.text}</p>
+				</li>
+			))}
+		</ul>
+	);
+}
 
 export function DesignSystem() {
         const [profile, setProfile] = useState({
@@ -89,6 +134,17 @@ export function DesignSystem() {
                     ]}
                 />
                 </div>
+                <div className="flex flex-col gap-4">
+		            <Tabs tabs={tabs} variant="main" />
+		            <Tabs tabs={tabs} variant="sub" />
+		        </div>
             </div>
     );
 }
+
+
+
+
+
+
+
