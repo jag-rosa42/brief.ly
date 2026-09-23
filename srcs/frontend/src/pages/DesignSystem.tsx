@@ -5,10 +5,12 @@ import { Division, divVariants } from "@/shared/components/Division";
 import { Dropdown } from "@/shared/components/Dropdown";
 import { useState, type ChangeEvent } from "react";
 import {Tabs, type TabItem} from "@/shared/components/Tabs";
+import { Input } from "@/shared/components/Input";
+
 
 const tabs: TabItem[] = [
 	{
-        value: "mockarticle",
+        value: "tab-a",
 		label: "Tab A",
 		content: (
 			<ItemList
@@ -20,7 +22,7 @@ const tabs: TabItem[] = [
 		),
 	},
 	{
-        value: "mockarticle",
+        value: "tab-b",
 		label: "Tab B",
 		content: (
 			<ItemList
@@ -57,6 +59,9 @@ export function DesignSystem() {
         interest2: "",
         interest3: "",
     });
+    const [lastName, setLastName] = useState("");
+    const [firstName, setFirstName] = useState("");
+    const [password, setPassword] = useState("");
 
     const handleChange = (e: ChangeEvent<HTMLSelectElement>) => {
         const {name,value} = e.target;
@@ -138,6 +143,29 @@ export function DesignSystem() {
 		            <Tabs tabs={tabs} variant="main" />
 		            <Tabs tabs={tabs} variant="sub" />
 		        </div>
+                <div className="flex flex-col gap-4">
+                    <Input
+                        variant="sub"
+                        label="First name"
+                        name="firstName"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                    />
+                    <Input
+                        variant="sub"
+                        label="Last name"
+                        name="last name"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                    />
+                    <Input
+                        variant="sub"
+                        label="Password"
+                        name="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
+                </div>
             </div>
     );
 }
