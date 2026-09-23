@@ -97,10 +97,10 @@ export function DesignSystem() {
                     </Division>
                 ))}
             </div>
-            <div className="flex flex-col gap-1">
-                Interest1:
+            <div>
                 <Dropdown
                     variant="main"
+                    label="Interest1"
                     name="interest1"
                     value={profile.interest1}
                     onChange={handleChange}
@@ -111,10 +111,10 @@ export function DesignSystem() {
                     ]}
                 />
                 </div>
-                <div className="flex flex-col gap-1">
-                Interest2:
+            <div>
                 <Dropdown
                     variant="main"
+                    label="Interest2"
                     name="interest2"
                     value={profile.interest2}
                     onChange={handleChange}
@@ -125,10 +125,10 @@ export function DesignSystem() {
                     ]}
                 />
                 </div>
-                <div className="flex flex-col gap-1">
-                Interest3:
+            <div>
                 <Dropdown
                     variant="main"
+                    label="Interest3"
                     name="interest3"
                     value={profile.interest3}
                     onChange={handleChange}
