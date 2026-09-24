@@ -6,6 +6,7 @@ import { Dropdown } from "@/shared/components/Dropdown";
 import { useState, type ChangeEvent } from "react";
 import {Tabs, type TabItem} from "@/shared/components/Tabs";
 import { Input } from "@/shared/components/Input";
+import { Form } from "@/shared/components/Form";
 
 
 const tabs: TabItem[] = [
@@ -154,7 +155,7 @@ export function DesignSystem() {
                     <Input
                         variant="sub"
                         label="Last name"
-                        name="last name"
+                        name="lastName"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
                     />
@@ -166,7 +167,51 @@ export function DesignSystem() {
                         onChange={(e) => setPassword(e.target.value)}
                     />
                 </div>
-            </div>
+                <Form
+                    title="Test Form"
+                    
+                    actions={
+                        <>
+                            <Button variant="primary" type="submit">Save</Button>
+                            <Button variant="secondary" type="button">Back</Button>
+                        </>
+                    }
+                    >
+                    <Input
+                        variant="sub"
+                        label="First name"
+                        name="firstName"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                    />
+                    <Input
+                        variant="sub"
+                        label="Last name"
+                        name="lastName"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                    />
+                    <Input
+                        variant="sub"
+                        label="Password"
+                        name="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <Dropdown
+                        variant="main"
+                        label="Interest3"
+                        name="interest3"
+                        value={profile.interest3}
+                        onChange={handleChange}
+                        options={[
+                            {value: "AI", label: "AI"},
+                            {value: "Finance", label: "Finance"},
+                            {value: "Nature", label: "Nature"},
+                    ]}
+                />
+                    </Form>
+                </div>
     );
 }
 
