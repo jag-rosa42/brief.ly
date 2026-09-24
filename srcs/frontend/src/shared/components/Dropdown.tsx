@@ -58,8 +58,8 @@ export function Dropdown({
 					</option>
 				))}
 			</select>
-			{error && <span className="text-sm text-red-600">{error}</span>}
-			{info && <span className="text-sm text-gray-500">{info}</span>}
+			{error && <span className="text-sm text-error">{error}</span>}
+			{info && <span className="text-sm text-info">{info}</span>}
 			</label>
 	);
 }

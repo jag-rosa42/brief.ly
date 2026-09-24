@@ -41,9 +41,8 @@ export function Input({
 				{...props}
 				className={`${style} ${className}`}>
 			</input>
-			{error && <span className="text-sm text-red-600">{error}</span>}
-			{info && <span className="text-sm text-gray-500"> {info}</span>}
+			{error && <span className="text-sm text-error">{error}</span>}
+			{info && <span className="text-sm text-info">{info}</span>}
 		</label>
 	);
 }
-
