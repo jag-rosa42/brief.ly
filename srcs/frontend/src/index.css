@@ -3,10 +3,10 @@
 
 /* @theme {
 
-    --color-primary: #16a34a;
+	--color-primary: #16a34a;
 	--color-secondary: #115E59;
 	--color-accent: #475569;
-    --color-background: #F8FAFC;
+	--color-background: #F8FAFC;
 
 	--color-primary-light: #DCFCE7;
 	--color-primary-dark: #15803D;
@@ -22,12 +22,12 @@
 /* @theme {
 
 	--font-sans: "Inter", sans-serif;
-    --font-serif: "Source Serif 4", serif;
+	--font-serif: "Source Serif 4", serif;
 
-    --color-primary: #16a34a;
+	--color-primary: #16a34a;
 	--color-secondary: #115E59;
 	--color-accent: #475569;
-    --color-background: #FDFBF7;
+	--color-background: #FDFBF7;
 	--color-error: #a95f58;
 	--color-info: #7A807A;
 
@@ -43,13 +43,13 @@
 
 @theme {
 
-	--font-sans: "Inter", sans-serif;
-    --font-serif: "Source Serif 4", serif;
+	--font-sans: "Sofia Sans", sans-serif;
+	--font-serif: "Fraunces", serif;
 
 	--color-primary: #D4751A;
 	--color-secondary: #B79A7A;
 	--color-accent: #493A33;
-    --color-background: #F2EBE0;
+	--color-background: #F2EBE0;
 	--color-error: #E62E1C;
 	--color-info: #7A807A;
 
@@ -68,10 +68,10 @@
    bg-secondary, text-accent, etc. */
 /* @theme {
 
-    --color-primary: #16a34a;
+	--color-primary: #16a34a;
 	--color-secondary: #0f766e;
 	--color-accent: grey;
-    --color-background: white;
+	--color-background: white;
 
 	--color-primary-light: color-mix(in srgb, var(--color-primary) 60%, white);
 	--color-primary-dark: color-mix(in srgb, var(--color-primary) 80%, black);

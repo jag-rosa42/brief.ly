@@ -10,7 +10,7 @@ export function getDivStyle(style: string): string
 {
     switch(style) {
         case "featurecard":
-            return ("bg-white border border-ui rounded-xl p-6 flex flex-col gap-y-3");
+            return ("bg-white border border-ui rounded-[28px] p-6 flex flex-col gap-y-3");
         case "prose":
             return ("text-accent leading-relaxed");
         default:
