@@ -1,13 +1,20 @@
 import { useState } from "react";
 import type { SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
+
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/app/AuthContext";
+import { Form } from "@/shared/components/Form";
+import { Input } from "@/shared/components/Input";
+
+
+import { Button } from "@/shared/components/Button";
+import { Card } from "@/shared/components/Card";
+import { Text } from "@/shared/components/Text";
+
 
 export function LoginPage() {
-
-
-	const [pass, setP1] = useState("");
+	const [pass, setPassword] = useState("");
 	const [email, setEmail] = useState("");
 	const [waiting, setWaiting] = useState(false);
 	const navigate = useNavigate();
@@ -19,29 +26,34 @@ export function LoginPage() {
 
 	async function handleSubmit(e: SyntheticEvent)
 	{
-		setWaiting(true);
 		e.preventDefault();
+		setWaiting(true);
 		if (email == "")
 		{
-			setResult(<p role="alert">Email is required</p>);
+			setResult(<p role="alert" className="text-error">Email is required</p>);
 			setWaiting(false);
 			return;
 		}
 		if (!email.includes("@"))
 		{
-			setResult(<p role="alert">Enter a valid email address</p>);
+			setResult(<p role="alert" className="text-error">Enter a valid email address</p>);
 			setWaiting(false);
 			return;
 		}
-		else if (pass.length < 8)
-		{
-			setResult(<p role="alert">Password must be at least 8 characters</p>);
+		if (pass === "") {
+			setResult(<p role="alert" className="text-error">Password is required</p>);
 			setWaiting(false);
 			return;
 		}
-		login();
+		//TODO add call API (mock behaviour here)
+		try {
+			await login();
 		navigate("/");
-		setWaiting(false);
+		} catch (err) {
+			setResult(<p role="alert" className="text-error"> Login failed. Please try again</p>);
+		} finally {
+			setWaiting(false);
+		}
 	}
 
 	async function oauth(){
@@ -49,30 +61,58 @@ export function LoginPage() {
 		login();
 		navigate("/");
 		setWaiting(false);
-	}
+	};
 
-	return (
-	<main className="max-w-md mx-auto px-6 py-16">
-		<h1 className="text-center font-serif text-4xl font-bold text-accent-dark mb-16">Welcome back!</h1>
-		<h2 className="font-sans text-3xl font-bold text-accent-dark mb-6">Log in</h2>
-		<div className="flex flex-col gap-3">
-		<form  onSubmit={handleSubmit}className="flex rounded flex-col gap-4">
-			<div className="bg-white border border-ui rounded-xl p-6">
-			<label className="flex flex-col gap-2">
-				Email:
-			<input type="email" className="border border-ui rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary" onChange={(e) => setEmail(e.target.value)} />
-			</label>
-			<label className="flex flex-col gap-2">
-				Password:
-			<input type="password" className="border border-ui rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary" onChange={(e) => setP1(e.target.value)}
-			/>
-			</label>
-			{result}
+	return(
+		<div className="min-h-screen bg-background flex flex-col items-center pt-12 px-4">
+			<Text variant="title" className="mb-10 text-center">
+				Welcome back!
+			</Text>
+			<div className="w-full max-w-sm">
+				<Text variant="subheading" className="mb-4">
+					Log in
+				</Text>
+				<Card>
+					<Form
+					onSubmit={handleSubmit}
+					actions={
+						<div className="flex flex-col gap-3 w-full">
+							{result}
+							<Button
+								type="submit"
+								variant="secondary"
+								className="w-full"
+								disabled={waiting}>
+							{waiting ? "Logging in..." : "Log in"}
+							</Button>
+
+							<Button
+								type="button"
+								variant="primary"
+								className="w-full"
+								onClick={oauth}
+								disabled={waiting}>
+							OAuth
+							</Button>
+						</div>
+							}
+					>
+						<Input
+							variant="main"
+							label="Email"
+							name="email"
+							type="email"
+							onChange={(e) => setEmail(e.target.value)}/>
+						<Input
+							variant="main"
+							label="Password"
+							name="password"
+							type="password"
+							onChange={(e) => setPassword(e.target.value)}/>
+					</Form>
+				</Card>
 			</div>
-			<button type="submit" className="w-full bg-primary text-background rounded px-4 py-2 hover:text-secondary disabled:opacity-50" disabled={waiting}>Log in</button>
-		</form>
-			<button onClick={oauth} type="button" className="w-full bg-primary text-background rounded px-4 py-2 hover:text-secondary disabled:opacity-50" disabled={waiting}>OAuth</button>
-			</div>
-		</main>
-	);
+		</div>
+	)
 }
+

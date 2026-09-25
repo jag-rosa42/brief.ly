@@ -10,7 +10,7 @@ interface FormProps {
 
 export function Form({title, onSubmit, children, actions }: FormProps) {
 	return (
-		<form className="flex flex-col gap-4" onSubmit={onSubmit}>
+		<form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
 			{title && <Text variant="heading">{title}</Text>}
 			{children}
 			<div className="flex gap-2">{actions}</div>
