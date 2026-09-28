@@ -1,12 +1,7 @@
-import { DesignSystem } from "@/pages/DesignSystem";
+import { AppRouter } from "./app/router";
 
 function App() {
-
-  return (
-    <>
-	  <DesignSystem />
-    </>
-  )
+	return <AppRouter />;
 }
 
-export default App
+export default App;

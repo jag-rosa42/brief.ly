@@ -5,7 +5,7 @@ import { Button } from "@/shared/components/Button"
 export function Header() {
 	return (
     <header className="flex justify-between items-center px-6 py-4">
-        <Link to="/" variant="title">D<span className="text-secondary">AI</span>LY</Link>
+        <Link to="/" variant="title">Brief<span className="text-secondary">.ly</span></Link>
         {/* TODO: will display <NavbarLogged/> or <NavbarUnlogged/> depending on connection state*/}
         <NavbarUnlogged/>
     </header>
