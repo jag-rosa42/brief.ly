@@ -6,13 +6,15 @@
    bg-secondary, text-accent, etc. */
 @theme {
 
-	--font-sans: "Inter", sans-serif;
-    --font-serif: "Source Serif 4", serif;
+	--font-sans: "Sofia Sans", sans-serif;
+	--font-serif: "Fraunces", serif;
 
-    --color-primary: #16a34a;
-	--color-secondary: #115E59;
-	--color-accent: #475569;
-    --color-background: #FDFBF7;
+	--color-primary: #D4751A;
+	--color-secondary: #B79A7A;
+	--color-accent: #493A33;
+	--color-background: #F2EBE0;
+	--color-error: #E62E1C;
+	--color-info: #7A807A;
 
 	--color-primary-light: color-mix(in srgb, var(--color-primary) 11%, white);
 	--color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, black);

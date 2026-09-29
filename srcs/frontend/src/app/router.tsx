@@ -7,6 +7,7 @@ import { NotFoundPage } from "@/pages/NotFoundPage";
 import { DesignSystem } from "@/pages/DesignSystem";
 import { SignupPage } from "@/pages/SignupPage";
 import { LoginPage } from "@/pages/LoginPage";
+import { ProfilePage } from "@/pages/ProfilePage";
 
 export function AppRouter() {
 	return (
@@ -22,6 +23,8 @@ export function AppRouter() {
 					element={<SignupPage />}/>
 				<Route path="/login"
 					element={<LoginPage/>}/>
+				<Route path="/profile"
+					element={<ProfilePage/>}/>
 				<Route path="/designsystem"
 					element={<DesignSystem />}/>
 				<Route path="*"
