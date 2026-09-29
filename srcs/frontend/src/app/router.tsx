@@ -6,7 +6,7 @@ import { PrivacyPolicyPage } from "@/pages/PrivacyPolicyPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { DesignSystem } from "@/pages/DesignSystem";
 import { SignupPage } from "@/pages/SignupPage";
-
+import { LoginPage } from "@/pages/LoginPage";
 
 export function AppRouter() {
 	return (
@@ -20,6 +20,8 @@ export function AppRouter() {
 					element={<PrivacyPolicyPage />}/>
 				<Route path="/signup"
 					element={<SignupPage />}/>
+				<Route path="/login"
+					element={<LoginPage/>}/>
 				<Route path="/designsystem"
 					element={<DesignSystem />}/>
 				<Route path="*"
