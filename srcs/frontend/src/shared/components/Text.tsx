@@ -1,4 +1,4 @@
-export const textVariants = ["title", "heading", "subheading", "body", "lead"] as const;
+export const textVariants = ["title", "heading", "subheading", "body", "lead", "error", "success"] as const;
 export type TextVariant = typeof textVariants[number];
 
 interface TextProps extends React.HTMLAttributes<HTMLElement>
@@ -22,6 +22,10 @@ export function getTextStyle(style: TextVariant): string
             return("text-accent leading-relaxed");
         case "lead":
             return("font-serif text-lg md:text-xl text-accent-dark");
+        case "error":
+            return("text-error");
+        case "success":
+            return("text-success");
     }
 }
 
