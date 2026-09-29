@@ -5,6 +5,7 @@ import { TermsOfServicePage } from "@/pages/TermsOfServicePage";
 import { PrivacyPolicyPage } from "@/pages/PrivacyPolicyPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { DesignSystem } from "@/pages/DesignSystem";
+import { SignupPage } from "@/pages/SignupPage";
 
 
 export function AppRouter() {
@@ -17,6 +18,8 @@ export function AppRouter() {
 					element={<TermsOfServicePage />}/>
 				<Route path="/privacypolicy"
 					element={<PrivacyPolicyPage />}/>
+				<Route path="/signup"
+					element={<SignupPage />}/>
 				<Route path="/designsystem"
 					element={<DesignSystem />}/>
 				<Route path="*"
