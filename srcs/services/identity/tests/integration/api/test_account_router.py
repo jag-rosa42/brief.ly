@@ -42,3 +42,22 @@ class TestAccountsRouter:
         assert body["id"] == str(account.id)
         assert body["email"] == account.email.value
         assert datetime.fromisoformat(body["created_at"]) == account.created_at
+
+    def test_returns_401_with_invalid_access_token(
+        self,
+        client: TestClient,
+    ) -> None:
+        response: Response = client.get(
+            url="/api/accounts/me",
+            headers={"Authorization": "Bearer not-a-jwt"}
+        )
+
+        assert response.status_code == 401
+
+    def test_rejetcs_a_request_without_credentials(
+        self,
+        client: TestClient,
+    ) -> None:
+        response: Response = client.get("/api/accounts/me")
+
+        assert response.status_code == 401

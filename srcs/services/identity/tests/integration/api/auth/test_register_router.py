@@ -1,6 +1,4 @@
-import datetime
 from collections.abc import Generator
-from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,12 +6,10 @@ from httpx2 import Response
 from shared_errors import ErrorResponse
 
 from src.api.dependencies.account import get_register_account
-from src.domain.entities.account import Account
 from src.domain.exception import EmailAlreadyRegisteredError
-from src.domain.value_objects.email import Email
-from src.domain.value_objects.password_hash import PasswordHash
 from src.main import app
 from tests.fixtures.accounts import FakeRegisterAccount
+from tests.fixtures.sessions import build_account_session
 
 VALID_EMAIL: str = "john.doe@example.com"
 VALID_PASSWORD: str = "super-secret"
@@ -41,25 +37,17 @@ def use_register_account() -> Generator:
 
 
 class TestAuthRegisterRouter:
-    def _build_account(
-        self,
-        email: str = VALID_EMAIL,
-        password: str = VALID_PASSWORD,
-    ) -> Account:
-        return Account(
-            id=uuid4(),
-            email=Email(email),
-            password_hash=PasswordHash(password),
-            created_at=datetime.datetime.now(datetime.UTC),
-        )
-
     def test_returns_201_on_register_account_success(
         self,
         client: TestClient,
         use_register_account,
     ) -> None:
-        account: Account = self._build_account()
-        fake_register_account: FakeRegisterAccount = FakeRegisterAccount(account)
+        fake_register_account: FakeRegisterAccount = FakeRegisterAccount(
+            build_account_session(
+                access_token="test-access-token",
+                refresh_token="test-refresh-token",
+            )
+        )
         use_register_account(fake_register_account)
 
         response: Response = client.post(
@@ -68,7 +56,11 @@ class TestAuthRegisterRouter:
         )
 
         assert response.status_code == 201
-        assert response.json() == {"id": str(account.id), "email": VALID_EMAIL}
+        assert response.json() == {
+            "access_token": "test-access-token",
+            "refresh_token": "test-refresh-token",
+            "token_type": "Bearer",
+        }
         assert fake_register_account._execute_called_with == (
             VALID_EMAIL,
             VALID_PASSWORD,
@@ -79,9 +71,8 @@ class TestAuthRegisterRouter:
         client: TestClient,
         use_register_account,
     ) -> None:
-        account: Account = self._build_account()
         fake_register_account: FakeRegisterAccount = FakeRegisterAccount(
-            account, error=EmailAlreadyRegisteredError()
+            error=EmailAlreadyRegisteredError()
         )
         use_register_account(fake_register_account)
 

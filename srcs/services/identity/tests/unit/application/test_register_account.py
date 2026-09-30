@@ -4,24 +4,31 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from src.application.use_cases.register_account import RegisterAccount
+from src.application.use_cases.auth.register_account import RegisterAccount
+from src.application.use_cases.session.account_session import AccountSession
 from src.domain.entities.account import Account
+from src.domain.entities.refresh_token import RefreshToken
 from src.domain.exception import EmailAlreadyRegisteredError
+from src.domain.repositories.account_repository import AccountRepository
 from src.domain.value_objects.email import Email
 from tests.fixtures.accounts import FakeAccountRepository
-from tests.fixtures.security import FakePasswordHasher
+from tests.fixtures.security import FakePasswordHasher, FakeTokenService
+from tests.fixtures.sessions import FakeRefreshTokenRepository
 
 
 class TestRegisterAccount:
     def test_registers_new_account_with_hashed_password(
         self,
         register_account: RegisterAccount,
+        account_repository: FakeAccountRepository,
     ) -> None:
         email: str = "john.doe@example.com"
         plaintext_password: str = "secure-password"
 
-        account: Account = register_account.execute(email, plaintext_password)
+        register_account.execute(email, plaintext_password)
+        account: Account | None = account_repository.find_by_email(Email(email))
 
+        assert account is not None
         assert account.email.value == email
         assert account.password_hash.value == f"hashed::{plaintext_password}"
         assert isinstance(account.id, UUID)
@@ -34,12 +41,36 @@ class TestRegisterAccount:
         email: str = "john.doe@example.com"
         plaintext_password: str = "secure-password"
 
-        account: Account = register_account.execute(email, plaintext_password)
+        register_account.execute(email, plaintext_password)
         stored_account: Account | None = account_repository.find_by_email(Email(email))
 
-        assert account == stored_account
+        assert stored_account is not None
         assert account_repository.committed is True
         assert account_repository.rolled_back is False
+
+    def test_returns_session_linked_to_registered_account(
+        self,
+        register_account: RegisterAccount,
+        account_repository: AccountRepository,
+        refresh_token_repository: FakeRefreshTokenRepository,
+        token_service: FakeTokenService,
+    ):
+        email: str = "john.doe@example.com"
+        plaintext_password: str = "secure-password"
+
+        session: AccountSession = register_account.execute(email, plaintext_password)
+        account: Account | None = account_repository.find_by_email(Email(email))
+        stored: RefreshToken | None = refresh_token_repository.find_by_id(
+            session.refresh_token_id
+        )
+
+        assert account is not None
+        assert (
+            token_service.verify_access_token(session.access_token).account_id
+            == account.id
+        )
+        assert stored is not None
+        assert stored.account_id == account.id
 
     def test_raises_when_email_is_already_registered(
         self,
@@ -86,6 +117,7 @@ class TestRegisterAccount:
         self,
         register_account: RegisterAccount,
         account_repository: FakeAccountRepository,
+        refresh_token_repository: FakeRefreshTokenRepository,
         password_hasher: FakePasswordHasher,
     ) -> None:
         email: str = "john.doe@example.com"
@@ -102,8 +134,26 @@ class TestRegisterAccount:
             register_account.execute(email, f"{plaintext_password}-2")
 
         assert account_repository.committed is False
+        assert refresh_token_repository.count() == 0
 
-    def test_rollback_and_raises_when_saved_failed(
+    def test_rollback_and_raises_when_session_creation_fails(
+        self,
+        register_account: RegisterAccount,
+        account_repository: FakeAccountRepository,
+        refresh_token_repository: FakeRefreshTokenRepository,
+    ) -> None:
+        email: str = "john.doe@example.com"
+        plaintext_password: str = "secure-password"
+
+        refresh_token_repository.make_add_raise(RuntimeError("connection lost"))
+
+        with pytest.raises(RuntimeError, match="connection lost"):
+            register_account.execute(email, plaintext_password)
+
+        assert account_repository.rolled_back is True
+        assert account_repository.committed is False
+
+    def test_rollback_and_raises_when_account_repository_save_fails(
         self,
         register_account: RegisterAccount,
         account_repository: FakeAccountRepository,
@@ -128,7 +178,14 @@ class TestRegisterAccount:
         ],
     )
     def test_registers_several_distinct_accounts(
-        self, register_account: RegisterAccount, email: str, password: str
+        self,
+        register_account: RegisterAccount,
+        account_repository: FakeAccountRepository,
+        email: str,
+        password: str,
     ) -> None:
-        account: Account = register_account.execute(email, password)
+        register_account.execute(email, password)
+        account = account_repository.find_by_email(Email(email))
+
+        assert account is not None
         assert account.email.value == email
