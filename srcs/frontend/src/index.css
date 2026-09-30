@@ -15,6 +15,7 @@
 	--color-background: #F2EBE0;
 	--color-error: #E62E1C;
 	--color-info: #7A807A;
+	--color-success: #778B6B;
 
 	--color-primary-light: color-mix(in srgb, var(--color-primary) 11%, white);
 	--color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, black);

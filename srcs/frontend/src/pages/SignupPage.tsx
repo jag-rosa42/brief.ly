@@ -10,6 +10,14 @@ import { useAuth } from "@/app/AuthContext";
 import { Form } from "@/shared/components/Form";
 import { Input } from "@/shared/components/Input";
 
+import isEmail from "validator/lib/isEmail";
+
+function validateForm(email: string) {
+	if (!isEmail(email)) {
+		return "Enter a valid email address";
+	}
+	return null;
+}
 
 export function SignupPage() {
 	const [pass, setPassword] = useState("");
@@ -27,15 +35,12 @@ export function SignupPage() {
 	{
 		e.preventDefault();
 		setWaiting(true);
-		if (email == "")
+
+		const error = validateForm(email);
+
+		if (error)
 		{
-			setResult(<p role="alert" className="text-error">Email is required</p>);
-			setWaiting(false);
-			return;
-		}
-		if (!email.includes("@"))
-		{
-			setResult(<p role="alert" className="text-error">Enter a valid email address</p>);
+			setResult(<p role="alert" className="text-error">{error}</p>);
 			setWaiting(false);
 			return;
 		}
@@ -90,7 +95,7 @@ export function SignupPage() {
 							>
 						<Input
 							variant="main"
-							label="Email"
+							label="Email address (name@example.com)"
 							name="email"
 							type="email"
 							onChange={(e) => setEmail(e.target.value)}/>

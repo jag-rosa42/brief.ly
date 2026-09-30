@@ -35,8 +35,12 @@ const focusTimeOptions: DropdownOption[] = [
 export function ProfilePage() {
 	const [lastName, setLastName] = useState("");
 	const [firstName, setFirstName] = useState("");
-	const [email, setEmail] = useState("");
 	const [birthday, setBirthday] = useState("");
+	const [displayName, setDisplayName] = useState("");
+	const [lastNameError, setLastNameError] = useState("");
+	const [firstNameError, setFirstNameError] = useState("");
+	const [displayNameError, setDisplayNameError] = useState("");
+	const [birthdayError, setBirthdayError] = useState("");
 
 	const [preference1, setPreference1] = useState("");
 	const [preference2, setPreference2] = useState("");
@@ -47,13 +51,50 @@ export function ProfilePage() {
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [passwordError, setPasswordError] = useState("");
-	const [interestError, setInterestError] = useState("");
+	const [preferenceError, setPreferenceError] = useState("");
+	const [focusTimeError, setFocusTimeError] = useState("");
 
 	const [saved, setSaved] = useState(false);
 	
 	//TODO: add a function UseEffect with API call and error handling
 	function handleSave(e: SubmitEvent) {
 		e.preventDefault();
+		setSaved(false);
+		setLastNameError("");
+		setFirstNameError("");
+		setDisplayNameError("");
+		setBirthdayError("");
+		setPreferenceError("");
+		setFocusTimeError("");
+
+		let hasError = false;
+    	
+    if (lastName.trim() === "") {
+        setLastNameError("Last name is required");
+        hasError=true;
+    }
+	    if (firstName.trim() === "") {
+        setFirstNameError("First name is required");
+        hasError=true;
+    }
+	    if (displayName.trim() === "") {
+        setDisplayNameError("Display name is required");
+        hasError=true;
+    }
+	    if (birthday.trim() === "") {
+        setBirthdayError("Birthday is required");
+        hasError=true;
+    }
+	if (preference1 === "" || preference2 === "" || preference3 === "") {
+    setPreferenceError("Please select all three interests");
+    hasError = true;
+}
+
+if (focusTime === "") {
+    setFocusTimeError("Please select a focus time");
+    hasError = true;
+}
+
 		if (showPasswordFields && password !== confirmPassword)
 			{
 				setPasswordError("Passwords don't match");
@@ -61,10 +102,13 @@ export function ProfilePage() {
 				return;
 			}
 			setPasswordError("");
-			setInterestError("");
-
+		if(hasError)
+	{
+		return;
+	}
 // TODO: add API call
 setSaved(true);
+
 }
 return (
 	<main className="max-w-2xl mx-auto px-6 py-16">
@@ -77,27 +121,42 @@ return (
 					label="Last name"
 					name="lastName"
 					value={lastName}
-					onChange={(e: ChangeEvent<HTMLInputElement>) => setLastName(e.target.value)}/>
+					error={lastNameError}
+					onChange={(e: ChangeEvent<HTMLInputElement>) => {
+						setLastName(e.target.value);
+						setLastNameError("");
+					}}/>
 				<Input
 					variant="main"
 					label="First name"
 					name="firstName"
 					value={firstName}
-					onChange={(e: ChangeEvent<HTMLInputElement>) => setFirstName(e.target.value)}/>
+					error={firstNameError}
+					onChange={(e: ChangeEvent<HTMLInputElement>) => {
+						setFirstName(e.target.value);
+						setFirstNameError("");
+					}}/>
 				<Input
 					variant="main"
-					label="Email"
-					name="email"
-					type="email"
-					value={email}
-					onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}/>
+					label="Display name"
+					name="displayName"
+					value={displayName}
+					error={displayNameError}
+					onChange={(e: ChangeEvent<HTMLInputElement>) =>
+						{setDisplayName(e.target.value);
+						setDisplayNameError("");
+						}}/>
 				<Input
 					variant="main"
 					label="Birthday"
 					name="birthday"
 					type="date"
 					value={birthday}
-					onChange={(e: ChangeEvent<HTMLInputElement>) => setBirthday(e.target.value)}/>
+					error={birthdayError}
+					onChange={(e: ChangeEvent<HTMLInputElement>) => {
+						setBirthday(e.target.value);
+						setBirthdayError("");
+					}}/>
 					<div className="grid grid-cols-3 gap-4">
 						<Dropdown
 						variant="main"
@@ -121,14 +180,17 @@ return (
 						value={preference3}
 						onChange={(e: ChangeEvent<HTMLSelectElement>) => setPreference3(e.target.value)}/>
 						</div>
-						    {interestError && <p className="text-error text-sm">{interestError}</p>}
+						    {preferenceError && <p className="text-error text-sm">{preferenceError}</p>}
 						<Dropdown
 						variant="main"
 						label="Focus time"
 						name="focusTime"
 						options={focusTimeOptions}
 						value={focusTime}
-						onChange={(e: ChangeEvent<HTMLSelectElement>) => setFocusTime(e.target.value)}/>
+						onChange={(e: ChangeEvent<HTMLSelectElement>) => {
+							setFocusTime(e.target.value)
+							setFocusTimeError("")}}/>
+						{focusTimeError && (<p className="text-error text-sm">{focusTimeError}</p>)}
 						{!showPasswordFields && (
 							<Button
 							type="button"
@@ -177,7 +239,7 @@ return (
 												Back
 												</Button>
 												</Link>
-												{saved && <p className="text-green-600">Profile Saved</p>}
+												{saved && <p className="text-success">Profile Saved</p>}
 												</Form>
 												</main>
 )}

@@ -7,11 +7,18 @@ import { useAuth } from "@/app/AuthContext";
 import { Form } from "@/shared/components/Form";
 import { Input } from "@/shared/components/Input";
 
-
 import { Button } from "@/shared/components/Button";
 import { Card } from "@/shared/components/Card";
 import { Text } from "@/shared/components/Text";
 
+import isEmail from "validator/lib/isEmail";
+
+function validateForm(email: string) {
+	if (!isEmail(email)) {
+		return "Enter a valid email address";
+	}
+	return null;
+}
 
 export function LoginPage() {
 	const [pass, setPassword] = useState("");
@@ -28,17 +35,14 @@ export function LoginPage() {
 	{
 		e.preventDefault();
 		setWaiting(true);
-		if (email == "")
+
+		const error = validateForm(email);
+
+		if (error)
 		{
-			setResult(<p role="alert" className="text-error">Email is required</p>);
+    		setResult(<p role="alert" className="text-error">{error}</p>);
 			setWaiting(false);
-			return;
-		}
-		if (!email.includes("@"))
-		{
-			setResult(<p role="alert" className="text-error">Enter a valid email address</p>);
-			setWaiting(false);
-			return;
+    		return;
 		}
 		if (pass === "") {
 			setResult(<p role="alert" className="text-error">Password is required</p>);
@@ -48,7 +52,7 @@ export function LoginPage() {
 		//TODO add call API (mock behaviour here)
 		try {
 			await login();
-		navigate("/");
+		navigate("*");
 		} catch (err) {
 			setResult(<p role="alert" className="text-error"> Login failed. Please try again</p>);
 		} finally {
@@ -59,7 +63,7 @@ export function LoginPage() {
 	async function oauth(){
 		setWaiting(true);
 		login();
-		navigate("/profile");
+		navigate("*");
 		setWaiting(false);
 	};
 
@@ -99,7 +103,7 @@ export function LoginPage() {
 					>
 						<Input
 							variant="main"
-							label="Email"
+							label="Email address (name@example.com)"
 							name="email"
 							type="email"
 							onChange={(e) => setEmail(e.target.value)}/>
