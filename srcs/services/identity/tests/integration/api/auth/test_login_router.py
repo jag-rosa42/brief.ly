@@ -34,13 +34,13 @@ def use_login_account() -> Generator:
     app.dependency_overrides.pop(get_login_account, None)
 
 
-class TestAUthLoginAccount:
+class TestAuthLoginAccount:
     def test_returns_200_on_login_success(
         self,
         client: TestClient,
         use_login_account,
     ) -> None:
-        fake_login_account: FakeLoginAccount = FakeLoginAccount("test-access-token")
+        fake_login_account: FakeLoginAccount = FakeLoginAccount()
         use_login_account(fake_login_account)
 
         response: Response = client.post(
@@ -50,7 +50,8 @@ class TestAUthLoginAccount:
 
         assert response.status_code == 200
         assert response.json() == {
-            "access_token": "test-access-token",
+            "access_token": "fake-access-token",
+            "refresh_token": "fake-refresh-token",
             "token_type": "Bearer",
         }
         assert fake_login_account._execute_called_with == (

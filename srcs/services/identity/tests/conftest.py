@@ -8,8 +8,18 @@ discovery mechanism.
 """
 
 pytest_plugins: list[str] = [
+    # Factory
+    "tests.fixtures.factory",
+    # Lowest-level fixtures first
+    "tests.fixtures.security",
+    # Sessions depend on security
+    "tests.fixtures.sessions",
+
+    # Accounts depend on sessions
     "tests.fixtures.accounts",
+
+    # Infrastructure fixtures
     "tests.fixtures.database",
     "tests.fixtures.http",
-    "tests.fixtures.security",
+
 ]

@@ -16,7 +16,10 @@ class TestRegisterEndpoint:
         )
 
         assert register_response.status_code == 201
-        assert register_response.json()["email"] == email
+        body = register_response.json()
+        assert body["access_token"]
+        assert body["refresh_token"]
+        assert body["token_type"] == "Bearer"
 
         duplicated_response = client.post(
             url="/api/auth/register",

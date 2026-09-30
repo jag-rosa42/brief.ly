@@ -5,7 +5,7 @@ from httpx2 import Response
 
 
 class TestAccountsEndpoints:
-    def test_returns_accounts_with_valid_access_token(
+    def test_returns_accounts_with_access_token_from_register(
         self,
         client: TestClient,
     ) -> None:
@@ -14,25 +14,11 @@ class TestAccountsEndpoints:
 
         registered_account_response: Response = client.post(
             "/api/auth/register",
-            json={
-                "email": email,
-                "password": password,
-            },
+            json={"email": email, "password": password},
         )
 
         assert registered_account_response.status_code == 201
-
-        login_response = client.post(
-            url="/api/auth/login",
-            json={
-                "email": email,
-                "password": password,
-            },
-        )
-
-        assert login_response.status_code == 200
-
-        access_token = login_response.json()["access_token"]
+        access_token: str = registered_account_response.json()["access_token"]
 
         protected_response: Response = client.get(
             url="/api/accounts/me",
@@ -44,6 +30,40 @@ class TestAccountsEndpoints:
         assert protected_response.status_code == 200
         body: dict[str, str] = protected_response.json()
 
-        assert body["id"] == registered_account_response.json()["id"]
         assert body["email"] == email
         assert body["created_at"]
+
+    def test_returns_account_with_access_token_from_login(
+        self,
+        client: TestClient,
+    ) -> None:
+        email: str = f"john.doe-{uuid4()}@example.com"
+        password: str = "super-secret"
+
+        client.post("/api/auth/register", json={"email": email, "password": password})
+
+        login_response: Response = client.post(
+            "/api/auth/login",
+            json={"email": email, "password": password},
+        )
+        assert login_response.status_code == 200
+        access_token: str = login_response.json()["access_token"]
+
+        protected_response: Response = client.get(
+            "/api/accounts/me",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+        assert protected_response.status_code == 200
+        assert protected_response.json()["email"] == email
+
+    def test_rejects_an_invalid_access_token(self, client: TestClient) -> None:
+        response: Response = client.get(
+            "/api/accounts/me",
+            headers={"Authorization": "Bearer not-a-real-token"},
+        )
+        assert response.status_code == 401
+
+    def test_rejects_a_missing_access_token(self, client: TestClient) -> None:
+        response: Response = client.get("/api/accounts/me")
+        assert response.status_code == 401

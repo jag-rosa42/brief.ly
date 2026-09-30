@@ -1,14 +1,25 @@
-from datetime import UTC, datetime
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import pytest
 
 from src.application.port.password_hasher import PasswordHasher
 from src.application.use_cases.auth.login_account import LoginAccount
+from src.application.use_cases.auth.logout_account import LogoutAccount
 from src.application.use_cases.auth.register_account import RegisterAccount
+from src.application.use_cases.session.account_session import AccountSession
+from src.application.use_cases.session.create_account_session import CreateAccountSession
+from src.application.use_cases.session.refresh_token_validator import (
+    RefreshTokenValidator,
+)
 from src.domain.entities.account import Account
 from src.domain.exception import DomainError
 from src.domain.value_objects.email import Email
+from tests.fixtures.factory import (
+    DEFAULT_ACCOUNT_EMAIL,
+    DEFAULT_ACCOUNT_PASSWORD,
+    build_account,
+)
+from tests.fixtures.sessions import FakeRefreshTokenRepository, build_account_session
 
 # ---------------------------------------------------------------------------
 # Test Double - Fake
@@ -20,15 +31,15 @@ from src.domain.value_objects.email import Email
 
 
 # ---------------------------------------------------------------------------
-# Account Repository
+# Account
 # ---------------------------------------------------------------------------
+
+
 @pytest.fixture
 def account(password_hasher: PasswordHasher) -> Account:
-    return Account(
-        id=uuid4(),
-        email=Email("john-do@example.com"),
-        password_hash=password_hasher.hash("secure-password"),
-        created_at=datetime.now(UTC),
+    return build_account(
+        email=DEFAULT_ACCOUNT_EMAIL,
+        password_hash=password_hasher.hash(DEFAULT_ACCOUNT_PASSWORD),
     )
 
 
@@ -73,52 +84,69 @@ def account_repository() -> FakeAccountRepository:
 
 
 # ---------------------------------------------------------------------------
-# Register Account
+# Fake Register Account
 # ---------------------------------------------------------------------------
 class FakeRegisterAccount:
-    def __init__(self, account: Account, error: DomainError | None = None) -> None:
-        self._account: Account = account
+    def __init__(
+        self,
+        session: AccountSession | None = None,
+        error: DomainError | None = None,
+    ) -> None:
+        self._session: AccountSession = session or build_account_session()
         self._error: DomainError | None = error
         self._execute_called_with: tuple[str, str] | None = None
 
-    def execute(self, email: str, password: str) -> Account:
+    def execute(self, email: str, password: str) -> AccountSession:
         self._execute_called_with: tuple[str, str] = email, password
         if self._error is not None:
             raise self._error
-        return self._account
+        return self._session
 
 
 @pytest.fixture
 def register_account(
-    account_repository: FakeAccountRepository, password_hasher: PasswordHasher
+    account_repository: FakeAccountRepository,
+    password_hasher: PasswordHasher,
+    create_account_session: CreateAccountSession,
 ) -> RegisterAccount:
-    return RegisterAccount(account_repository, password_hasher)
+    return RegisterAccount(account_repository, password_hasher, create_account_session)
 
 
 # ---------------------------------------------------------------------------
-# Login Account
+# Fake Login Account
 # ---------------------------------------------------------------------------
 class FakeLoginAccount:
     def __init__(
         self,
-        access_token: str = "fake-access-token",
+        session: AccountSession | None = None,
         error: DomainError | None = None,
     ) -> None:
-        self._access_token: str = access_token
+        self._session: AccountSession = session or build_account_session()
         self._error: DomainError | None = error
         self._execute_called_with: tuple[str, str] | None = None
 
-    def execute(self, email: str, password: str) -> str:
+    def execute(self, email: str, password: str) -> AccountSession:
         self._execute_called_with: tuple[str, str] = email, password
         if self._error is not None:
             raise self._error
-        return self._access_token
+        return self._session
 
 
 @pytest.fixture
 def login_account(
     account_repository: FakeAccountRepository,
     password_hasher: PasswordHasher,
-    token_service: TokenService,
+    create_account_session: CreateAccountSession,
 ) -> LoginAccount:
-    return LoginAccount(account_repository, password_hasher, token_service)
+    return LoginAccount(account_repository, password_hasher, create_account_session)
+
+
+# ---------------------------------------------------------------------------
+# Logout Account
+# ---------------------------------------------------------------------------
+@pytest.fixture
+def logout_account(
+    refresh_token_validator: RefreshTokenValidator,
+    refresh_token_repository: FakeRefreshTokenRepository,
+) -> LogoutAccount:
+    return LogoutAccount(refresh_token_validator, refresh_token_repository)
