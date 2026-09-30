@@ -4,6 +4,8 @@ from uuid import uuid4
 from sqlalchemy.exc import IntegrityError
 
 from src.application.port.password_hasher import PasswordHasher
+from src.application.use_cases.session.account_session import AccountSession
+from src.application.use_cases.session.create_account_session import CreateAccountSession
 from src.domain.entities.account import Account
 from src.domain.exception import EmailAlreadyRegisteredError
 from src.domain.repositories.account_repository import AccountRepository
@@ -16,11 +18,13 @@ class RegisterAccount:
         self,
         account_repository: AccountRepository,
         password_hasher: PasswordHasher,
+        create_account_session: CreateAccountSession,
     ) -> None:
         self._account_repository: AccountRepository = account_repository
         self._password_hasher: PasswordHasher = password_hasher
+        self._create_account_session: CreateAccountSession = create_account_session
 
-    def execute(self, email: str, password: str) -> Account:
+    def execute(self, email: str, password: str) -> AccountSession:
         email_value_object: Email = Email(email)
 
         existing_account: Account | None = self._account_repository.find_by_email(
@@ -44,6 +48,7 @@ class RegisterAccount:
         # boundary so the entire use case is executed within a single transaction.
         try:
             self._account_repository.save(account)
+            session: AccountSession = self._create_account_session.execute(account.id)
             self._account_repository.commit()
         except IntegrityError as exc:
             self._account_repository.rollback()
@@ -52,5 +57,4 @@ class RegisterAccount:
             self._account_repository.rollback()
             raise
 
-        # TODO: missing access_token and refresh_token
-        return account
+        return session

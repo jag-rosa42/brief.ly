@@ -11,6 +11,7 @@ class JWTTokenPayload(BaseModel):
         frozen=True,
         validate_by_alias=True,
     )
+    token_id: str = Field(alias="jti")
     subject: str = Field(alias="sub")
     token_type: TokenType = Field(alias="type")
     issued_at: int = Field(alias="iat")

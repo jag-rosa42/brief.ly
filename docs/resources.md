@@ -26,6 +26,7 @@
 - [JSON Web Token (JWT)](https://datatracker.ietf.org/doc/html/rfc7519)
 - [RFC 6750: The OAuth 2.0 Authorization Framework: Bearer Token Usage](https://www.rfc-editor.org/info/rfc6750/)
 - [RFC 9700: BCP 240: Best Current Practice for OAuth 2.0 Security](https://www.rfc-editor.org/info/rfc9700/)
+- [Hashing tokens](https://www.freecodecamp.org/news/how-to-perform-secure-hashing-using-pythons-hashlib-module/)
 
 ## Errors
 - [Handling HTTP errors with FastAPI](https://safir.lsst.io/user-guide/fastapi-errors.html)
@@ -36,3 +37,9 @@
 
 ## FastAPI
 - [I Hired a Penetration Tester to Attack My FastAPI App. He Owned Everything in 45 Minutes](https://medium.com/@rameshkannanyt0078/i-hired-a-penetration-tester-to-attack-my-fastapi-app-he-owned-everything-in-45-minutes-b66818704f6b)
+
+## SQLAlchemy
+- [Basic Relationship Patterns](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html)
+- [Configuring how Relationship Joins](https://docs.sqlalchemy.org/en/20/orm/join_conditions.html)
+- [Tutorials: Sql Alchemy Foreign Keys and Relationships](https://www.codearmo.com/python-tutorial/sql-alchemy-foreign-keys-and-relationships)
+- [SQLAlchemy Relationships Without Foreign Keys (And How to Replace 'backref' With 'back_populates')](https://that.guru/blog/sqlalchemy-relationships-without-foreign-keys/)
