@@ -54,7 +54,7 @@ export function SignupPage() {
 		//TODO add call API (mock behaviour here)
 		try {
 			await login();
-			navigate("/");
+			navigate("/profile");
 		} catch (err) {
 			setResult(<p role="alert" className="text-error"> Registration failed</p>);
 		}
@@ -62,13 +62,6 @@ export function SignupPage() {
 		setWaiting(false);
 		}
 	}
-
-	async function oauth(){
-		setWaiting(true);
-		login();
-		navigate("/");
-		setWaiting(false);
-	};
 
 	return(
 		<div className="min-h-screen bg-background flex flex-col items-center pt-12 px-4">
@@ -92,18 +85,9 @@ export function SignupPage() {
 								disabled={waiting}>
 								{waiting ? "Signing in..." : "Sign in"}
 							</Button>
-
-							<Button
-								type="button"
-								variant="primary"
-								className="w-full"
-								onClick={oauth}
-								disabled={waiting}>
-								OAuth
-							</Button>
 						</div>
 							}
-					>
+							>
 						<Input
 							variant="main"
 							label="Email"

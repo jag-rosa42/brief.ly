@@ -59,7 +59,7 @@ export function LoginPage() {
 	async function oauth(){
 		setWaiting(true);
 		login();
-		navigate("/");
+		navigate("/profile");
 		setWaiting(false);
 	};
 
