@@ -6,18 +6,17 @@ from pydantic import BaseModel, EmailStr
 
 from src.domain.entities.account import Account
 
+# class AccountRegisterResponse(BaseModel):
 
-class AccountRegisterResponse(BaseModel):
+#     id: uuid.UUID
+#     email: EmailStr
 
-    id: uuid.UUID
-    email: EmailStr
-
-    @classmethod
-    def from_domain(cls, account: Account) -> Self:
-        return cls(
-            id=account.id,
-            email=account.email.value,
-        )
+#     @classmethod
+#     def from_domain(cls, account: Account) -> Self:
+#         return cls(
+#             id=account.id,
+#             email=account.email.value,
+#         )
 
 
 class AccountResponse(BaseModel):

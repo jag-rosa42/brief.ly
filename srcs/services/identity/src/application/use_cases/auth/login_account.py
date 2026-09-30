@@ -1,5 +1,6 @@
 from src.application.port.password_hasher import PasswordHasher
-from src.application.port.token.service import TokenService
+from src.application.use_cases.session.account_session import AccountSession
+from src.application.use_cases.session.create_account_session import CreateAccountSession
 from src.domain.entities.account import Account
 from src.domain.exception import InvalidCredentialsError
 from src.domain.repositories.account_repository import AccountRepository
@@ -11,16 +12,20 @@ class LoginAccount:
         self,
         account_repository: AccountRepository,
         password_hasher: PasswordHasher,
-        token_service: TokenService,
+        create_account_session: CreateAccountSession,
     ) -> None:
         self._account_repository: AccountRepository = account_repository
         self._password_hasher: PasswordHasher = password_hasher
-        self._token_service: TokenService = token_service
+        self._create_account_session: CreateAccountSession = create_account_session
 
-    def execute(self, email: str, password: str) -> str:
+    def execute(self, email: str, password: str) -> AccountSession:
         account: Account | None = self._account_repository.find_by_email(Email(email))
         if account is None:
             raise InvalidCredentialsError()
         if not self._password_hasher.verify(password, account.password_hash):
             raise InvalidCredentialsError()
-        return self._token_service.create_access_token(account.id)
+
+        session: AccountSession = self._create_account_session.execute(account.id)
+        self._account_repository.commit()
+
+        return session

@@ -4,9 +4,8 @@ from uuid import UUID, uuid4
 import pytest
 
 from src.application.port.password_hasher import PasswordHasher
-from src.application.port.token.service import TokenService
-from src.application.use_cases.login_account import LoginAccount
-from src.application.use_cases.register_account import RegisterAccount
+from src.application.use_cases.auth.login_account import LoginAccount
+from src.application.use_cases.auth.register_account import RegisterAccount
 from src.domain.entities.account import Account
 from src.domain.exception import DomainError
 from src.domain.value_objects.email import Email

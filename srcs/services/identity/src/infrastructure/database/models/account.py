@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     UUID,
@@ -10,9 +11,12 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.infrastructure.database.models.base import Base
+
+if TYPE_CHECKING:
+    from src.infrastructure.database.models.refresh_token import RefreshToken
 
 
 class Account(Base):
@@ -31,11 +35,13 @@ class Account(Base):
         default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
+
     email: Mapped[str] = mapped_column(
         String(255),
         index=True,
-        nullable=False
+        nullable=False,
     )
+
     password_hash: Mapped[str] = mapped_column(
         Text,
         nullable=False,
@@ -45,6 +51,14 @@ class Account(Base):
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
+    )
+
+    # ORM-level cascade: SQLAlchemy propagates operations to the related tokens.
+    # delete-orphan also deletes a token when it is removed from account.refresh_tokens.
+    refresh_tokens: Mapped[list[RefreshToken]] = relationship(
+        "RefreshToken",
+        back_populates="account",
+        cascade="all, delete-orphan",
     )
 
 
