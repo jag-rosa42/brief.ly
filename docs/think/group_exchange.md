@@ -1,11 +1,12 @@
 Morning Briefing
 
-3 interservices connection:
-Morning_Briefing <-> Content_Management
-Morning_Briefing <-> AI_Processing
-Morning_Briefing <-> Personalization
+- 3 interservices connection:
+	- Morning_Briefing <-> Content_Management
+	- Morning_Briefing <-> AI_Processing
+	- Morning_Briefing <-> Personalization
 
 Content_Management
+
 
 AI_Processing
 - Endpoint sumarry of sumarry

@@ -2,36 +2,36 @@ Transcendence Project — Architecture Context & Open Questions
 
 I am working on my final project at 42 Paris called **Transcendence**.
 
- I want to continue an architecture discussion about the backend, authentication, networking, TLS, and communication between my microservices.
+I want to continue an architecture discussion about the backend, authentication, networking, TLS, and communication between my microservices.
 
- Please use the following information as context. Do **not assume that I have already made any of the architectural decisions described in the open questions below**. I want you to analyze the problem and propose appropriate solutions based on the project constraints.
+Please use the following information as context. Do **not assume that I have already made any of the architectural decisions described in the open questions below**. I want you to analyze the problem and propose appropriate solutions based on the project constraints.
 
- ## Project
+## Project
 
- The goal of Transcendence is to build a dashboard that provides personalized newspaper/news summaries to users.
+The goal of Transcendence is to build a dashboard that provides personalized newspaper/news summaries to users.
 
- For example, if a user is interested in technology, they should receive summaries of articles from approximately the last 24 hours related to technology.
+For example, if a user is interested in technology, they should receive summaries of articles from approximately the last 24 hours related to technology.
 
- Articles are retrieved using:
+Articles are retrieved using:
 
- - NewsAPI
+- NewsAPI
 - newspaper3k to scrape the article content
 
- The project contains a frontend and several backend microservices.
+The project contains a frontend and several backend microservices.
 
- The frontend has already been well started.
+The frontend has already been well started.
 
- The Identity service is almost finished.
+The Identity service is almost finished.
 
- The Content Management service is ready.
+The Content Management service is ready.
 
- We are now starting development of:
+We are now starting development of:
 
- - Personalization
+- Personalization
 - AI Processing
 - other services such as Morning Briefing
 
- Several architectural questions remain open before continuing development.
+Several architectural questions remain open before continuing development.
 
 ---
 
@@ -54,50 +54,50 @@ I am working on my final project at 42 Paris called **Transcendence**.
 
 ---
 
- ## Database architecture
+## Database architecture
 
- There are currently two PostgreSQL instances.
+There are currently two PostgreSQL instances.
 
- ### PostgreSQL instance 1
+### PostgreSQL instance 1
 
- Used by the AI Processing services:
+Used by the AI Processing services:
 
- - PostgreSQL
+- PostgreSQL
 - pgvector
 
- ### PostgreSQL instance 2
+### PostgreSQL instance 2
 
- Used by the other backend services.
+Used by the other backend services.
 
- Each service owns its own database.
+Each service owns its own database.
 
- Services should conceptually remain isolated from each other's databases rather than directly accessing another service's database.
+Services should conceptually remain isolated from each other's databases rather than directly accessing another service's database.
 
 ---
 
- ## Current Identity service
+## Current Identity service
 
- The Identity service already exists and is almost finished.
+The Identity service already exists and is almost finished.
 
- It currently implements:
+It currently implements:
 
- - account creation/authentication
+- account creation/authentication
 - access tokens
 - refresh tokens
 - JWT
 - RS256 signing
 
- The exact implementation details will be provided separately.
+The exact implementation details will be provided separately.
 
- I will provide the relevant Identity code later so that the architecture can be evaluated based on what already exists rather than assuming a new authentication system.
+I will provide the relevant Identity code later so that the architecture can be evaluated based on what already exists rather than assuming a new authentication system.
 
 ---
 
- # Main architectural problem
+# Main architectural problem
 
- The frontend will need to communicate with the backend microservices.
+The frontend will need to communicate with the backend microservices.
 
- For example:
+For example:
 
 ```
 Frontend
