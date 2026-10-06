@@ -8,6 +8,7 @@ import { DesignSystem } from "@/pages/DesignSystem";
 import { SignupPage } from "@/pages/SignupPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { ProfilePage } from "@/pages/ProfilePage";
+import { NotificationTestPage } from "@/pages/NotificationTestPage";
 import { useAuth } from "@/app/AuthContext";
 
 export function AppRouter() {
@@ -31,6 +32,8 @@ export function AppRouter() {
 					/>
 				<Route path="/designsystem"
 					element={<DesignSystem />}/>
+				<Route path="/notificationtest"
+					element={<NotificationTestPage />}/>
 				<Route path="*"
 					element={<NotFoundPage />}/>
 			</Route>
