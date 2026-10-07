@@ -1,0 +1,70 @@
+# .github/workflows/reusable-python.yml
+name: Python CI
+
+on:
+  workflow_call: # called by ci.yml
+    inputs:
+      working-directory:
+        required: true
+        type: string
+      database-name:
+        default: postgres
+        type: string
+      postgres-image:
+        default: postgres:18
+        type: string
+      generate-jwt-keys:
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: ${{ inputs.postgres-image }} # PostgreSQL or pgvector
+        env:
+          POSTGRES_DB: ${{ inputs.database-name }}
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432 # expose database to the runner
+        options: >- # wait for a healthy database
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - name: checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      - name: setup python
+        uses: ./.github/actions/setup-python
+        with:
+          working-directory: ${{ inputs.working-directory }}
+      - name: prepare service configuration
+        run: |
+          if [[ -f .env.example ]]; then
+            cp .env.example .env
+          fi
+      - name: generate test JWT keys
+        if: inputs.generate-jwt-keys # only when requested
+        working-directory: ${{ github.workspace }} # run from repository root
+        run: make -f shared/mk/secrets.mk secrets-jwt-keys
+      - name: lint
+        run: python -m uv run ruff check .
+      - name: type check
+        run: python -m uv run ty check
+      - name: tests
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DEFAULT_DB_NAME: postgres
+        run: python -m uv run pytest
