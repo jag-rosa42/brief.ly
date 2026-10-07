@@ -1,0 +1,20 @@
+# .github/actions/setup-node/action.yml
+name: 'Setup Node'
+description: 'Installe node + deps with cache'
+inputs:
+  working-directory:
+    required: true
+  node-version:
+    default: '24.18.0'
+runs:
+  using: composite # run inside the caller job
+  steps:
+    - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v5
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+        cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json # cache key
+    - name: install dependencies
+      run: npm ci # use the exact lockfile
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
