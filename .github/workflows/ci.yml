@@ -1,0 +1,161 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main] # PRs to main only
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }} # one run per PR
+  cancel-in-progress: true # cancel older runs
+
+permissions: {} # deny by default
+
+# define parallelized jobs
+jobs:
+  check-changes:
+    runs-on: ubuntu-24.04
+    # create check-changes outputs that will be used for other jobs
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      identity: ${{ steps.filter.outputs.identity }}
+      ai-processing: ${{ steps.filter.outputs.ai-processing }}
+      content-management: ${{ steps.filter.outputs.content-management }}
+      morning-briefing: ${{ steps.filter.outputs.morning-briefing }}
+      personalization: ${{ steps.filter.outputs.personalization }}
+      shared_errors: ${{ steps.filter.outputs.shared_errors }}
+      frontend_ci: ${{ steps.filter.outputs.frontend_ci }}
+      python_ci: ${{ steps.filter.outputs.python_ci }}
+      all_ci: ${{ steps.filter.outputs.all_ci }}
+
+    permissions:
+      contents: read
+      pull-requests: read # read changed files
+    steps:
+      - name: checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          fetch-depth: 2 # to get parent commit too
+
+      - name: filter paths # detect changed services
+        uses: dorny/paths-filter@d1c1ffe0248fe513906c8e24db8ea791d46f8590
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'srcs/frontend/**'
+            identity:
+              - 'srcs/services/identity/**'
+              - 'shared/packages/shared_errors/**'
+            ai-processing:
+              - 'srcs/services/ai-processing/**'
+              - 'shared/packages/shared_errors/**'
+            content-management:
+              - 'srcs/services/content-management/**'
+              - 'shared/packages/shared_errors/**'
+            morning-briefing:
+              - 'srcs/services/morning-briefing/**'
+              - 'shared/packages/shared_errors/**'
+            personalization:
+              - 'srcs/services/personalization/**'
+              - 'shared/packages/shared_errors/**'
+            shared_errors:
+              - 'shared/packages/shared_errors/**'
+            frontend_ci:
+              - '.github/workflows/reusable-react.yml'
+              - '.github/actions/setup-node/**'
+            python_ci:
+              - '.github/workflows/reusable-python.yml'
+              - '.github/actions/setup-python/**'
+            all_ci:
+              - '.github/workflows/ci.yml'
+
+  frontend:
+    needs: check-changes # wait for path filters
+    if: >- # run if frontend changed
+      needs.check-changes.outputs.frontend == 'true' ||
+      needs.check-changes.outputs.frontend_ci == 'true' ||
+      needs.check-changes.outputs.all_ci == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-react.yml # run frontend checks
+    with:
+      working-directory: srcs/frontend
+
+  identity:
+    needs: check-changes
+    if: >-
+      needs.check-changes.outputs.identity == 'true' ||
+      needs.check-changes.outputs.python_ci == 'true' ||
+      needs.check-changes.outputs.all_ci == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-python.yml
+    with:
+      working-directory: srcs/services/identity
+      database-name: identity_db
+      generate-jwt-keys: true # identity signs tokens
+
+  ai-processing:
+    needs: check-changes
+    if: >-
+      needs.check-changes.outputs.ai-processing == 'true' ||
+      needs.check-changes.outputs.python_ci == 'true' ||
+      needs.check-changes.outputs.all_ci == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-python.yml
+    with:
+      working-directory: srcs/services/ai-processing
+      database-name: ai_processing_db
+      postgres-image: pgvector/pgvector:pg18 # enable vector extension
+
+  content-management:
+    needs: check-changes
+    if: >-
+      needs.check-changes.outputs.content-management == 'true' ||
+      needs.check-changes.outputs.python_ci == 'true' ||
+      needs.check-changes.outputs.all_ci == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-python.yml
+    with:
+      working-directory: srcs/services/content-management
+      database-name: content_management_db
+
+  morning-briefing:
+    needs: check-changes
+    if: >-
+      needs.check-changes.outputs.morning-briefing == 'true' ||
+      needs.check-changes.outputs.python_ci == 'true' ||
+      needs.check-changes.outputs.all_ci == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-python.yml
+    with:
+      working-directory: srcs/services/morning-briefing
+      database-name: morning_briefing_db
+
+  personalization:
+    needs: check-changes
+    if: >-
+      needs.check-changes.outputs.personalization == 'true' ||
+      needs.check-changes.outputs.python_ci == 'true' ||
+      needs.check-changes.outputs.all_ci == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-python.yml
+    with:
+      working-directory: srcs/services/personalization
+      database-name: personalization_db
+
+  shared-errors:
+    needs: check-changes
+    if: >-
+      needs.check-changes.outputs.shared_errors == 'true' ||
+      needs.check-changes.outputs.python_ci == 'true' ||
+      needs.check-changes.outputs.all_ci == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-python.yml
+    with:
+      working-directory: shared/packages/shared_errors
