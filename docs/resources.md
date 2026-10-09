@@ -43,3 +43,4 @@
 - [Configuring how Relationship Joins](https://docs.sqlalchemy.org/en/20/orm/join_conditions.html)
 - [Tutorials: Sql Alchemy Foreign Keys and Relationships](https://www.codearmo.com/python-tutorial/sql-alchemy-foreign-keys-and-relationships)
 - [SQLAlchemy Relationships Without Foreign Keys (And How to Replace 'backref' With 'back_populates')](https://that.guru/blog/sqlalchemy-relationships-without-foreign-keys/)
+- [SQLAlchemy Database Locks Using FastAPI: A Simple Guide](https://mjmichael.medium.com/sqlalchemy-database-locks-using-fastapi-a-simple-guide-3e7dcd552d87)

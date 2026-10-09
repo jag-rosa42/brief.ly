@@ -27,6 +27,7 @@ class FakeRefreshTokenRepository:
         self.rolled_back: bool = False
         self.flushed: bool = False
         self._failure_to_raise_on_add: Exception | None = None
+        self.locked_ids: list[UUID] = []
 
     def add(self, refresh_token: RefreshToken) -> None:
         if self._failure_to_raise_on_add is not None:
@@ -36,11 +37,11 @@ class FakeRefreshTokenRepository:
     def update(
         self,
         refresh_token: RefreshToken,
-    ) -> None:
-        refresh_token_id: UUID = refresh_token.id
-        stored: RefreshToken | None = self._refresh_tokens_by_id.get(refresh_token_id)
-        if stored is None:
-            raise ValueError(f"Refresh token {refresh_token_id} not found")
+    ) -> bool:
+        stored: RefreshToken | None = self._refresh_tokens_by_id.get(refresh_token.id)
+        # Same compare-and-set as the SQL version: WHERE revoked_at IS NULL.
+        if stored is None or stored.is_revoked():
+            return False
         if (
             refresh_token.replaced_by is not None
             and refresh_token.replaced_by not in self._refresh_tokens_by_id
@@ -48,6 +49,16 @@ class FakeRefreshTokenRepository:
             raise ValueError("replaced_by must reference an existing refresh token")
         stored.revoked_at = refresh_token.revoked_at
         stored.replaced_by = refresh_token.replaced_by
+        return True
+
+    def find_by_id_for_update(
+        self,
+        refresh_token_id: UUID,
+    ) -> RefreshToken | None:
+        # No real lock in memory: record the call so tests can check that
+        # the use case asked for one.
+        self.locked_ids.append(refresh_token_id)
+        return self.find_by_id(refresh_token_id)
 
     def find_by_id(
         self,
