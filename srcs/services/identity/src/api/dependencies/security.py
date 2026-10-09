@@ -102,13 +102,11 @@ CreateAccountSessionDep = Annotated[
 def get_refresh_account_session(
     refresh_token_validator: RefreshTokenValidatorDep,
     refresh_token_repository: RefreshTokenRepositoryDep,
-    token_service: TokenServiceDep,
     create_account_session: CreateAccountSessionDep,
 ) -> RefreshAccountSession:
     return RefreshAccountSession(
         refresh_token_validator,
         refresh_token_repository,
-        token_service,
         create_account_session,
     )
 

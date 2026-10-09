@@ -159,12 +159,10 @@ def refresh_token_validator(
 def refresh_account_session(
     refresh_token_validator: RefreshTokenValidator,
     refresh_token_repository: FakeRefreshTokenRepository,
-    token_service: FakeTokenService,
     create_account_session: CreateAccountSession,
 ) -> RefreshAccountSession:
     return RefreshAccountSession(
         refresh_token_validator,
         refresh_token_repository,
-        token_service,
         create_account_session,
     )
