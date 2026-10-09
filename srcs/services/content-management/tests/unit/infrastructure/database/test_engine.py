@@ -5,6 +5,7 @@ These tests verify that the engine:
 - is configured with the expected database connection settings
 - uses the expected connection pool
 """
+
 from sqlalchemy import Engine
 from sqlalchemy.pool import QueuePool
 

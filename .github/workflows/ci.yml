@@ -28,13 +28,8 @@ jobs:
       all_ci: ${{ steps.filter.outputs.all_ci }}
 
     permissions:
-      contents: read
       pull-requests: read # read changed files
     steps:
-      - name: checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
-        with:
-          fetch-depth: 2 # to get parent commit too
 
       - name: filter paths # detect changed services
         uses: dorny/paths-filter@d1c1ffe0248fe513906c8e24db8ea791d46f8590
@@ -92,7 +87,6 @@ jobs:
     uses: ./.github/workflows/reusable-python.yml
     with:
       working-directory: srcs/services/identity
-      database-name: identity_db
       generate-jwt-keys: true # identity signs tokens
 
   ai-processing:
@@ -106,8 +100,8 @@ jobs:
     uses: ./.github/workflows/reusable-python.yml
     with:
       working-directory: srcs/services/ai-processing
-      database-name: ai_processing_db
       postgres-image: pgvector/pgvector:pg18 # enable vector extension
+      postgres-host-port: 5433 # preserve AI port contract
 
   content-management:
     needs: check-changes
@@ -120,7 +114,6 @@ jobs:
     uses: ./.github/workflows/reusable-python.yml
     with:
       working-directory: srcs/services/content-management
-      database-name: content_management_db
 
   morning-briefing:
     needs: check-changes
@@ -133,7 +126,6 @@ jobs:
     uses: ./.github/workflows/reusable-python.yml
     with:
       working-directory: srcs/services/morning-briefing
-      database-name: morning_briefing_db
 
   personalization:
     needs: check-changes
@@ -146,7 +138,6 @@ jobs:
     uses: ./.github/workflows/reusable-python.yml
     with:
       working-directory: srcs/services/personalization
-      database-name: personalization_db
 
   shared-errors:
     needs: check-changes

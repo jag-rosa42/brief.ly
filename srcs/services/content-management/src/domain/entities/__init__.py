@@ -3,7 +3,7 @@ from .normalized_article import NormalizedArticle
 from .source import Source
 
 __all__ = [
-        "DiscoveredArticle",
-        "NormalizedArticle",
-        "Source",
-        ]
+    "DiscoveredArticle",
+    "NormalizedArticle",
+    "Source",
+]

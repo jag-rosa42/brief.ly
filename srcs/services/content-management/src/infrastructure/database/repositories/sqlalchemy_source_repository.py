@@ -37,9 +37,7 @@ class SqlAlchemySourceRepository:
         return source_list
 
     @staticmethod
-    def _is_not_synced(
-            source_model: SourceModel, synchronized_at: datetime
-            ) -> bool:
+    def _is_not_synced(source_model: SourceModel, synchronized_at: datetime) -> bool:
         if source_model.last_successful_sync_at is None:
             return True
         next_sync = source_model.last_successful_sync_at + timedelta(

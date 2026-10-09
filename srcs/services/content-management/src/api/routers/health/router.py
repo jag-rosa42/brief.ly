@@ -3,6 +3,7 @@
 Provides the root endpoint and a database connectivity health check
 for container/orchestrator probes.
 """
+
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import text
 

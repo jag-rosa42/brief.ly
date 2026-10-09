@@ -24,11 +24,11 @@ def _discovered_article(**overrides):
 
 
 @patch(
-        "src.infrastructure.clients.article_extraction.newspaper_article_extractor.NewspaperArticle"
-        )
+    "src.infrastructure.clients.article_extraction.newspaper_article_extractor.NewspaperArticle"
+)
 def test_extract_downloads_and_parses_the_discovered_article_url(
-        discovered_article_factory
-        ):
+    discovered_article_factory,
+):
     downloaded = Mock()
     downloaded.id = uuid4()
     downloaded.title = "Titre extrait"
@@ -40,18 +40,16 @@ def test_extract_downloads_and_parses_the_discovered_article_url(
 
     result = NewspaperArticleExtractor().extract(_discovered_article())
 
-    discovered_article_factory.assert_called_once_with(
-            "https://example.test/articles/42"
-            )
+    discovered_article_factory.assert_called_once_with("https://example.test/articles/42")
     downloaded.download.assert_called_once_with()
     downloaded.parse.assert_called_once_with()
     assert isinstance(result, NormalizedArticle)
 
 
-@patch("src.infrastructure.clients.article_extraction.newspaper_article_extractor.NewspaperArticle")
-def test_extract_builds_the_complete_persistable_article(
-        discovered_article_factory
-        ):
+@patch(
+    "src.infrastructure.clients.article_extraction.newspaper_article_extractor.NewspaperArticle"
+)
+def test_extract_builds_the_complete_persistable_article(discovered_article_factory):
     downloaded = Mock(
         id=uuid4(),
         title="Titre extrait",
@@ -65,7 +63,9 @@ def test_extract_builds_the_complete_persistable_article(
     expected_id = uuid4()
     uuid_factory = Mock(return_value=expected_id)
 
-    result = NewspaperArticleExtractor(uuid_factory=uuid_factory).extract(discovered_article)
+    result = NewspaperArticleExtractor(uuid_factory=uuid_factory).extract(
+        discovered_article
+    )
 
     uuid_factory.assert_called_once_with()
     assert result == NormalizedArticle(
@@ -84,10 +84,12 @@ def test_extract_builds_the_complete_persistable_article(
     )
 
 
-@patch("src.infrastructure.clients.article_extraction.newspaper_article_extractor.NewspaperArticle")
+@patch(
+    "src.infrastructure.clients.article_extraction.newspaper_article_extractor.NewspaperArticle"
+)
 def test_extract_retains_the_discovered_article_external_identity(
-        discovered_article_factory
-        ):
+    discovered_article_factory,
+):
     downloaded = Mock(
         title="Titre extrait",
         text="Contenu extrait",

@@ -17,4 +17,3 @@ app.add_middleware(
 
 app.include_router(root_routers)
 app.include_router(api_routers)
-

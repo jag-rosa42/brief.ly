@@ -4,8 +4,8 @@ from .normalized_article_repository import NormalizedArticleRepository
 from .source_repository import SourceRepository
 
 __all__ = [
-        "ArticleDiscoverer",
-        "ArticleExtractor",
-        "NormalizedArticleRepository",
-        "SourceRepository",
-        ]
+    "ArticleDiscoverer",
+    "ArticleExtractor",
+    "NormalizedArticleRepository",
+    "SourceRepository",
+]

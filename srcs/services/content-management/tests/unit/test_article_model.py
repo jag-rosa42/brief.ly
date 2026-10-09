@@ -1,10 +1,11 @@
-from sqlalchemy import UniqueConstraint, inspect
+from sqlalchemy import Table, UniqueConstraint, inspect
 
 from src.infrastructure.database.models import NormalizedArticleModel
 
 
 def test_normalized_article_model_declares_the_required_persistence_contract():
     table = inspect(NormalizedArticleModel).local_table
+    assert isinstance(table, Table)
 
     assert {
         "id",
@@ -19,9 +20,9 @@ def test_normalized_article_model_declares_the_required_persistence_contract():
         "fetched_at",
     } <= set(table.columns.keys())
 
-    assert {
-            foreign_key.target_fullname for foreign_key in table.foreign_keys
-            } == {"sources.id"}
+    assert {foreign_key.target_fullname for foreign_key in table.foreign_keys} == {
+        "sources.id"
+    }
 
     unique_column_sets = {
         tuple(constraint.columns.keys())

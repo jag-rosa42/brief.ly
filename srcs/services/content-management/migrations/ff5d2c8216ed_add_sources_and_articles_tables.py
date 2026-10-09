@@ -53,7 +53,9 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(
-            "source_id", "discovered_article_external_id", name="uq_normalized_articles_source_discovered_article_external_id"
+            "source_id",
+            "discovered_article_external_id",
+            name="uq_normalized_articles_source_discovered_article_external_id",
         ),
     )
     # ### end Alembic commands ###

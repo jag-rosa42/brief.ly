@@ -20,6 +20,7 @@ else:
 # TODO: debug prints to remove later
 print(f"SECRET_DIR={SECRETS_DIR}")
 
+
 class Settings(BaseSettings):
     """
     Application configuration loaded from environment variables.
@@ -158,6 +159,9 @@ print("DB HOST:", settings.POSTGRES_HOST)
 print("DB PORT:", settings.POSTGRES_PORT)
 print("DB USER:", settings.POSTGRES_USER)
 print("DB NAME:", settings.POSTGRES_DB_NAME)
-print("DB URI:", settings.SQLALCHEMY_DATABASE_URI.replace(
-    settings.POSTGRES_PASSWORD.get_secret_value(), "***"
-))
+print(
+    "DB URI:",
+    settings.SQLALCHEMY_DATABASE_URI.replace(
+        settings.POSTGRES_PASSWORD.get_secret_value(), "***"
+    ),
+)

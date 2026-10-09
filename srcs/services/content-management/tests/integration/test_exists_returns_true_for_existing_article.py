@@ -1,6 +1,6 @@
 from src.infrastructure.database.repositories import (
-        SqlAlchemyNormalizedArticleRepository,
-        )
+    SqlAlchemyNormalizedArticleRepository,
+)
 
 
 def test_exists_returns_true_for_existing_normalized_article(
@@ -17,7 +17,5 @@ def test_exists_returns_true_for_existing_normalized_article(
 
     assert repository.exists(
         source_id=source_model.id,
-        external_id=(
-            normalized_article_model.discovered_article_external_id
-            ),
+        external_id=(normalized_article_model.discovered_article_external_id),
     )

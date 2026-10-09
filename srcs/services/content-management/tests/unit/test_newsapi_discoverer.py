@@ -2,8 +2,8 @@ from datetime import UTC, datetime
 from unittest.mock import Mock
 
 from src.infrastructure.clients.article_discovery.newsapi_article_discoverer import (
-        NewsApiArticleDiscoverer,
-        )
+    NewsApiArticleDiscoverer,
+)
 
 
 def test_discover_queries_newsapi_with_the_source_configuration(source):
@@ -61,9 +61,7 @@ def test_discover_ignores_items_without_a_url(source):
 
     articles = NewsApiArticleDiscoverer(client).discover(source)
 
-    assert [article.url for article in articles] == [
-        "https://example.test/complete"
-    ]
+    assert [article.url for article in articles] == ["https://example.test/complete"]
 
 
 def test_discover_keeps_optional_metadata_optional(source):

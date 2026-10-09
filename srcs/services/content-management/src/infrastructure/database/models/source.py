@@ -20,6 +20,4 @@ class SourceModel(Base):
     language: Mapped[str] = mapped_column()
     interval_seconds: Mapped[int] = mapped_column()
     enabled: Mapped[bool] = mapped_column()
-    last_successful_sync_at: Mapped[datetime | None] = mapped_column(
-            nullable=True
-            )
+    last_successful_sync_at: Mapped[datetime | None] = mapped_column(nullable=True)
