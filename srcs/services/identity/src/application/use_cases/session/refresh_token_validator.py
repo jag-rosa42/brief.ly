@@ -47,7 +47,12 @@ class RefreshTokenValidator:
         self._refresh_token_repository: RefreshTokenRepository = refresh_token_repository
         self._token_service: TokenService = token_service
 
-    def get_valid_refresh_token(self, refresh_token: str) -> RefreshToken:
+    def get_valid_refresh_token(
+        self,
+        refresh_token: str,
+        *,
+        for_update: bool = False,
+    ) -> RefreshToken:
         """Validate a refresh token and return its stored database entity.
 
         Validation happens in two stages:
@@ -62,6 +67,10 @@ class RefreshTokenValidator:
 
         Args:
             refresh_token: The raw refresh token presented by the client.
+            for_update: Lock the stored token until the caller's transaction
+                ends (SELECT ... FOR UPDATE).
+                Callers that are going to change the token (refresh, logout) must pass
+                True so that concurrent requests on the same token run one after the other
 
         Returns:
             The stored RefreshToken entity corresponding to the presented
@@ -79,9 +88,11 @@ class RefreshTokenValidator:
         )
 
         # Find the database record corresponding to the JWT's `jti`.
-        stored_token: RefreshToken | None = self._refresh_token_repository.find_by_id(
-            claims.id,
-        )
+        stored_token: RefreshToken | None
+        if for_update:
+            stored_token = self._refresh_token_repository.find_by_id_for_update(claims.id)
+        else:
+            stored_token = self._refresh_token_repository.find_by_id(claims.id)
 
         # The database stores only the hash of the refresh token.
         # Hash the presented token and compare it with the stored hash.

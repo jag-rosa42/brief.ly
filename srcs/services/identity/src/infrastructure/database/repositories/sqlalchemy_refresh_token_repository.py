@@ -5,7 +5,7 @@ from sqlalchemy import Select, select, update
 from sqlalchemy.engine.result import Result
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
-from sqlalchemy.sql.dml import Update
+from sqlalchemy.sql.dml import ReturningUpdate, Update
 
 from src.domain.entities.refresh_token import RefreshToken
 from src.infrastructure.database.models.refresh_token import (
@@ -21,22 +21,61 @@ class SqlAlchemyRefreshTokenRepository:
         refresh_token_model: RefreshTokenModel = self._to_model(refresh_token)
         self._session.add(refresh_token_model)
 
-    def update(self, refresh_token: RefreshToken) -> None:
-        refresh_token_model = self._session.get(
-            RefreshTokenModel,
-            refresh_token.id,
+    def update(self, refresh_token: RefreshToken) -> bool:
+        """Persist the revocation of a refresh token that is still active
+
+        Compare-and-set Technique:
+        The UPDATE only matches a row whose revoked_at is still NULL.
+        A token can never be revoked twice, and an existing replaced_by_id can never
+        be overwritten by a concurrent request, even if the caller
+        did not lock the row first
+        Returns:
+            True if the stored token was updated
+            False if it was already revoked (or does not exist).
+        """
+        statement: ReturningUpdate[tuple[UUID]] = (
+            update(RefreshTokenModel)
+            .where(RefreshTokenModel.id == refresh_token.id)
+            .where(RefreshTokenModel.revoked_at.is_(None))
+            .values(
+                revoked_at=refresh_token.revoked_at,
+                replaced_by_id=refresh_token.replaced_by,
+            )
+            .returning(RefreshTokenModel.id)
         )
 
-        if refresh_token_model is None:
-            raise ValueError(f"Refresh token {refresh_token.id} not found")
-
-        refresh_token_model.revoked_at = refresh_token.revoked_at
-        refresh_token_model.replaced_by_id = refresh_token.replaced_by
+        result: Result[tuple[UUID]] = self._session.execute(statement)
+        return result.scalar_one_or_none() is not None
 
     def find_by_id(self, refresh_token_id: UUID) -> RefreshToken | None:
         statement: Select[tuple[RefreshTokenModel]] = select(RefreshTokenModel).where(
             RefreshTokenModel.id == refresh_token_id
         )
+        result: Result[tuple[RefreshTokenModel]] = self._session.execute(statement)
+        refresh_token_model: RefreshTokenModel | None = result.scalar_one_or_none()
+        if refresh_token_model is None:
+            return None
+        return self._to_domain(refresh_token_model)
+
+    def find_by_id_for_update(self, refresh_token_id: UUID) -> RefreshToken | None:
+        """Load a refresh token and bock its row until the transaction ends.
+
+        Use SELECT ... FOR UPDATE:
+        A concurrent transaction locking the same row blocks until this one commits
+        or rolls back.
+        populate_existing ensures the returned model contains the latest
+        database values, even if it is already loaded in the session.
+
+        Returns:
+            The refresh token if found, otherwise None.
+        """
+        statement: Select[tuple[RefreshTokenModel]] = (
+            select(RefreshTokenModel)
+            .where(RefreshTokenModel.id == refresh_token_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+
         result: Result[tuple[RefreshTokenModel]] = self._session.execute(statement)
         refresh_token_model: RefreshTokenModel | None = result.scalar_one_or_none()
         if refresh_token_model is None:

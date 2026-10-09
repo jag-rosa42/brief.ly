@@ -110,3 +110,16 @@ class TestLogoutAccount:
 
         with pytest.raises(TokenRevokedError):
             refresh_account_session.execute(session.refresh_token)
+
+    def test_locks_the_presented_token(
+        self,
+        logout_account: LogoutAccount,
+        create_account_session: CreateAccountSession,
+        refresh_token_repository: FakeRefreshTokenRepository,
+        account: Account,
+    ) -> None:
+        session = create_account_session.execute(account.id)
+
+        logout_account.execute(session.refresh_token)
+
+        assert refresh_token_repository.locked_ids == [session.refresh_token_id]

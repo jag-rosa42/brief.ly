@@ -115,6 +115,10 @@ class RefreshAccountSession:
         is affected, since a stale or replayed logout is not evidence of
         theft.
 
+        Concurrent refreshes of the same token are serialised by a row lock
+        on the stored token: the first request rotates it, the next ones see
+        it as already rotated.
+
         Args:
             refresh_token: The refresh token presented by the client.
 
@@ -129,9 +133,13 @@ class RefreshAccountSession:
                 (whether by rotation or logout).
         """
 
-        # 1. Verify the JWT and find the corresponding database token.
+        # 1. Verify the JWT and find the stored token and lock it until the end of the
+        # transaction.
+        # A concurrent refresh of the same token waits here, then sees the rotation
+        # committed by this request
         current_refresh_token = self._refresh_token_validator.get_valid_refresh_token(
-            refresh_token
+            refresh_token,
+            for_update=True,
         )
 
         now: datetime = datetime.now(UTC)
@@ -193,10 +201,10 @@ class RefreshAccountSession:
                     refresh_token.account_id,
                     now,
                 )
-            # Important: persist the security response BEFORE raising.
-            #
-            # The exception should not prevent the revocation from being
-            # committed to the database.
+                # Important: persist the security response BEFORE raising.
+                #
+                # The exception should not prevent the revocation from being
+                # committed to the database.
                 self._refresh_token_repository.commit()
             raise TokenRevokedError()
 
@@ -222,7 +230,13 @@ class RefreshAccountSession:
         current_refresh_token.revoke(now, replaced_by=new_refresh_token_id)
 
         # Persist the changed state of the old refresh token.
-        self._refresh_token_repository.update(current_refresh_token)
+        #
+        # update() is a compare-and-set (WHERE revoked_at IS NULL).
+        # With the row lock taken in execute() step 1 it cannot fail.
+        # It is a safety net that refuses to overwrite replaced_by
+        # if the lock is ever removed.
+        if not self._refresh_token_repository.update(current_refresh_token):
+            raise TokenRevokedError()
 
         # The actual database commit is intentionally performed by
         # execute(), after all changes required for the rotation have

@@ -82,3 +82,45 @@ class TestRefreshTokenValidator:
 
         with pytest.raises(TokenExpiredError):
             refresh_token_validator.get_valid_refresh_token(session.refresh_token)
+
+    def test_does_not_lock_the_token_by_default(
+        self,
+        refresh_token_validator: RefreshTokenValidator,
+        create_account_session: CreateAccountSession,
+        refresh_token_repository: FakeRefreshTokenRepository,
+        account: Account,
+    ):
+        session: AccountSession = create_account_session.execute(account.id)
+
+        refresh_token_validator.get_valid_refresh_token(session.refresh_token)
+
+        assert refresh_token_repository.locked_ids == []
+
+    def test_locks_the_token_when_asked(
+        self,
+        refresh_token_validator: RefreshTokenValidator,
+        create_account_session: CreateAccountSession,
+        refresh_token_repository: FakeRefreshTokenRepository,
+        account: Account,
+    ):
+        session: AccountSession = create_account_session.execute(account.id)
+
+        refresh_token_validator.get_valid_refresh_token(
+            session.refresh_token,
+            for_update=True,
+        )
+
+        assert refresh_token_repository.locked_ids == [session.refresh_token_id]
+
+    def test_does_not_lock_an_unverifiable_token(
+        self,
+        refresh_token_validator: RefreshTokenValidator,
+        refresh_token_repository: FakeRefreshTokenRepository,
+    ):
+        with pytest.raises(InvalidTokenError):
+            refresh_token_validator.get_valid_refresh_token(
+                "not-a-token",
+                for_update=True,
+            )
+
+        assert refresh_token_repository.locked_ids == []

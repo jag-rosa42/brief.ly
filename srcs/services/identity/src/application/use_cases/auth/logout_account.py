@@ -58,7 +58,8 @@ class LogoutAccount:
         """
         try:
             stored: RefreshToken = self._refresh_token_validator.get_valid_refresh_token(
-                refresh_token
+                refresh_token,
+                for_update=True,
             )
         except (InvalidTokenError, TokenExpiredError):
             return
@@ -67,5 +68,8 @@ class LogoutAccount:
             return
 
         stored.revoke(datetime.now(UTC))
-        self._refresh_token_repository.update(stored)
-        self._refresh_token_repository.commit()
+
+        # False only if the token was revoked concurrently.
+        # Logout is idempotent: nothing left to do
+        if self._refresh_token_repository.update(stored):
+            self._refresh_token_repository.commit()

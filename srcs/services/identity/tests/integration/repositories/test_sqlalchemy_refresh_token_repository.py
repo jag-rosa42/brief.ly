@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
@@ -75,13 +76,15 @@ class TestSqlAlchemyRefreshTokenRepository:
         assert result.revoked_at == old_token.revoked_at
         assert result.replaced_by == new_token.id
 
-    def test_update_raises_for_an_unknown_token(
+    def test_update_returns_false_for_an_unknown_token(
         self,
         repository: SqlAlchemyRefreshTokenRepository,
         persisted_account: Account,
     ) -> None:
-        with pytest.raises(ValueError):
-            repository.update(build_refresh_token(account_id=persisted_account.id))
+        unknown = build_refresh_token(account_id=persisted_account.id)
+        unknown.revoke(datetime.now(UTC))
+
+        assert repository.update(unknown) is False
 
     def test_replacement_must_reference_an_existing_token(
         self,
@@ -151,3 +154,33 @@ class TestSqlAlchemyRefreshTokenRepository:
         db_session.expire_all()
 
         assert repository.find_by_id(token.id) is None
+
+def test_update_does_not_overwrite_an_already_revoked_token(
+        self,
+        repository: SqlAlchemyRefreshTokenRepository,
+        db_session: Session,
+        persisted_account: Account,
+    ) -> None:
+        token = build_refresh_token(account_id=persisted_account.id)
+        first_replacement = build_refresh_token(account_id=persisted_account.id)
+        second_replacement = build_refresh_token(account_id=persisted_account.id)
+        for refresh_token in (token, first_replacement, second_replacement):
+            repository.add(refresh_token)
+        db_session.flush()
+        now = datetime.now(UTC)
+
+        # Two requests both read the token while it was still active…
+        winner = replace(token)
+        loser = replace(token)
+        winner.revoke(now, replaced_by=first_replacement.id)
+        loser.revoke(now, replaced_by=second_replacement.id)
+
+        # …only the first write is applied.
+        assert repository.update(winner) is True
+        assert repository.update(loser) is False
+
+        db_session.flush()
+        db_session.expire_all()
+        stored = repository.find_by_id(token.id)
+        assert stored is not None
+        assert stored.replaced_by == first_replacement.id
