@@ -86,7 +86,7 @@ class JWTTokenService:
         )
         expires_at: datetime = now + lifetime
         payload: dict[str, Any] = {
-            "jti": str(token_id),  # subject
+            "jti": str(token_id),  # token id
             "sub": str(account_id),  # subject
             "type": token_type,
             "iat": now,  # Issued at
@@ -105,7 +105,7 @@ class JWTTokenService:
                 jwt=token,
                 key=self._public_key,
                 algorithms=[self._algorithm],
-                options={"require": ["sub", "type", "iat", "exp"]},
+                options={"require": ["jti", "sub", "type", "iat", "exp"]},
             )
         except jwt.ExpiredSignatureError as exc:
             raise TokenExpiredError() from exc

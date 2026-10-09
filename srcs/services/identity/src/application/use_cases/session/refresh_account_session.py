@@ -1,7 +1,6 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from src.application.port.token.service import TokenService
 from src.application.use_cases.session.account_session import AccountSession
 from src.application.use_cases.session.create_account_session import CreateAccountSession
 from src.application.use_cases.session.refresh_token_validator import (
@@ -93,12 +92,10 @@ class RefreshAccountSession:
         self,
         refresh_token_validator: RefreshTokenValidator,
         refresh_token_repository: RefreshTokenRepository,
-        token_service: TokenService,
         create_account_session: CreateAccountSession,
     ) -> None:
-        self._refresh_token_validator = refresh_token_validator
+        self._refresh_token_validator: RefreshTokenValidator = refresh_token_validator
         self._refresh_token_repository: RefreshTokenRepository = refresh_token_repository
-        self._token_service: TokenService = token_service
         self._create_account_session: CreateAccountSession = create_account_session
 
     def execute(self, refresh_token: str) -> AccountSession:

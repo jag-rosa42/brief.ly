@@ -1,7 +1,7 @@
 import hashlib
 from datetime import UTC, datetime, timedelta
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import jwt
 import pytest
@@ -36,7 +36,7 @@ class TestJWTTokenService:
     ) -> str:
         return jwt.encode(
             payload={
-                "jti": token_id,
+                "jti": token_id if token_id is not None else str(uuid4()),
                 "sub": subject,
                 "type": token_type,
                 "iat": issued_at,
