@@ -2,21 +2,18 @@ import logging
 from unittest.mock import Mock
 
 from src.application.ports import (
-        ArticleDiscoverer,
-        ArticleExtractor,
-        NormalizedArticleRepository,
-        SourceRepository,
-        )
+    ArticleDiscoverer,
+    ArticleExtractor,
+    NormalizedArticleRepository,
+    SourceRepository,
+)
 from src.application.synchronize_sources import SynchronizeSources
 
 
 # Synchronization and save new normalized_article
 def test_synchronize_sources_and_save_normalized_article(
-        source,
-        discovered_article,
-        normalized_article,
-        synchronization_time
-        ):
+    source, discovered_article, normalized_article, synchronization_time
+):
 
     # ---------- ARRANGE --------------------
     # Define the mock for dependencies
@@ -34,35 +31,35 @@ def test_synchronize_sources_and_save_normalized_article(
     # ---------- ACT ------------------------
     # Execute use case with dependencies
     SynchronizeSources(
-            source_repository,
-            normalized_article_repository,
-            article_discoverer,
-            article_extractor,
-            ).execute(synchronization_time)
+        source_repository,
+        normalized_article_repository,
+        article_discoverer,
+        article_extractor,
+    ).execute(synchronization_time)
 
     # ---------- ASSERT ---------------------
     # make sure each mock dependencies are called once with coherent args
     source_repository.list_due.assert_called_once_with(synchronization_time)
     article_discoverer.discover.assert_called_once_with(source)
     normalized_article_repository.exists.assert_called_once_with(
-            source.id,
-            discovered_article.external_id
-            )
+        source.id, discovered_article.external_id
+    )
     article_extractor.extract.assert_called_once_with(discovered_article)
-    normalized_article_repository.save.assert_called_once_with(source.id, normalized_article)
+    normalized_article_repository.save.assert_called_once_with(
+        source.id, normalized_article
+    )
     source_repository.update_last_successful_sync.assert_called_once_with(
-            source.id,
-            synchronization_time
-            )
+        source.id, synchronization_time
+    )
 
 
 # Article already existing ignored
 def test_ignore_already_existing_normalized_article(
-        source,
-        discovered_article,
-        normalized_article,
-        synchronization_time,
-        ):
+    source,
+    discovered_article,
+    normalized_article,
+    synchronization_time,
+):
 
     # ---------- ARRANGE --------------------
     article_extractor = Mock(spec=ArticleExtractor)
@@ -77,32 +74,31 @@ def test_ignore_already_existing_normalized_article(
 
     # ---------- ACT ------------------------
     SynchronizeSources(
-            source_repository,
-            normalized_article_repository,
-            article_discoverer,
-            article_extractor,
-            ).execute(synchronization_time)
+        source_repository,
+        normalized_article_repository,
+        article_discoverer,
+        article_extractor,
+    ).execute(synchronization_time)
 
     # ---------- ASSERT ---------------------
     source_repository.list_due.assert_called_once_with(synchronization_time)
     article_discoverer.discover.assert_called_once_with(source)
     normalized_article_repository.exists.assert_called_once_with(
-            source.id,
-            discovered_article.external_id
-            )
+        source.id, discovered_article.external_id
+    )
     article_extractor.extract.assert_not_called()
     normalized_article_repository.save.assert_not_called()
     source_repository.update_last_successful_sync.assert_called_once_with(
-            source.id,
-            synchronization_time,
-            )
+        source.id,
+        synchronization_time,
+    )
 
 
 # Update of last success
 def test_update_of_last_success(
-        source,
-        synchronization_time,
-        ):
+    source,
+    synchronization_time,
+):
 
     # ---------- ARRANGE --------------------
     article_extractor = Mock(spec=ArticleExtractor)
@@ -116,28 +112,28 @@ def test_update_of_last_success(
 
     # ---------- ACT ------------------------
     SynchronizeSources(
-            source_repository,
-            normalized_article_repository,
-            article_discoverer,
-            article_extractor,
-            ).execute(synchronization_time)
+        source_repository,
+        normalized_article_repository,
+        article_discoverer,
+        article_extractor,
+    ).execute(synchronization_time)
 
     # ---------- ASSERT ---------------------
     source_repository.update_last_successful_sync.assert_called_once_with(
-            source.id,
-            synchronization_time,
-            )
+        source.id,
+        synchronization_time,
+    )
 
 
 # Error isolated from other sources
 def test_error_isolated_from_other_sources(
-        caplog,
-        source,
-        source_b,
-        discovered_article,
-        normalized_article,
-        synchronization_time,
-        ):
+    caplog,
+    source,
+    source_b,
+    discovered_article,
+    normalized_article,
+    synchronization_time,
+):
 
     # ---------- ARRANGE --------------------
     article_extractor = Mock(spec=ArticleExtractor)
@@ -147,36 +143,35 @@ def test_error_isolated_from_other_sources(
 
     article_extractor.extract.return_value = normalized_article
     article_discoverer.discover.side_effect = [
-            RuntimeError('NewsAPI indisponible'),
-            [discovered_article],
-            ]
+        RuntimeError("NewsAPI indisponible"),
+        [discovered_article],
+    ]
     source_repository.list_due.return_value = [source, source_b]
     normalized_article_repository.exists.return_value = True
 
     # ---------- ACT ------------------------
     with caplog.at_level(
-            logging.ERROR,
-            logger="src.application.synchronize_sources",
-            ):
+        logging.ERROR,
+        logger="src.application.synchronize_sources",
+    ):
         SynchronizeSources(
-                source_repository,
-                normalized_article_repository,
-                article_discoverer,
-                article_extractor,
-                ).execute(synchronization_time)
+            source_repository,
+            normalized_article_repository,
+            article_discoverer,
+            article_extractor,
+        ).execute(synchronization_time)
 
     # ---------- ASSERT ---------------------
     source_repository.list_due.assert_called_once_with(synchronization_time)
     normalized_article_repository.exists.assert_called_once_with(
-            source_b.id,
-            discovered_article.external_id
-            )
+        source_b.id, discovered_article.external_id
+    )
     article_extractor.extract.assert_not_called()
     normalized_article_repository.save.assert_not_called()
     source_repository.update_last_successful_sync.assert_called_once_with(
-            source_b.id,
-            synchronization_time,
-            )
+        source_b.id,
+        synchronization_time,
+    )
 
     [error_record] = [
         record for record in caplog.records if record.levelno == logging.ERROR
@@ -184,5 +179,6 @@ def test_error_isolated_from_other_sources(
     assert error_record.message == "source synchronization failed"
     assert error_record.source_id == source.id
     assert error_record.exc_info is not None
+
 
 # Logs and retry

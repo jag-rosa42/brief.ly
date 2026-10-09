@@ -12,8 +12,19 @@ permissions:
   contents: read
 
 jobs:
-  lint-test:
+  quality:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false # run every check
+      matrix:
+        include:
+          - name: lint
+            npm_script: lint
+          - name: typecheck
+            npm_script: typecheck
+          - name: tests
+            npm_script: test
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }} # run in the frontend
@@ -24,9 +35,5 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           working-directory: ${{ inputs.working-directory }}
-      - name: check lint
-        run: npm run lint
-      - name: check types
-        run: npm run typecheck
-      - name: run tests
-        run: npm run test
+      - name: run ${{ matrix.name }}
+        run: npm run ${{ matrix.npm_script }}

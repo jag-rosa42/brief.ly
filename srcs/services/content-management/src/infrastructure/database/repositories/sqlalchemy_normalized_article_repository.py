@@ -22,8 +22,7 @@ class SqlAlchemyNormalizedArticleRepository:
         statement = select(
             exists().where(
                 NormalizedArticleModel.source_id == source_id,
-                NormalizedArticleModel.discovered_article_external_id
-                == external_id,
+                NormalizedArticleModel.discovered_article_external_id == external_id,
             )
         )
         return bool(self._session.scalar(statement))
@@ -48,7 +47,7 @@ class SqlAlchemyNormalizedArticleRepository:
             source_id=source_id,
             discovered_article_external_id=(
                 normalized_article.discovered_article_external_id
-                ),
+            ),
             url=normalized_article.url,
             title=normalized_article.title,
             publisher_name=normalized_article.publisher_name,

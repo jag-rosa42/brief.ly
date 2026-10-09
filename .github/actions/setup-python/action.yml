@@ -1,6 +1,6 @@
 # .github/actions/setup-python/action.yml
 name: 'Setup Python'
-description: 'Install Python + deps with cache'
+description: 'Install Python + dependencies'
 inputs:
   working-directory:
     required: true

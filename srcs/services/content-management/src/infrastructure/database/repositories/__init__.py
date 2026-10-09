@@ -1,6 +1,6 @@
 from .sqlalchemy_normalized_article_repository import (
-        SqlAlchemyNormalizedArticleRepository,
-        )
+    SqlAlchemyNormalizedArticleRepository,
+)
 from .sqlalchemy_source_repository import SqlAlchemySourceRepository
 
 __all__ = [

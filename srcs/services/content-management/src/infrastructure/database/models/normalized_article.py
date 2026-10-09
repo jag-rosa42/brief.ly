@@ -13,9 +13,7 @@ class NormalizedArticleModel(Base):
         UniqueConstraint(
             "source_id",
             "discovered_article_external_id",
-            name=(
-                "uq_normalized_articles_source_discovered_article_external_id"
-                ),
+            name=("uq_normalized_articles_source_discovered_article_external_id"),
         ),
     )
 
@@ -25,9 +23,7 @@ class NormalizedArticleModel(Base):
         default=uuid.uuid4,
     )
 
-    source_id: Mapped[uuid.UUID] = mapped_column(
-            ForeignKey("sources.id"), nullable=False
-            )
+    source_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sources.id"), nullable=False)
     discovered_article_external_id: Mapped[str] = mapped_column()
     url: Mapped[str] = mapped_column()
     title: Mapped[str] = mapped_column()
@@ -39,6 +35,4 @@ class NormalizedArticleModel(Base):
     published_at: Mapped[datetime | None] = mapped_column()
     category: Mapped[str] = mapped_column()
     language: Mapped[str] = mapped_column()
-    fetched_at: Mapped[datetime] = mapped_column(
-            default=lambda: datetime.now(UTC)
-            )
+    fetched_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))

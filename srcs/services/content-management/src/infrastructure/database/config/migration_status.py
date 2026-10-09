@@ -89,9 +89,7 @@ def get_applied_revisions(
             break
 
         if not isinstance(parent, str):
-            raise RuntimeError(
-                "This script doesn't support Alembic migration branches."
-            )
+            raise RuntimeError("This script doesn't support Alembic migration branches.")
 
         revision = script.get_revision(parent)
 

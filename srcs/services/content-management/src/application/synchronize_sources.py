@@ -73,9 +73,7 @@ class SynchronizeSources:
 
         try:
             normalized_article = self.article_extractor.extract(discovered)
-            self.normalized_article_repository.save(
-                    source.id, normalized_article
-                    )
+            self.normalized_article_repository.save(source.id, normalized_article)
 
         except Exception:
             logger.exception(

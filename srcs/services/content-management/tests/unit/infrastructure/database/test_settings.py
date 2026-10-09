@@ -73,23 +73,25 @@ def test_database_uri_reflects_explicit_overrides():
     assert url.port == 6543
     assert url.database == "test_db"
 
+
 def test_database_name_is_suffixed_with_test():
     """
     Without an explicit override, TEST_DATABASE_URI should point to
     "<POSTGRES_DB_NAME>_test"
     """
     custom = Settings(
-            _env_file=None,
-            PROJECT_NAME="test-project",
-            POSTGRES_HOST="db.example.internal",
-            POSTGRES_PORT=6543,
-            POSTGRES_USER="tester",
-            POSTGRES_PASSWORD="s3cret",
-            POSTGRES_DB_NAME="my_app",
-        )
+        _env_file=None,
+        PROJECT_NAME="test-project",
+        POSTGRES_HOST="db.example.internal",
+        POSTGRES_PORT=6543,
+        POSTGRES_USER="tester",
+        POSTGRES_PASSWORD="s3cret",
+        POSTGRES_DB_NAME="my_app",
+    )
     url = make_url(custom.TEST_DATABASE_URI)
 
     assert url.database == "my_app_test"
+
 
 def test_database_uri_always_uses_sync_driver():
     custom = Settings(
@@ -100,7 +102,7 @@ def test_database_uri_always_uses_sync_driver():
         POSTGRES_USER="tester",
         POSTGRES_PASSWORD="s3cret",
         POSTGRES_DB_NAME="my_app",
-        DATABASE_DRIVER="asyncpg"
+        DATABASE_DRIVER="asyncpg",
     )
     url = make_url(custom.TEST_DATABASE_URI)
     assert url.drivername == "postgresql+psycopg"
