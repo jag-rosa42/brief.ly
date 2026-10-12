@@ -56,6 +56,13 @@ class LogoutAccount:
         For a valid, active refresh token, the token is revoked and the
         change is persisted to the repository.
 
+        Known limit: logout only revokes the refresh token. Access tokens
+        already issued for this session stay valid until they expire
+        (ACCESS_TOKEN_EXPIRE_MINUTES), because they are stateless JWTs
+        that cannot be revoked individually.
+        The client is expected to discard its access token on logout.
+        See docs/adr/0005-accept-non-revocable-access-tokens.md.
+
         Args:
             refresh_token: The refresh token presented by the client to be revoked.
         """

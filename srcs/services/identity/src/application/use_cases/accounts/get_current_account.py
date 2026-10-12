@@ -6,6 +6,15 @@ from src.domain.repositories.account_repository import AccountRepository
 
 
 class GetCurrentAccount:
+    """Return the account authenticated by an access token.
+
+    The access token is checked statelessly: signature, expiry, token type,
+    and the existence of its account. There is no revocation check, so an
+    access token stays valid until it expires, even after a logout or after
+    token theft was detected during a refresh.
+    See docs/adr/0005-accept-non-revocable-access-tokens.md.
+    """
+
     def __init__(
         self,
         account_repository: AccountRepository,
