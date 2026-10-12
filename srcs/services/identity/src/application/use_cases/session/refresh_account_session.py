@@ -204,6 +204,11 @@ class RefreshAccountSession:
                     refresh_token.account_id,
                     now,
                 )
+                # Known limit: access tokens already issued for the account
+                # (including the attacker's) stay valid until they expire.
+                # Only refresh tokens can be revoked.
+                # See docs/adr/0005-accept-non-revocable-access-tokens.md.
+
                 # Important: persist the security response BEFORE raising.
                 #
                 # The exception should not prevent the revocation from being
