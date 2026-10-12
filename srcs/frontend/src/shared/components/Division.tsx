@@ -1,4 +1,4 @@
-export const divVariants = ["featurecard", "content"] as const;
+export const divVariants = ["featurecard", "content", "stack"] as const;
 export type DivVariant = typeof divVariants[number];
 
 interface DivProps extends React.HTMLAttributes<HTMLDivElement>
@@ -13,6 +13,8 @@ export function getDivStyle(style: DivVariant): string
             return ("bg-white border border-ui rounded-xl p-6 flex flex-col gap-y-3");
         case "content":
             return ("text-accent leading-relaxed");
+        case "stack":
+            return ("flex flex-col gap-2");
     }
 }
 

@@ -8,6 +8,8 @@ import { DesignSystem } from "@/pages/DesignSystem";
 import { SignupPage } from "@/pages/SignupPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { ProfilePage } from "@/pages/ProfilePage";
+import { DashboardPage } from "@/pages/DashboardPage";
+import { SidebarTestPage } from "@/pages/SidebarTestPage";
 import { NotificationTestPage } from "@/pages/NotificationTestPage";
 import { useAuth } from "@/app/AuthContext";
 
@@ -37,6 +39,13 @@ export function AppRouter() {
 				<Route path="*"
 					element={<NotFoundPage />}/>
 			</Route>
+			{/* Hors du Layout : le dashboard a sa Sidebar à la place du Header et du Footer. */}
+			<Route path="/sidebartest"
+				element={<SidebarTestPage />}/>
+			<Route path="/dashboard"
+				element={
+					isLoggedIn ? <DashboardPage/> : <Navigate to="/login" replace />}
+				/>
 		</Routes>
 	);
 }
