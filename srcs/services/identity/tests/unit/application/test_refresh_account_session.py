@@ -15,6 +15,7 @@ from src.domain.entities.refresh_token import RefreshToken
 from src.domain.exception import InvalidTokenError, TokenExpiredError, TokenRevokedError
 from tests.fixtures.security import FakeTokenService
 from tests.fixtures.sessions import FakeRefreshTokenRepository
+from tests.fixtures.unit_of_work import FakeUnitOfWork
 
 
 class TestRefreshAccountSession:
@@ -68,20 +69,20 @@ class TestRefreshAccountSession:
     def test_flushed_the_new_token_before_referencing_it(
         self,
         refresh_account_session: RefreshAccountSession,
-        refresh_token_repository: FakeRefreshTokenRepository,
+        uow: FakeUnitOfWork,
         current_session: AccountSession,
     ):
         refresh_account_session.execute(current_session.refresh_token)
-        assert refresh_token_repository.flushed is True
+        assert uow.flushed is True
 
     def test_commit_the_rotation_once(
         self,
         refresh_account_session: RefreshAccountSession,
-        refresh_token_repository: FakeRefreshTokenRepository,
+        uow: FakeUnitOfWork,
         current_session: AccountSession,
     ):
         refresh_account_session.execute(current_session.refresh_token)
-        assert refresh_token_repository.commit_count == 1
+        assert uow.commit_count == 1
 
     def test_the_renew_refresh_token_can_be_rotated_again(
         self,
@@ -108,6 +109,7 @@ class TestRefreshAccountSession:
 
     def test_raises_and_changes_nothing_for_an_invalid_token(
         self,
+        uow: FakeUnitOfWork,
         refresh_account_session: RefreshAccountSession,
         refresh_token_repository: FakeRefreshTokenRepository,
         create_account_session: CreateAccountSession,
@@ -119,10 +121,11 @@ class TestRefreshAccountSession:
             refresh_account_session.execute("not-a-token")
 
         assert refresh_token_repository.count() == 1
-        assert refresh_token_repository.committed is False
+        assert uow.committed is False
 
     def test_raises_when_the_stored_token_is_expired(
         self,
+        uow: FakeUnitOfWork,
         refresh_account_session: RefreshAccountSession,
         refresh_token_repository: FakeRefreshTokenRepository,
         current_session: AccountSession,
@@ -136,7 +139,7 @@ class TestRefreshAccountSession:
             refresh_account_session.execute(current_session.refresh_token)
 
         assert refresh_token_repository.count() == 1
-        assert refresh_token_repository.committed is False
+        assert uow.committed is False
         assert (
             refresh_token_repository.get(current_session.refresh_token_id).is_revoked()
             is False
@@ -172,14 +175,14 @@ class TestRefreshAccountSession:
     def test_reuse_persists_the_revocation_before_raising(
         self,
         refresh_account_session: RefreshAccountSession,
-        refresh_token_repository: FakeRefreshTokenRepository,
+        uow: FakeUnitOfWork,
         current_session: AccountSession,
     ):
         refresh_account_session.execute(current_session.refresh_token)
         with pytest.raises(TokenRevokedError):
             refresh_account_session.execute(current_session.refresh_token)
 
-        assert refresh_token_repository.commit_count == 2
+        assert uow.commit_count == 2
 
     def test_reuse_does_not_touch_other_accounts(
         self,
@@ -235,13 +238,30 @@ class TestRefreshAccountSession:
         self,
         refresh_account_session: RefreshAccountSession,
         logout_account: LogoutAccount,
-        refresh_token_repository: FakeRefreshTokenRepository,
+        uow: FakeUnitOfWork,
         current_session: AccountSession,
     ) -> None:
         logout_account.execute(current_session.refresh_token)  # commit 1
-        assert refresh_token_repository.commit_count == 1
+        assert uow.commit_count == 1
 
         with pytest.raises(TokenRevokedError):
             refresh_account_session.execute(current_session.refresh_token)
 
-        assert refresh_token_repository.commit_count == 1  # no additional commit
+        assert uow.commit_count == 1  # no additional commit
+
+    def test_rolls_back_when_session_creation_fails(
+        self,
+        refresh_account_session: RefreshAccountSession,
+        refresh_token_repository: FakeRefreshTokenRepository,
+        uow: FakeUnitOfWork,
+        current_session: AccountSession,
+    ):
+        refresh_token_repository.make_add_raise(RuntimeError("connection lost"))
+
+        with pytest.raises(RuntimeError, match="connection lost"):
+            refresh_account_session.execute(current_session.refresh_token)
+
+        assert uow.committed is False
+        assert uow.rolled_back is True
+        stored = refresh_token_repository.get(current_session.refresh_token_id)
+        assert stored.is_revoked() is False

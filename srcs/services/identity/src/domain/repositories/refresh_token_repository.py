@@ -14,7 +14,8 @@ class RefreshTokenRepository(Protocol):
 
     Returns:
         True if the stored token was updated
-        False if it was already revoked (or does not exist).Nothing is written in this cas
+        False if it was already revoked (or does not exist). Nothing is written
+        in this case
     """
 
     def find_by_id(self, refresh_token_id: UUID) -> RefreshToken | None: ...
@@ -28,9 +29,3 @@ class RefreshTokenRepository(Protocol):
     """
 
     def revoke_all_for_account(self, account_id: UUID, now: datetime) -> None: ...
-
-    def flush(self) -> None: ...
-
-    def commit(self) -> None: ...
-
-    def rollback(self) -> None: ...

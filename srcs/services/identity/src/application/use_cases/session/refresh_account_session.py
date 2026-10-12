@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
+from src.application.port.unit_of_work import UnitOfWork
 from src.application.use_cases.session.account_session import AccountSession
 from src.application.use_cases.session.create_account_session import CreateAccountSession
 from src.application.use_cases.session.refresh_token_validator import (
@@ -90,10 +91,12 @@ from src.domain.repositories.refresh_token_repository import RefreshTokenReposit
 class RefreshAccountSession:
     def __init__(
         self,
+        uow: UnitOfWork,
         refresh_token_validator: RefreshTokenValidator,
         refresh_token_repository: RefreshTokenRepository,
         create_account_session: CreateAccountSession,
     ) -> None:
+        self._uow: UnitOfWork = uow
         self._refresh_token_validator: RefreshTokenValidator = refresh_token_validator
         self._refresh_token_repository: RefreshTokenRepository = refresh_token_repository
         self._create_account_session: CreateAccountSession = create_account_session
@@ -132,45 +135,45 @@ class RefreshAccountSession:
             TokenRevokedError: If the refresh token has already been revoked
                 (whether by rotation or logout).
         """
+        with self._uow:
+            # 1. Verify the JWT and find the stored token and lock it until the end of the
+            # transaction.
+            # A concurrent refresh of the same token waits here, then sees the rotation
+            # committed by this request
+            current_refresh_token = self._refresh_token_validator.get_valid_refresh_token(
+                refresh_token,
+                for_update=True,
+            )
 
-        # 1. Verify the JWT and find the stored token and lock it until the end of the
-        # transaction.
-        # A concurrent refresh of the same token waits here, then sees the rotation
-        # committed by this request
-        current_refresh_token = self._refresh_token_validator.get_valid_refresh_token(
-            refresh_token,
-            for_update=True,
-        )
+            now: datetime = datetime.now(UTC)
 
-        now: datetime = datetime.now(UTC)
+            # 2. Make sure the refresh token can still be used.
+            self._validate_refresh_token_state(current_refresh_token, now)
 
-        # 2. Make sure the refresh token can still be used.
-        self._validate_refresh_token_state(current_refresh_token, now)
+            # 3. Create a new account session.
+            new_account_session: AccountSession = self._create_account_session.execute(
+                current_refresh_token.account_id
+            )
 
-        # 3. Create a new account session.
-        new_account_session: AccountSession = self._create_account_session.execute(
-            current_refresh_token.account_id
-        )
+            # The new refresh token must exist in the database before the old
+            # token is updated to reference it through replaced_by.
+            #
+            # This is required because replaced_by is a foreign-key reference.
+            self._uow.flush()
 
-        # The new refresh token must exist in the database before the old
-        # token is updated to reference it through replaced_by.
-        #
-        # This is required because replaced_by is a foreign-key reference.
-        self._refresh_token_repository.flush()
+            # 4. Revoke the refresh token that was just used.
+            #   - The token that was just used becomes revoked
+            #   - and records the newly-created refresh token as its replacement.
+            self._rotate_refresh_token(
+                current_refresh_token=current_refresh_token,
+                new_refresh_token_id=new_account_session.refresh_token_id,
+                now=now,
+            )
 
-        # 4. Revoke the refresh token that was just used.
-        #   - The token that was just used becomes revoked
-        #   - and records the newly-created refresh token as its replacement.
-        self._rotate_refresh_token(
-            current_refresh_token=current_refresh_token,
-            new_refresh_token_id=new_account_session.refresh_token_id,
-            now=now,
-        )
-
-        # Commit INSERT + UPDATE atomically.
-        # Persist the creation of the new token and the revocation of the
-        # old token as one transaction.
-        self._refresh_token_repository.commit()
+            # Commit INSERT + UPDATE atomically.
+            # Persist the creation of the new token and the revocation of the
+            # old token as one transaction.
+            self._uow.commit()
 
         return new_account_session
 
@@ -205,7 +208,7 @@ class RefreshAccountSession:
                 #
                 # The exception should not prevent the revocation from being
                 # committed to the database.
-                self._refresh_token_repository.commit()
+                self._uow.commit()
             raise TokenRevokedError()
 
         # Check the database expiration as well.

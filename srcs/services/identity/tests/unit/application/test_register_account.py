@@ -2,7 +2,6 @@ import datetime
 from uuid import UUID, uuid4
 
 import pytest
-from sqlalchemy.exc import IntegrityError
 
 from src.application.use_cases.auth.register_account import RegisterAccount
 from src.application.use_cases.session.account_session import AccountSession
@@ -14,6 +13,7 @@ from src.domain.value_objects.email import Email
 from tests.fixtures.accounts import FakeAccountRepository
 from tests.fixtures.security import FakePasswordHasher, FakeTokenService
 from tests.fixtures.sessions import FakeRefreshTokenRepository
+from tests.fixtures.unit_of_work import FakeUnitOfWork
 
 
 class TestRegisterAccount:
@@ -37,6 +37,7 @@ class TestRegisterAccount:
         self,
         register_account: RegisterAccount,
         account_repository: FakeAccountRepository,
+        uow: FakeUnitOfWork,
     ) -> None:
         email: str = "john.doe@example.com"
         plaintext_password: str = "secure-password"
@@ -45,8 +46,7 @@ class TestRegisterAccount:
         stored_account: Account | None = account_repository.find_by_email(Email(email))
 
         assert stored_account is not None
-        assert account_repository.committed is True
-        assert account_repository.rolled_back is False
+        assert uow.commit_count == 1
 
     def test_returns_session_linked_to_registered_account(
         self,
@@ -94,30 +94,25 @@ class TestRegisterAccount:
     def test_rollback_and_raises_on_unicity_email_constraint_violation(
         self,
         register_account: RegisterAccount,
-        account_repository: FakeAccountRepository,
+        uow: FakeUnitOfWork,
     ) -> None:
         email: str = "john.doe@example.com"
         plaintext_password: str = "secure-password"
 
         # simulate a DB-level failure ( lost connetcion, constraint violation, etc.)
-        account_repository.make_save_raise(
-            IntegrityError(
-                "duplicate key value violates unique constraint",
-                None,
-                Exception("uq_accounts_email"),
-            )
-        )
+        uow.make_commit_raise(EmailAlreadyRegisteredError())
         with pytest.raises(EmailAlreadyRegisteredError):
             register_account.execute(email, plaintext_password)
 
-        assert account_repository.rolled_back is True
-        assert account_repository.committed is False
+        assert uow.committed is False
+        assert uow.rolled_back is True
 
     def test_does_not_touch_repository_when_email_is_already_registered(
         self,
         register_account: RegisterAccount,
         account_repository: FakeAccountRepository,
         refresh_token_repository: FakeRefreshTokenRepository,
+        uow: FakeUnitOfWork,
         password_hasher: FakePasswordHasher,
     ) -> None:
         email: str = "john.doe@example.com"
@@ -133,7 +128,7 @@ class TestRegisterAccount:
         with pytest.raises(EmailAlreadyRegisteredError):
             register_account.execute(email, f"{plaintext_password}-2")
 
-        assert account_repository.committed is False
+        assert uow.committed is False
         assert refresh_token_repository.count() == 0
 
     def test_rollback_and_raises_when_session_creation_fails(
@@ -141,6 +136,7 @@ class TestRegisterAccount:
         register_account: RegisterAccount,
         account_repository: FakeAccountRepository,
         refresh_token_repository: FakeRefreshTokenRepository,
+        uow: FakeUnitOfWork,
     ) -> None:
         email: str = "john.doe@example.com"
         plaintext_password: str = "secure-password"
@@ -150,13 +146,14 @@ class TestRegisterAccount:
         with pytest.raises(RuntimeError, match="connection lost"):
             register_account.execute(email, plaintext_password)
 
-        assert account_repository.rolled_back is True
-        assert account_repository.committed is False
+        assert uow.committed is False
+        assert uow.rolled_back is True
 
     def test_rollback_and_raises_when_account_repository_save_fails(
         self,
         register_account: RegisterAccount,
         account_repository: FakeAccountRepository,
+        uow: FakeUnitOfWork,
     ) -> None:
         email: str = "john.doe@example.com"
         plaintext_password: str = "secure-password"
@@ -166,8 +163,8 @@ class TestRegisterAccount:
         with pytest.raises(RuntimeError, match="connection lost"):
             register_account.execute(email, plaintext_password)
 
-        assert account_repository.rolled_back is True
-        assert account_repository.committed is False
+        assert uow.committed is False
+        assert uow.rolled_back is True
 
     @pytest.mark.parametrize(
         argnames="email, password",

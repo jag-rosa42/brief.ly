@@ -4,6 +4,7 @@ from src.domain.entities.account import Account
 from src.domain.entities.refresh_token import RefreshToken
 from tests.fixtures.security import FakeTokenService
 from tests.fixtures.sessions import FakeRefreshTokenRepository
+from tests.fixtures.unit_of_work import FakeUnitOfWork
 
 
 class TestCreateAccountSession:
@@ -48,13 +49,13 @@ class TestCreateAccountSession:
     def test_does_not_commit(
         self,
         create_account_session: CreateAccountSession,
-        refresh_token_repository: FakeRefreshTokenRepository,
+        uow: FakeUnitOfWork,
         account: Account,
     ):
         create_account_session.execute(account.id)
 
         # The caller (login / register /refresh) owns the commit transaction
-        assert refresh_token_repository.committed is False
+        assert uow.committed is False
 
     def test_each_call_creates_a_distinct_session(
         self,

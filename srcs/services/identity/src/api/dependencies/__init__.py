@@ -4,7 +4,7 @@ from src.api.dependencies.account import (
     LogoutAccountDep,
     RegisterAccountDep,
 )
-from src.api.dependencies.database import SessionDep
+from src.api.dependencies.database import SessionDep, UnitOfWorkDep
 from src.api.dependencies.security import (
     AccessTokenDep,
     CreateAccountSessionDep,
@@ -28,4 +28,5 @@ __all__: list[str] = [
     "RegisterAccountDep",
     "SessionDep",
     "TokenServiceDep",
+    "UnitOfWorkDep",
 ]

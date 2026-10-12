@@ -6,7 +6,7 @@ from fastapi.security import (
     HTTPBearer,
 )
 
-from src.api.dependencies.database import SessionDep
+from src.api.dependencies.database import SessionDep, UnitOfWorkDep
 from src.application.port.password_hasher import PasswordHasher
 from src.application.port.token.service import TokenService
 from src.application.use_cases.session.create_account_session import CreateAccountSession
@@ -100,11 +100,13 @@ CreateAccountSessionDep = Annotated[
 # Refresh Account Session
 # ---------------------------------------------------------------------------
 def get_refresh_account_session(
+    uow: UnitOfWorkDep,
     refresh_token_validator: RefreshTokenValidatorDep,
     refresh_token_repository: RefreshTokenRepositoryDep,
     create_account_session: CreateAccountSessionDep,
 ) -> RefreshAccountSession:
     return RefreshAccountSession(
+        uow,
         refresh_token_validator,
         refresh_token_repository,
         create_account_session,

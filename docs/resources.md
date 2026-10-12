@@ -44,3 +44,7 @@
 - [Tutorials: Sql Alchemy Foreign Keys and Relationships](https://www.codearmo.com/python-tutorial/sql-alchemy-foreign-keys-and-relationships)
 - [SQLAlchemy Relationships Without Foreign Keys (And How to Replace 'backref' With 'back_populates')](https://that.guru/blog/sqlalchemy-relationships-without-foreign-keys/)
 - [SQLAlchemy Database Locks Using FastAPI: A Simple Guide](https://mjmichael.medium.com/sqlalchemy-database-locks-using-fastapi-a-simple-guide-3e7dcd552d87)
+
+## Pattern
+- [Transaction - Unit Of Work Pattern](https://www.cosmicpython.com/book/chapter_06_uow#before_uow_diagram)
+- [A Python Implementation of the Unit of Work and Repository Design Pattern using SQLModel](https://dev.to/manukanne/a-python-implementation-of-the-unit-of-work-and-repository-design-pattern-using-sqlmodel-3mb5)

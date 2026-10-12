@@ -15,6 +15,7 @@ from src.application.use_cases.session.refresh_token_validator import (
 from src.domain.entities.refresh_token import RefreshToken
 from src.domain.exception import DomainError
 from tests.fixtures.security import FakeTokenService
+from tests.fixtures.unit_of_work import FakeUnitOfWork
 
 
 # ---------------------------------------------------------------------------
@@ -23,9 +24,6 @@ from tests.fixtures.security import FakeTokenService
 class FakeRefreshTokenRepository:
     def __init__(self) -> None:
         self._refresh_tokens_by_id: dict[UUID, RefreshToken] = {}
-        self.commit_count = 0
-        self.rolled_back: bool = False
-        self.flushed: bool = False
         self._failure_to_raise_on_add: Exception | None = None
         self.locked_ids: list[UUID] = []
 
@@ -73,19 +71,6 @@ class FakeRefreshTokenRepository:
         for refresh_token in self._refresh_tokens_by_id.values():
             if refresh_token.account_id == account_id and not refresh_token.is_revoked():
                 refresh_token.revoke(now)
-
-    def flush(self) -> None:
-        self.flushed = True
-
-    def commit(self) -> None:
-        self.commit_count += 1
-
-    def rollback(self) -> None:
-        self.rolled_back = True
-
-    @property
-    def committed(self) -> bool:
-        return self.commit_count > 0
 
     def count(self) -> int:
         return len(self._refresh_tokens_by_id)
@@ -168,11 +153,13 @@ def refresh_token_validator(
 # ---------------------------------------------------------------------------
 @pytest.fixture
 def refresh_account_session(
+    uow: FakeUnitOfWork,
     refresh_token_validator: RefreshTokenValidator,
     refresh_token_repository: FakeRefreshTokenRepository,
     create_account_session: CreateAccountSession,
 ) -> RefreshAccountSession:
     return RefreshAccountSession(
+        uow,
         refresh_token_validator,
         refresh_token_repository,
         create_account_session,

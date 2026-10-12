@@ -3,7 +3,6 @@ from uuid import UUID
 
 from sqlalchemy import Select, select, update
 from sqlalchemy.engine.result import Result
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.dml import ReturningUpdate, Update
 
@@ -90,19 +89,6 @@ class SqlAlchemyRefreshTokenRepository:
             .values(revoked_at=now)
         )
         self._session.execute(statement)
-
-    def flush(self) -> None:
-        self._session.flush()
-
-    def commit(self) -> None:
-        try:
-            self._session.commit()
-        except SQLAlchemyError:
-            self._session.rollback()
-            raise
-
-    def rollback(self) -> None:
-        self._session.rollback()
 
     @staticmethod
     def _to_domain(model: RefreshTokenModel) -> RefreshToken:

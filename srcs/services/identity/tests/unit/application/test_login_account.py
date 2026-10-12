@@ -9,6 +9,7 @@ from src.domain.exception import InvalidCredentialsError
 from tests.fixtures.accounts import FakeAccountRepository
 from tests.fixtures.factory import DEFAULT_ACCOUNT_PASSWORD
 from tests.fixtures.sessions import FakeRefreshTokenRepository
+from tests.fixtures.unit_of_work import FakeUnitOfWork
 
 
 class TestLoginAccount:
@@ -55,6 +56,7 @@ class TestLoginAccount:
         login_account: LoginAccount,
         account_repository: FakeAccountRepository,
         refresh_token_repository: FakeRefreshTokenRepository,
+        uow: FakeUnitOfWork,
         token_service: TokenService,
         account: Account,
     ) -> None:
@@ -70,13 +72,14 @@ class TestLoginAccount:
         assert stored is not None
         assert stored.account_id == account.id
         assert stored.token_hash == token_service.hash_token(session.refresh_token)
-        assert account_repository.committed is True
+        assert uow.committed is True
 
     def test_does_not_create_session_for_invalid_password(
         self,
         login_account: LoginAccount,
         account_repository: FakeAccountRepository,
         refresh_token_repository: FakeRefreshTokenRepository,
+        uow: FakeUnitOfWork,
         account: Account,
     ) -> None:
         account_repository.save(account)
@@ -85,4 +88,24 @@ class TestLoginAccount:
             login_account.execute(email=account.email.value, password="wrong-password")
 
         assert refresh_token_repository.count() == 0
-        assert account_repository.committed is False
+        assert uow.committed is False
+
+    def test_rolls_back_when_session_creation_fails(
+        self,
+        login_account: LoginAccount,
+        account_repository: FakeAccountRepository,
+        refresh_token_repository: FakeRefreshTokenRepository,
+        uow: FakeUnitOfWork,
+        account: Account,
+    ) -> None:
+        account_repository.save(account)
+        refresh_token_repository.make_add_raise(RuntimeError("connection lost"))
+
+        with pytest.raises(RuntimeError, match="connection lost"):
+            login_account.execute(
+                email=account.email.value,
+                password=DEFAULT_ACCOUNT_PASSWORD,
+            )
+
+        assert uow.committed is False
+        assert uow.rolled_back is True
