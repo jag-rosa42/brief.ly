@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from src.api.dependencies.database import SessionDep
+from src.api.dependencies.database import SessionDep, UnitOfWorkDep
 from src.api.dependencies.security import (
     AccessTokenDep,
     CreateAccountSessionDep,
@@ -39,11 +39,17 @@ AccountRepositoryDep = Annotated[
 # Register Account
 # ---------------------------------------------------------------------------
 def get_register_account(
+    uow: UnitOfWorkDep,
     account_repository: AccountRepositoryDep,
     password_hasher: PasswordHasherDep,
     create_account_session: CreateAccountSessionDep,
 ) -> RegisterAccount:
-    return RegisterAccount(account_repository, password_hasher, create_account_session)
+    return RegisterAccount(
+        uow,
+        account_repository,
+        password_hasher,
+        create_account_session,
+    )
 
 
 RegisterAccountDep = Annotated[RegisterAccount, Depends(get_register_account)]
@@ -53,11 +59,17 @@ RegisterAccountDep = Annotated[RegisterAccount, Depends(get_register_account)]
 # Login Account
 # ---------------------------------------------------------------------------
 def get_login_account(
+    uow: UnitOfWorkDep,
     account_repository: AccountRepositoryDep,
     password_hasher: PasswordHasherDep,
     create_account_session: CreateAccountSessionDep,
 ) -> LoginAccount:
-    return LoginAccount(account_repository, password_hasher, create_account_session)
+    return LoginAccount(
+        uow,
+        account_repository,
+        password_hasher,
+        create_account_session,
+    )
 
 
 LoginAccountDep = Annotated[LoginAccount, Depends(get_login_account)]
@@ -67,10 +79,15 @@ LoginAccountDep = Annotated[LoginAccount, Depends(get_login_account)]
 # Logout Account
 # ---------------------------------------------------------------------------
 def get_logout_account(
+    uow: UnitOfWorkDep,
     refresh_token_validator: RefreshTokenValidatorDep,
     refresh_token_repository: RefreshTokenRepositoryDep,
 ) -> LogoutAccount:
-    return LogoutAccount(refresh_token_validator, refresh_token_repository)
+    return LogoutAccount(
+        uow,
+        refresh_token_validator,
+        refresh_token_repository,
+    )
 
 
 LogoutAccountDep = Annotated[LogoutAccount, Depends(get_logout_account)]

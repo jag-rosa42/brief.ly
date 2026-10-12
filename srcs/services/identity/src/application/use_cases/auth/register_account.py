@@ -1,9 +1,8 @@
 import datetime
 from uuid import uuid4
 
-from sqlalchemy.exc import IntegrityError
-
 from src.application.port.password_hasher import PasswordHasher
+from src.application.port.unit_of_work import UnitOfWork
 from src.application.use_cases.session.account_session import AccountSession
 from src.application.use_cases.session.create_account_session import CreateAccountSession
 from src.domain.entities.account import Account
@@ -16,10 +15,12 @@ from src.domain.value_objects.password_hash import PasswordHash
 class RegisterAccount:
     def __init__(
         self,
+        uow: UnitOfWork,
         account_repository: AccountRepository,
         password_hasher: PasswordHasher,
         create_account_session: CreateAccountSession,
     ) -> None:
+        self._uow: UnitOfWork = uow
         self._account_repository: AccountRepository = account_repository
         self._password_hasher: PasswordHasher = password_hasher
         self._create_account_session: CreateAccountSession = create_account_session
@@ -27,34 +28,31 @@ class RegisterAccount:
     def execute(self, email: str, password: str) -> AccountSession:
         email_value_object: Email = Email(email)
 
-        existing_account: Account | None = self._account_repository.find_by_email(
-            email_value_object
-        )
+        with self._uow:
+            existing_account: Account | None = self._account_repository.find_by_email(
+                email_value_object
+            )
 
-        if existing_account is not None:
-            raise EmailAlreadyRegisteredError()
+            if existing_account is not None:
+                raise EmailAlreadyRegisteredError()
 
-        password_hash: PasswordHash = self._password_hasher.hash(password)
+            password_hash: PasswordHash = self._password_hasher.hash(password)
 
-        account: Account = Account(
-            id=uuid4(),
-            email=email_value_object,
-            password_hash=password_hash,
-            created_at=datetime.datetime.now(datetime.UTC),
-        )
-        # TODO: Revisit the transaction boundary.
-        # Currently, this use case explicitly commits/rolls back through the repository.
-        # Consider moving transaction management to a Unit of Work or outer application
-        # boundary so the entire use case is executed within a single transaction.
-        try:
+            account: Account = Account(
+                id=uuid4(),
+                email=email_value_object,
+                password_hash=password_hash,
+                created_at=datetime.datetime.now(datetime.UTC),
+            )
             self._account_repository.save(account)
             session: AccountSession = self._create_account_session.execute(account.id)
-            self._account_repository.commit()
-        except IntegrityError as exc:
-            self._account_repository.rollback()
-            raise EmailAlreadyRegisteredError() from exc
-        except Exception:
-            self._account_repository.rollback()
-            raise
+            # Commits the new 'account' row and its first 'refresh token' row
+            # in one transaction: either both are persisted or both are rollbacked
+            #
+            # A concurrent registration with the same email passes the
+            # find_by_email() check above and fails here instead: the
+            # UnitOfWork translates the uq_accounts_email violation into
+            # EmailAlreadyRegisteredError.
+            self._uow.commit()
 
         return session

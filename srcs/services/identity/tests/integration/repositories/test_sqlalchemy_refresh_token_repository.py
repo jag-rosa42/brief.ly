@@ -97,11 +97,12 @@ class TestSqlAlchemyRefreshTokenRepository:
         db_session.flush()
 
         token.revoke(datetime.now(UTC), replaced_by=uuid4())
-        repository.update(token)
-
+        # update() executes the UPDATE immediately (it needs RETURNING to know
+        # whether the compare-and-set matched), so the foreign key on
+        # replaced_by_id is checked here, not at the next flush.
         with pytest.raises(IntegrityError):
-            db_session.flush()
-        repository.rollback()
+            repository.update(token)
+        db_session.rollback()
 
     def test_revoke_all_for_account_only_revokes_its_active_tokens(
         self,
@@ -155,7 +156,7 @@ class TestSqlAlchemyRefreshTokenRepository:
 
         assert repository.find_by_id(token.id) is None
 
-def test_update_does_not_overwrite_an_already_revoked_token(
+    def test_update_does_not_overwrite_an_already_revoked_token(
         self,
         repository: SqlAlchemyRefreshTokenRepository,
         db_session: Session,

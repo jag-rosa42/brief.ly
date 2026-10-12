@@ -9,6 +9,12 @@ from src.domain.repositories.refresh_token_repository import RefreshTokenReposit
 
 
 class CreateAccountSession:
+    """Issue an access token and stage a new refresh token.
+
+    This use case does NOT commit. It is always called from inside another
+    use case's ``with uow:`` block (login, register, refresh), and that
+    caller commits the new refresh token together with its own changes.
+    """
     def __init__(
         self,
         refresh_token_repository: RefreshTokenRepository,

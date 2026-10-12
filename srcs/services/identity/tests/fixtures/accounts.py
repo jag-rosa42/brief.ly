@@ -20,6 +20,7 @@ from tests.fixtures.factory import (
     build_account,
 )
 from tests.fixtures.sessions import FakeRefreshTokenRepository, build_account_session
+from tests.fixtures.unit_of_work import FakeUnitOfWork
 
 # ---------------------------------------------------------------------------
 # Test Double - Fake
@@ -50,8 +51,6 @@ class FakeAccountRepository:
     def __init__(self) -> None:
         self._accounts_by_email: dict[str, Account] = {}
         self._accounts_by_id: dict[UUID, Account] = {}
-        self.committed = False
-        self.rolled_back = False
         self._failure_to_raise_on_save: Exception | None = None
 
     def save(self, account: Account) -> None:
@@ -65,12 +64,6 @@ class FakeAccountRepository:
 
     def find_by_id(self, account_id: UUID) -> Account | None:
         return self._accounts_by_id.get(account_id)
-
-    def commit(self) -> None:
-        self.committed = True
-
-    def rollback(self) -> None:
-        self.rolled_back = True
 
     # Helper to simulate an infrastructure failure
     def make_save_raise(self, exception: Exception) -> None:
@@ -105,11 +98,17 @@ class FakeRegisterAccount:
 
 @pytest.fixture
 def register_account(
+    uow: FakeUnitOfWork,
     account_repository: FakeAccountRepository,
     password_hasher: PasswordHasher,
     create_account_session: CreateAccountSession,
 ) -> RegisterAccount:
-    return RegisterAccount(account_repository, password_hasher, create_account_session)
+    return RegisterAccount(
+        uow,
+        account_repository,
+        password_hasher,
+        create_account_session,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -134,11 +133,17 @@ class FakeLoginAccount:
 
 @pytest.fixture
 def login_account(
+    uow: FakeUnitOfWork,
     account_repository: FakeAccountRepository,
     password_hasher: PasswordHasher,
     create_account_session: CreateAccountSession,
 ) -> LoginAccount:
-    return LoginAccount(account_repository, password_hasher, create_account_session)
+    return LoginAccount(
+        uow,
+        account_repository,
+        password_hasher,
+        create_account_session,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -146,7 +151,12 @@ def login_account(
 # ---------------------------------------------------------------------------
 @pytest.fixture
 def logout_account(
+    uow: FakeUnitOfWork,
     refresh_token_validator: RefreshTokenValidator,
     refresh_token_repository: FakeRefreshTokenRepository,
 ) -> LogoutAccount:
-    return LogoutAccount(refresh_token_validator, refresh_token_repository)
+    return LogoutAccount(
+        uow,
+        refresh_token_validator,
+        refresh_token_repository,
+     )

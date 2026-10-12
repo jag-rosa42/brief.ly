@@ -12,6 +12,7 @@ pytest_plugins: list[str] = [
     "tests.fixtures.factory",
     # Lowest-level fixtures first
     "tests.fixtures.security",
+    "tests.fixtures.unit_of_work",
     # Sessions depend on security
     "tests.fixtures.sessions",
 

@@ -1,17 +1,10 @@
 import pytest
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from src.application.port.password_hasher import PasswordHasher
 from src.domain.entities.account import Account
 from src.domain.value_objects.email import Email
 from src.infrastructure.database.repositories.sqlalchemy_account_repository import (
     SqlAlchemyAccountRepository,
-)
-from tests.fixtures.factory import (
-    DEFAULT_ACCOUNT_EMAIL,
-    DEFAULT_ACCOUNT_PASSWORD,
-    build_account,
 )
 
 
@@ -64,42 +57,3 @@ class TestSqlAlchemyAccountRepository:
         result: Account | None = repository.find_by_email(account.email)
 
         assert result is not None
-
-    def test_commit_rollback_on_integrity_violation(
-        self,
-        repository: SqlAlchemyAccountRepository,
-        db_session: Session,
-        password_hasher: PasswordHasher,
-    ) -> None:
-        account1: Account = build_account(
-            email=DEFAULT_ACCOUNT_EMAIL,
-            password_hash=password_hasher.hash(DEFAULT_ACCOUNT_PASSWORD),
-        )
-        repository.save(account1)
-        db_session.commit()
-
-        account2: Account = build_account(
-            email=DEFAULT_ACCOUNT_EMAIL,
-            password_hash=password_hasher.hash(f"another-{DEFAULT_ACCOUNT_PASSWORD}"),
-        )
-        repository.save(account2)
-
-        with pytest.raises(SQLAlchemyError):
-            db_session.commit()
-        repository.rollback()
-
-        result: Account | None = repository.find_by_email(Email(DEFAULT_ACCOUNT_EMAIL))
-        assert result is not None
-
-    def test_rollback_discard_unsaved_changes(
-        self,
-        repository: SqlAlchemyAccountRepository,
-        db_session: Session,
-        account: Account,
-    ) -> None:
-        repository.save(account)
-        repository.rollback()
-
-        result: Account | None = repository.find_by_email(account.email)
-
-        assert result is None

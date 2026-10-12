@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 
+from src.application.port.unit_of_work import UnitOfWork
 from src.application.use_cases.session.refresh_token_validator import (
     RefreshTokenValidator,
 )
@@ -36,9 +37,11 @@ from src.domain.repositories.refresh_token_repository import RefreshTokenReposit
 class LogoutAccount:
     def __init__(
         self,
+        uow: UnitOfWork,
         refresh_token_validator: RefreshTokenValidator,
         refresh_token_repository: RefreshTokenRepository,
     ) -> None:
+        self._uow: UnitOfWork = uow
         self._refresh_token_validator: RefreshTokenValidator = refresh_token_validator
         self._refresh_token_repository: RefreshTokenRepository = refresh_token_repository
 
@@ -54,22 +57,25 @@ class LogoutAccount:
         change is persisted to the repository.
 
         Args:
-            refresh_token: The refresh token presented by the client.
+            refresh_token: The refresh token presented by the client to be revoked.
         """
-        try:
-            stored: RefreshToken = self._refresh_token_validator.get_valid_refresh_token(
-                refresh_token,
-                for_update=True,
-            )
-        except (InvalidTokenError, TokenExpiredError):
-            return
+        with self._uow:
+            try:
+                stored: RefreshToken = (
+                    self._refresh_token_validator.get_valid_refresh_token(
+                        refresh_token,
+                        for_update=True,
+                    )
+                )
+            except (InvalidTokenError, TokenExpiredError):
+                return
 
-        if stored.is_revoked():
-            return
+            if stored.is_revoked():
+                return
 
-        stored.revoke(datetime.now(UTC))
+            stored.revoke(datetime.now(UTC))
 
-        # False only if the token was revoked concurrently.
-        # Logout is idempotent: nothing left to do
-        if self._refresh_token_repository.update(stored):
-            self._refresh_token_repository.commit()
+            # False only if the token was revoked concurrently.
+            # Logout is idempotent: nothing left to do
+            if self._refresh_token_repository.update(stored):
+                self._uow.commit()

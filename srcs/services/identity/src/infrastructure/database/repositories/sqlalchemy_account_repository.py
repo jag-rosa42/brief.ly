@@ -1,7 +1,6 @@
 from uuid import UUID
 
 from sqlalchemy import Result, Select, select
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from src.domain.entities.account import Account
@@ -37,16 +36,6 @@ class SqlAlchemyAccountRepository:
         if account_model is None:
             return None
         return self._to_domain(account_model)
-
-    def commit(self) -> None:
-        try:
-            self._session.commit()
-        except SQLAlchemyError:
-            self._session.rollback()
-            raise
-
-    def rollback(self) -> None:
-        self._session.rollback()
 
     @staticmethod
     def _to_domain(model: AccountModel) -> Account:

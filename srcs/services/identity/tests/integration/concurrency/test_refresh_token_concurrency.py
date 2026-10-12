@@ -37,6 +37,7 @@ from src.infrastructure.database.repositories.sqlalchemy_account_repository impo
 from src.infrastructure.database.repositories.sqlalchemy_refresh_token_repository import (
     SqlAlchemyRefreshTokenRepository,
 )
+from src.infrastructure.database.unit_of_work import SqlAlchemyUnitOfWork
 from src.infrastructure.security.token.token_service import JWTTokenService
 from tests.fixtures.factory import DEFAULT_ACCOUNT_PASSWORD, build_account
 
@@ -78,6 +79,7 @@ def _build_refresh_account_session(session: Session) -> RefreshAccountSession:
     token_service = JWTTokenService()
     repository = SqlAlchemyRefreshTokenRepository(session)
     return RefreshAccountSession(
+        SqlAlchemyUnitOfWork(session),
         RefreshTokenValidator(repository, token_service),
         repository,
         CreateAccountSession(repository, token_service),

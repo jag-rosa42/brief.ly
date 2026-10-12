@@ -9,6 +9,7 @@ from src.domain.entities.account import Account
 from src.domain.exception import TokenRevokedError
 from tests.fixtures.security import FakeTokenService
 from tests.fixtures.sessions import FakeRefreshTokenRepository
+from tests.fixtures.unit_of_work import FakeUnitOfWork
 
 
 class TestLogoutAccount:
@@ -17,6 +18,7 @@ class TestLogoutAccount:
         logout_account: LogoutAccount,
         create_account_session: CreateAccountSession,
         refresh_token_repository: FakeRefreshTokenRepository,
+        uow: FakeUnitOfWork,
         account: Account,
     ) -> None:
         session = create_account_session.execute(account.id)
@@ -26,7 +28,7 @@ class TestLogoutAccount:
         stored = refresh_token_repository.get(session.refresh_token_id)
         assert stored.is_revoked() is True
         assert stored.replaced_by is None  # a logout is not a rotation
-        assert refresh_token_repository.commit_count == 1
+        assert uow.commit_count == 1
 
     def test_keeps_the_other_sessions_of_the_account_alive(
         self,
@@ -47,6 +49,7 @@ class TestLogoutAccount:
         logout_account: LogoutAccount,
         create_account_session: CreateAccountSession,
         refresh_token_repository: FakeRefreshTokenRepository,
+        uow: FakeUnitOfWork,
         account: Account,
     ) -> None:
         session = create_account_session.execute(account.id)
@@ -59,22 +62,22 @@ class TestLogoutAccount:
 
         stored = refresh_token_repository.get(session.refresh_token_id)
         assert stored.revoked_at == first_revoked_at
-        assert refresh_token_repository.commit_count == 1
+        assert uow.commit_count == 1
 
     def test_ignores_an_unverifiable_token(
         self,
         logout_account: LogoutAccount,
-        refresh_token_repository: FakeRefreshTokenRepository,
+        uow: FakeUnitOfWork,
     ) -> None:
         logout_account.execute("not-a-token")  # must not raise
 
-        assert refresh_token_repository.committed is False
+        assert uow.committed is False
 
     def test_ignores_an_expired_token(
         self,
         logout_account: LogoutAccount,
         create_account_session: CreateAccountSession,
-        refresh_token_repository: FakeRefreshTokenRepository,
+        uow: FakeUnitOfWork,
         token_service: FakeTokenService,
         account: Account,
     ) -> None:
@@ -83,12 +86,12 @@ class TestLogoutAccount:
 
         logout_account.execute(session.refresh_token)  # must not raise
 
-        assert refresh_token_repository.committed is False
+        assert uow.committed is False
 
     def test_ignores_a_token_that_is_not_persisted(
         self,
         logout_account: LogoutAccount,
-        refresh_token_repository: FakeRefreshTokenRepository,
+        uow: FakeUnitOfWork,
         token_service: FakeTokenService,
         account: Account,
     ) -> None:
@@ -96,7 +99,7 @@ class TestLogoutAccount:
 
         logout_account.execute(created.token)
 
-        assert refresh_token_repository.committed is False
+        assert uow.committed is False
 
     def test_a_logged_out_token_cannot_be_refreshed(
         self,
@@ -123,3 +126,20 @@ class TestLogoutAccount:
         logout_account.execute(session.refresh_token)
 
         assert refresh_token_repository.locked_ids == [session.refresh_token_id]
+
+    def test_releases_the_transaction_when_the_token_is_already_revoked(
+        self,
+        logout_account: LogoutAccount,
+        create_account_session: CreateAccountSession,
+        uow: FakeUnitOfWork,
+        account: Account,
+    ) -> None:
+        session = create_account_session.execute(account.id)
+        logout_account.execute(session.refresh_token)
+
+        # Check the early return of execute (whcih fails because token already revoked)
+        logout_account.execute(session.refresh_token)
+
+        assert uow.commit_count == 1
+        # Leaving the `with` block rolls back, which releases the row lock.
+        assert uow.rollback_count == 2
