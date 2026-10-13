@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 interface LinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
     variant: ButtonVariant;
     to: string;
+    external?: boolean;
 }
 
 
@@ -13,6 +14,7 @@ export function Link({
     variant,
     children,
     to,
+    external=false,
     className,
     ...props
 }: LinkProps) {
@@ -29,6 +31,8 @@ export function Link({
             {...props}
             className={`${style} ${className ?? ""}`}
             onClick={handleClick}
+             target={external ? "_blank" : props.target}
+            rel={external ? "noopener noreferrer" : props.rel}
         >
             {children}
         </a>
