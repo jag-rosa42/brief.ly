@@ -42,7 +42,7 @@ from sqlalchemy.engine import URL, make_url
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.compiler import IdentifierPreparer
 
-from src.infrastructure.database.config import settings
+from src.infrastructure.database.config import database_settings
 
 # ---------------------------------------------------------------------------
 # Logger
@@ -86,7 +86,9 @@ def _create_test_database_if_needed(url: str) -> None:
     # We can not connect to the test database if it does not exist.
     # Connect to an existing database first so we check wether the test database exists
     # and create it if necessary
-    existing_db_url: URL = target_url.set(database=settings.POSTGRES_DEFAULT_DB_NAME)
+    existing_db_url: URL = target_url.set(
+        database=database_settings.POSTGRES_DEFAULT_DB_NAME
+    )
     engine: Engine = create_engine(existing_db_url, isolation_level="AUTOCOMMIT")
     try:
         with engine.connect() as connection:
@@ -127,7 +129,7 @@ def database_url() -> str:
     already exist.
     """
 
-    url: str = settings.TEST_DATABASE_URI
+    url: str = database_settings.TEST_DATABASE_URI
     _assert_test_database(url)
     _create_test_database_if_needed(url)
     return url

@@ -37,6 +37,10 @@
 
 ## FastAPI
 - [I Hired a Penetration Tester to Attack My FastAPI App. He Owned Everything in 45 Minutes](https://medium.com/@rameshkannanyt0078/i-hired-a-penetration-tester-to-attack-my-fastapi-app-he-owned-everything-in-45-minutes-b66818704f6b)
+- [Settings decomposition](https://benavlabs.github.io/FastAPI-boilerplate/user-guide/configuration/settings-classes/)
+- [The Twelve-Factor environment config](https://12factor.net/config)
+- [Response Cookies](https://fastapi.tiangolo.com/advanced/response-cookies/)
+
 
 ## SQLAlchemy
 - [Basic Relationship Patterns](https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html)
