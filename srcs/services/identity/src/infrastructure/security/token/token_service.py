@@ -14,7 +14,7 @@ from src.application.port.token.types import (
     RefreshTokenClaims,
 )
 from src.domain.exception import InvalidTokenError, TokenExpiredError
-from src.infrastructure.database.config import settings
+from src.infrastructure.security.settings import security_settings
 from src.infrastructure.security.token.jwt_payload import JWTTokenPayload
 from src.infrastructure.security.token.token_type import TokenType
 
@@ -22,15 +22,17 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 
 class JWTTokenService:
+    JWT_ALGORITHM: str = "RS256"
+
     def __init__(self):
-        self._private_key: SecretStr = settings.JWT_PRIVATE_KEY
-        self._public_key: str = settings.JWT_PUBLIC_KEY
-        self._algorithm: str = settings.JWT_ALGORITHM
+        self._private_key: SecretStr = security_settings.JWT_PRIVATE_KEY
+        self._public_key: str = security_settings.JWT_PUBLIC_KEY
+        self._algorithm: str = self.JWT_ALGORITHM
         self._access_token_lifetime: timedelta = timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+            minutes=security_settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
         self._refresh_token_lifetime: timedelta = timedelta(
-            days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+            days=security_settings.REFRESH_TOKEN_EXPIRE_DAYS
         )
 
     def create_access_token(self, account_id: UUID) -> str:

@@ -24,12 +24,12 @@ from httpx2 import Response
 from shared_errors import ErrorResponse
 
 from src.api.dependencies.database import get_db
-from src.infrastructure.database.config import settings
+from src.infrastructure.config.app import app_settings
 from src.main import app
 
 
 def test_app_title_matches_settings() -> None:
-    assert app.title == settings.PROJECT_NAME
+    assert app.title == app_settings.PROJECT_NAME
 
 
 class _BrokenSession:
