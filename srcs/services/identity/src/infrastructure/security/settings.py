@@ -24,10 +24,24 @@ class SecuritySettings(ServiceSettings):
     JWT_PUBLIC_KEY: str
 
     # -----------------------------------------------------------------------
+    # Claims
+    # -----------------------------------------------------------------------
+
+    # `iss`: who issued the token. Every service checks it.
+    JWT_ISSUER: str = "transcendence:identity"
+
+    # `aud`: where the token may be used.
+    # Access tokens are for the backend API; refresh tokens are only
+    # accepted by Identity, so they are refused everywhere else.
+    JWT_ACCESS_AUDIENCE: str = "transcendence:api"
+    JWT_REFRESH_AUDIENCE: str = "transcendence:identity"
+
+    # -----------------------------------------------------------------------
     # Lifetimes
     # -----------------------------------------------------------------------
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
 
 security_settings = SecuritySettings()
