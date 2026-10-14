@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from shared_errors import register_shared_handlers
 
+from src.api.errors.handlers import register_domain_handlers
 from src.api.routers import api_routers, root_routers
 from src.infrastructure.database.config import settings
 
@@ -21,6 +22,7 @@ def create_app() -> FastAPI:
     app.include_router(root_routers)
     app.include_router(api_routers)
     register_shared_handlers(app)
+    register_domain_handlers(app)
 
     return app
 
