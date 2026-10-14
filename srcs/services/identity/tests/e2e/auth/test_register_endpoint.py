@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from httpx2 import Response
 
 from tests import routes
+from tests.fixtures.cookies import get_refresh_cookie
 
 
 class TestRegisterEndpoint:
@@ -20,8 +21,9 @@ class TestRegisterEndpoint:
         assert register_response.status_code == 201
         body = register_response.json()
         assert body["access_token"]
-        assert body["refresh_token"]
+        assert "refresh-token" not in body
         assert body["token_type"] == "Bearer"
+        assert get_refresh_cookie(register_response).value
 
         duplicated_response = client.post(
             url=routes.REGISTER,

@@ -27,6 +27,10 @@
 - [RFC 6750: The OAuth 2.0 Authorization Framework: Bearer Token Usage](https://www.rfc-editor.org/info/rfc6750/)
 - [RFC 9700: BCP 240: Best Current Practice for OAuth 2.0 Security](https://www.rfc-editor.org/info/rfc9700/)
 - [Hashing tokens](https://www.freecodecamp.org/news/how-to-perform-secure-hashing-using-pythons-hashlib-module/)
+- [RFC 7517: JSON Web Key (JWK)](https://www.rfc-editor.org/info/rfc7517/#section-4.5)
+- [RFC 7638: JSON Web Key (JWK) Thumbprint](https://www.rfc-editor.org/info/rfc7638/)
+
+
 
 ## Errors
 - [Handling HTTP errors with FastAPI](https://safir.lsst.io/user-guide/fastapi-errors.html)
