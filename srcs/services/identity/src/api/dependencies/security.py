@@ -1,12 +1,13 @@
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Cookie, Depends, Header
 from fastapi.security import (
     HTTPAuthorizationCredentials,
     HTTPBearer,
 )
 
 from src.api.dependencies.database import SessionDep, UnitOfWorkDep
+from src.api.errors.exceptions import CsrfCheckFailedError
 from src.application.port.password_hasher import PasswordHasher
 from src.application.port.token.service import TokenService
 from src.application.use_cases.session.create_account_session import CreateAccountSession
@@ -18,6 +19,7 @@ from src.application.use_cases.session.refresh_token_validator import (
 )
 from src.domain.exception import InvalidTokenError
 from src.domain.repositories.refresh_token_repository import RefreshTokenRepository
+from src.infrastructure.config.cookie import cookie_settings
 from src.infrastructure.database.repositories.sqlalchemy_refresh_token_repository import (
     SqlAlchemyRefreshTokenRepository,
 )
@@ -75,6 +77,73 @@ def get_access_token(
 
 
 AccessTokenDep = Annotated[HTTPAuthorizationCredentials, Depends(get_access_token)]
+
+
+# ---------------------------------------------------------------------------
+# Refresh Token Cookie
+# ---------------------------------------------------------------------------
+RefreshTokenCookie = Annotated[
+    str | None, Cookie(alias=cookie_settings.REFRESH_COOKIE_NAME)
+]
+
+
+# FastAPI forbids a default inside Annotated[..., Cookie()], so this wrapper
+# holds the "= None" once: routes can use the Dep without repeating it.
+def get_refresh_token_if_present(
+    refresh_token: RefreshTokenCookie = None,
+) -> str | None:
+    return refresh_token
+
+
+OptionalRefreshTokenCookieDep = Annotated[
+    str | None,
+    Depends(get_refresh_token_if_present),
+]
+
+
+def get_refresh_token(refresh_token: OptionalRefreshTokenCookieDep) -> str:
+    """
+    Require the refresh token cookie. Without it there is no session.
+    """
+    if refresh_token is None:
+        raise InvalidTokenError()
+    return refresh_token
+
+
+RefreshTokenCookieDep = Annotated[str, Depends(get_refresh_token)]
+
+
+# ---------------------------------------------------------------------------
+# CSRF guard (Cross-Site Request Forgery)
+# ---------------------------------------------------------------------------
+# Header name and value:
+#   "X-Transcendence-Client" is our own custom header, sent by the frontend on
+#   every call to these endpoints. The protection comes from the header being
+#   custom (it forces the preflight), not from its value: "web" only identifies
+#   which client sent it. It is NOT a secret token.
+#
+# Defense in depth: SameSite=Strict on the cookie (see cookie.py) already blocks
+# most of this. The header still holds on old browsers and against sibling
+# subdomains, which count as "same-site". Never put "*" in BACKEND_CORS_ORIGINS.
+#
+# More details:
+# - https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+# - https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS#simple_requests
+ANTI_CSRF_HEADER_NAME: str = "X-Transcendence-Client"
+ANTI_CSRF_HEADER_VALUE: str = "web"
+
+CsrfRequest = Annotated[
+    str | None,
+    Header(alias=ANTI_CSRF_HEADER_NAME),
+]
+
+
+def reject_cross_site_request(client: CsrfRequest = None) -> None:
+    if client != ANTI_CSRF_HEADER_VALUE:
+        raise CsrfCheckFailedError()
+
+
+CrossSiteGuardRequest = Depends(reject_cross_site_request)
 
 
 # ---------------------------------------------------------------------------

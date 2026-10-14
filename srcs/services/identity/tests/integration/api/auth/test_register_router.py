@@ -10,6 +10,7 @@ from src.domain.exception import EmailAlreadyRegisteredError
 from src.main import app
 from tests import routes
 from tests.fixtures.accounts import FakeRegisterAccount
+from tests.fixtures.cookies import REFRESH_COOKIE_PATH, get_refresh_cookie
 from tests.fixtures.sessions import build_account_session
 
 VALID_EMAIL: str = "john.doe@example.com"
@@ -59,9 +60,16 @@ class TestAuthRegisterRouter:
         assert response.status_code == 201
         assert response.json() == {
             "access_token": "test-access-token",
-            "refresh_token": "test-refresh-token",
             "token_type": "Bearer",
         }
+
+        cookie = get_refresh_cookie(response)
+        assert cookie.value == "test-refresh-token"
+        assert cookie["httponly"] is True
+        assert cookie["secure"] is True
+        assert cookie["samesite"] == "strict"
+        assert cookie["path"] == REFRESH_COOKIE_PATH
+
         assert fake_register_account._execute_called_with == (
             VALID_EMAIL,
             VALID_PASSWORD,
@@ -85,6 +93,8 @@ class TestAuthRegisterRouter:
         assert response.status_code == 409
         body: ErrorResponse = ErrorResponse.model_validate(response.json())
         assert body.error.code == "EMAIL_ALREADY_REGISTERED"
+
+        assert "set-cookie" not in response.headers
 
     @pytest.mark.parametrize(
         "body",

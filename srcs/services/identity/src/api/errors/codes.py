@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from fastapi import status
 
+from src.api.errors.exceptions import ApiErrorCode
 from src.domain.exception import ErrorCode
 
 
@@ -35,5 +36,11 @@ DOMAIN_ERROR_STATUS_MAP: dict[ErrorCode, HttpErrorConfig] = {
     ErrorCode.TOKEN_REVOKED: HttpErrorConfig(
         status_code=status.HTTP_401_UNAUTHORIZED,
         headers={"WWW-Authenticate": "Bearer"}
+    ),
+}
+
+API_ERROR_STATUS_MAP: dict[ApiErrorCode, HttpErrorConfig] = {
+    ApiErrorCode.CSRF_CHECK_FAILED: HttpErrorConfig(
+        status_code=status.HTTP_403_FORBIDDEN
     ),
 }

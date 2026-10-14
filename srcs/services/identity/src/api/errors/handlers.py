@@ -6,12 +6,20 @@ from shared_errors.handlers import respond
 from shared_errors.schemas import ErrorBody
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
-from src.api.errors.codes import DOMAIN_ERROR_STATUS_MAP, HttpErrorConfig
+from src.api.errors.codes import (
+    API_ERROR_STATUS_MAP,
+    DOMAIN_ERROR_STATUS_MAP,
+    HttpErrorConfig,
+)
+from src.api.errors.exceptions import ApiError
 from src.domain.exception import DomainError
 
 logger: logging.Logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# Domain
+# ---------------------------------------------------------------------------
 def domain_error_handler(_request: Request, exception: Exception) -> JSONResponse:
     """Handle domain errors and map them to appropriate HTTP responses.
 
@@ -42,14 +50,37 @@ def domain_error_handler(_request: Request, exception: Exception) -> JSONRespons
 
     if config is None:
         logger.error("No HTTP status mapped for DomainError code: %s", exception.code)
-        # config.status_code: int = HTTP_500_INTERNAL_SERVER_ERROR
         config = HttpErrorConfig(status_code=HTTP_500_INTERNAL_SERVER_ERROR)
     return respond(
         config.status_code,
         ErrorBody(code=exception.code, message=str(exception)),
-        headers=config.headers
+        headers=config.headers,
     )
 
 
 def register_domain_handlers(app: FastAPI) -> None:
     app.add_exception_handler(DomainError, domain_error_handler)
+
+
+# ---------------------------------------------------------------------------
+# Api
+# ---------------------------------------------------------------------------
+def api_error_handler(_request: Request, exception: Exception) -> JSONResponse:
+
+    assert isinstance(exception, ApiError)
+
+    config: HttpErrorConfig | None = API_ERROR_STATUS_MAP.get(exception.code)
+
+    if config is None:
+        logger.error("No HTTP status mapped for ApiError code: %s", exception.code)
+        config = HttpErrorConfig(status_code=HTTP_500_INTERNAL_SERVER_ERROR)
+
+    return respond(
+        config.status_code,
+        ErrorBody(code=exception.code, message=str(exception)),
+        headers=config.headers,
+    )
+
+
+def register_api_handlers(app: FastAPI) -> None:
+    app.add_exception_handler(ApiError, api_error_handler)

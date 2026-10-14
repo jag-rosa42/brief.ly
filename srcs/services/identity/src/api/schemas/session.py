@@ -9,16 +9,13 @@ class AuthenticationScheme(StrEnum):
     BEARER = "Bearer"
 
 
-class AccountSessionResponse(BaseModel):
+class AccessTokenResponse(BaseModel):
     access_token: str
-    refresh_token: str
     token_type: AuthenticationScheme = AuthenticationScheme.BEARER
 
     @classmethod
-    def from_session(cls, session: AccountSession) -> AccountSessionResponse:
+    def from_session(cls, session: AccountSession) -> AccessTokenResponse:
+        # session.refresh_token is sent as an HttpOnly cookie by the router
         # session.refresh_token_id is internal (rotation bookkeeping only)
         # it should deliberately never leaves the application layer.
-        return cls(
-            access_token=session.access_token,
-            refresh_token=session.refresh_token,
-        )
+        return cls(access_token=session.access_token)
