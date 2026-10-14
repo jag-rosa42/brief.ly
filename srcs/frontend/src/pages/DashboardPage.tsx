@@ -5,6 +5,7 @@ import { Tabs, type TabItem } from "@/shared/components/Tab";
 import { ArticleCard } from "@/shared/components/ArticleCard";
 import { ArticleModal, type Story } from "@/shared/components/ArticleModal";
 import { useDashboardData } from "@/utils/useDashboardData";
+import { useSavedArticles } from "@/app/SavedArticlesContext";
 
 const days = [
 	"Sunday",
@@ -44,20 +45,9 @@ export function DashboardPage() {
 	//TODO: API call to get Dashboard data: connect
 	const { data, isLoading, error } = useDashboardData();
 	const [selectedStory, setSelectedStory] = useState<Story | null>(null);
-	// TODO: call API here to get the saved articles' ids
-	const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set());
 
-	function toggleSave(id: string) {
-		//TODO: API call to save or delete the article 
-		setSavedIds((prev) => {
-			const next = new Set(prev);
-			if (next.has(id))
-				next.delete(id);
-			else
-				next.add(id);
-			return next;
-		});
-	}
+	// TODO: call API here to get the saved articles' ids
+	const { isSaved, toggleSave } = useSavedArticles();
 
 	function buildTabs(): TabItem[] {
 		if (!data)
@@ -90,7 +80,7 @@ export function DashboardPage() {
 								<ArticleCard
 									key={story.id}
 									story={story}
-									isSaved={savedIds.has(story.id)}
+									isSaved={isSaved(story.id)}
 									onReadMore={() => setSelectedStory(story)}
 									onToggleSave={() => toggleSave(story.id)}
 								/>

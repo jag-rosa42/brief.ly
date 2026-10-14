@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/app/AuthContext";
 import { useState } from "react";
 import type { SubmitEvent } from "react";
 import { Link } from "@/shared/components/Link";
@@ -9,10 +11,19 @@ import { Input } from "@/shared/components/Input";
 import { Button } from "@/shared/components/Button";
 import { FilterChip } from "@/shared/components/FilterChip";
 import type { FilterChipOption } from "@/shared/components/FilterChip";
+import { usePreferences } from "@/app/PreferencesContext";
 
 const MIN_INTERESTS = 1;
 const MAX_INTERESTS = 4;
 
+function validateUsername(value: string): string | null {
+	const name = value.trim();
+	if (name.length < 2)
+		return (`Username must be at least 2 characters.`);
+	if (name.length > 14)
+		return (`Username must be at most 14 characters.`);
+	return (null);
+}
 
 //TODO: API call to add, here mock for test
 const InterestOptions: FilterChipOption[] = [
@@ -32,11 +43,15 @@ type FieldName =
 type FormErrors = Partial<Record<FieldName, string>>;
 
 export function PreferencesPage() {
+	const { selectedPreferences: savedPreferences, updatePreferences } = usePreferences();
+
 	const [Name, setName] = useState("");
 	const [errors, setErrors] = useState<FormErrors>({});
-	const[selectedInterests, setSelectedInterests] = useState<string[]>([]);
+	const [selectedInterests, setSelectedInterests] = useState<string[]>(savedPreferences);
 	const [saved, setSaved] = useState(false);
 
+	const navigate = useNavigate();
+	const { profileComplete, completeProfile } = useAuth();
 	const limitReached = selectedInterests.length >= MAX_INTERESTS;
 
 	function clearError(field: FieldName) {
@@ -56,7 +71,13 @@ export function PreferencesPage() {
 	function validate(): boolean {
 		const next: FormErrors = {};
 
-		if (Name.trim() === "") next.Name = "Name is required";
+		if (Name.trim() === "")
+			next.Name = "Name is required";
+		else {
+		const nameError = validateUsername(Name);
+		if (nameError)
+			next.Name = nameError;
+		}
 		if (selectedInterests.length < MIN_INTERESTS) {
 			next.interests = "Please select at least one interest";
 		}
@@ -72,7 +93,12 @@ export function PreferencesPage() {
 		if (!validate())
 			return;
 		//TODO: add API call
+		updatePreferences(selectedInterests);
 		setSaved(true);
+		if (!profileComplete) {
+			completeProfile();
+			navigate("/sidebar/brief");
+		}
 	}
 
 return (

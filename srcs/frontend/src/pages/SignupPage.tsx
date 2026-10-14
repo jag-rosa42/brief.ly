@@ -25,7 +25,7 @@ export function SignupPage() {
 	const [email, setEmail] = useState("");
 	const [waiting, setWaiting] = useState(false);
 	const navigate = useNavigate();
-	const { login } = useAuth();
+	const { signup } = useAuth();
 	const location = useLocation();
 	const [errorMessage, setErrorMessage] = useState<string>(location.state?.message ?? "");
 
@@ -57,8 +57,8 @@ export function SignupPage() {
 		}
 		//TODO add call API (mock behaviour here)
 		try {
-			await login();
-			navigate("/profile");
+			await signup();
+			navigate("/sidebar/preferences");
 		}	catch (err) {
 			setErrorMessage("Login failed. Please try again");
 		}	finally {
