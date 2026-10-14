@@ -1,9 +1,15 @@
 import { Link } from "@/shared/components/Link";
 import { Division } from "@/shared/components/Division";
 import { Text } from "@/shared/components/Text";
-
+import { useAuth } from "@/app/AuthContext";
 
 export function LandingPage() {
+	const { isLoggedIn, profileComplete } = useAuth();
+
+	let startLink = "/signup";
+	if (isLoggedIn) {
+		startLink = profileComplete ? "/sidebar/brief" : "/sidebar/preferences";
+	}
 	return (
 		<main>
 			<section className="text-center text-primary pt-16 pb-10 px-6">
@@ -17,7 +23,9 @@ export function LandingPage() {
 				</Text>
 
 				<div className="mt-7">
-					<Link to="/signup" variant="main">
+					<Link
+						to={startLink}
+						variant="main">
 						Start the journey
 					</Link>
 				</div>

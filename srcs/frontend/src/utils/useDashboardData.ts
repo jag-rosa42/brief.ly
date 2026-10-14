@@ -1,4 +1,6 @@
 import { MOCK_DASHBOARD, type DashboardData } from "@/utils/mock";
+import { useMemo } from "react";
+import { usePreferences } from "@/app/PreferencesContext";
 
 interface UseDashboardData {
 	data: DashboardData | null;
@@ -11,5 +13,14 @@ interface UseDashboardData {
 // react-query, en gardant le même retour { data, isLoading, error }.
 // DashboardPage n'aura pas besoin de changer.
 export function useDashboardData(): UseDashboardData {
-	return { data: MOCK_DASHBOARD, isLoading: false, error: null };
+		const { selectedPreferences } = usePreferences();
+
+	const data = useMemo<DashboardData>(() => ({
+		...MOCK_DASHBOARD,
+		preferences: MOCK_DASHBOARD.preferences.filter((pref) =>
+			selectedPreferences.includes(pref.id)
+		),
+	}), [selectedPreferences]);
+
+	return { data, isLoading: false, error: null };
 }

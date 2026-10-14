@@ -49,7 +49,7 @@ export function LoginPage() {
 		//TODO add call API (mock behaviour here)
 		try {
 			await login();
-			navigate("*");
+			navigate("/sidebar/brief");
 		} catch (err) {
 			setErrorMessage("Login failed. Please try again");
 		} finally {

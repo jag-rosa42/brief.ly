@@ -5,6 +5,7 @@ import { Link } from "@/shared/components/Link";
 export interface SidebarTab {
 	id: string;
 	label: string;
+	disabled?: boolean;
 }
 
 interface SidebarProps {
@@ -32,6 +33,7 @@ export function Sidebar({
 						role="tab"
 						aria-selected={tab.id === activeTab}
 						variant={tab.id === activeTab ? "secondary" : "primary"}
+						disabled={tab.disabled}
 						onClick={() => onSelectTab(tab.id)}
 					>
 						{tab.label}

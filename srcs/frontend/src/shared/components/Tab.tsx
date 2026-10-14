@@ -47,6 +47,7 @@ export function Tabs({
 	onTabChange,
 }: TabsProps) {
 	const [activeIndex, setActiveIndex] = useState(0);
+	const currentIndex = Math.min(activeIndex, tabs.length - 1);
 	const handleTabChange = (tab: TabItem, index:number) => {
 		setActiveIndex(index);
 		onTabChange?.(tab.value);
@@ -71,9 +72,11 @@ export function Tabs({
 					);
 					})}
 					</div>
+				{tabs.length > 0 && (
 					<div role="tabpanel" className="mt-4">
-						{tabs[activeIndex].content}
+						{tabs[currentIndex].content}
 						</div>
+				)}
 						</div>
 		);
 }

@@ -22,6 +22,9 @@ export function Link({
     const style = getButtonStyle(variant);
     
     function handleClick(e: React.MouseEvent<HTMLAnchorElement>){
+        props.onClick?.(e);
+        if (external)
+            return;
         e.preventDefault()
         navigate(to);
     }
