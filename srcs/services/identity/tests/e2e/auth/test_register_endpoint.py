@@ -5,13 +5,15 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 from httpx2 import Response
 
+from tests import routes
+
 
 class TestRegisterEndpoint:
     def test_duplicate_registration_is_rejected(self, client: TestClient) -> None:
         email: str = "john.doe@example.com"
 
         register_response: Response = client.post(
-            url="/api/auth/register",
+            url=routes.REGISTER,
             json={"email": email, "password": "super-secret"},
         )
 
@@ -22,7 +24,7 @@ class TestRegisterEndpoint:
         assert body["token_type"] == "Bearer"
 
         duplicated_response = client.post(
-            url="/api/auth/register",
+            url=routes.REGISTER,
             json={"email": email, "password": "another-super-secret"},
         )
 
@@ -46,7 +48,7 @@ class TestRegisterEndpoint:
 
         def register(client: TestClient) -> int:
             response: Response = client.post(
-                url="/api/auth/register",
+                url=routes.REGISTER,
                 json=payload,
             )
             return response.status_code

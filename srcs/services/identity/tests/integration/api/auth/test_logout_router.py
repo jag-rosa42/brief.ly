@@ -6,6 +6,7 @@ from httpx2 import Response
 
 from src.api.dependencies.account import get_logout_account
 from src.main import app
+from tests import routes
 from tests.fixtures.sessions import FakeRefreshAccountSession
 
 REFRESH_TOKEN: str = "current-refresh-token"
@@ -41,7 +42,7 @@ class TestAuthLogoutRouter:
         use_logout_account(fake)
 
         response: Response = client.post(
-            url="/api/auth/logout",
+            url=routes.LOGOUT,
             json={"refresh_token": REFRESH_TOKEN},
         )
 
@@ -64,7 +65,7 @@ class TestAuthLogoutRouter:
         body: dict,
     ) -> None:
         response: Response = client.post(
-            url="/api/auth/logout",
+            url=routes.LOGOUT,
             json=body,
         )
 
