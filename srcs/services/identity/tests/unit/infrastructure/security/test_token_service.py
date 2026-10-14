@@ -15,6 +15,7 @@ from src.application.port.token.types import (
 )
 from src.domain.entities.account import Account
 from src.domain.exception import InvalidTokenError, TokenExpiredError
+from src.infrastructure.security.settings import security_settings
 from src.infrastructure.security.token.token_service import JWTTokenService
 from src.infrastructure.security.token.token_type import TokenType
 
@@ -33,17 +34,57 @@ class TestJWTTokenService:
         issued_at: datetime,
         expires_at: datetime,
         token_id: str | None = None,
+        overrides: dict[str, Any] | None = None,
+        missing: tuple[str, ...] = (),
+        headers: dict[str, Any] | None = None,
+        key: Any = None,
     ) -> str:
+        """Build a token by hand, valid by default, so each test breaks one thing.
+
+        overrides: replace claims (e.g. a wrong issuer)
+        missing:   remove claims
+        headers:   replace the default header (which carries the right kid)
+        key:       sign with another private key
+        """
+        audience: str = (
+            security_settings.JWT_ACCESS_AUDIENCE
+            if token_type == TokenType.ACCESS
+            else security_settings.JWT_REFRESH_AUDIENCE
+        )
+        payload: dict[str, Any] = {
+            "iss": security_settings.JWT_ISSUER,
+            "aud": audience,
+            "jti": token_id or str(uuid4()),
+            "sub": subject,
+            "type": token_type,
+            "iat": issued_at,
+            "exp": expires_at,
+        }
+        payload.update(overrides or {})
+        for claim in missing:
+            payload.pop(claim)
+
         return jwt.encode(
-            payload={
-                "jti": token_id if token_id is not None else str(uuid4()),
-                "sub": subject,
-                "type": token_type,
-                "iat": issued_at,
-                "exp": expires_at,
-            },
-            key=token_service._private_key.get_secret_value(),
+            payload=payload,
+            key=key or token_service._private_key.get_secret_value(),
             algorithm=token_service._algorithm,
+            headers=headers if headers is not None else {"kid": token_service._key_id},
+        )
+
+    def _valid_access_token(
+        self,
+        token_service: JWTTokenService,
+        account_id: UUID,
+        **kwargs: Any,
+    ) -> str:
+        now: datetime = datetime.now(UTC)
+        return self._create_jwt_token(
+            token_service,
+            subject=str(account_id),
+            token_type=TokenType.ACCESS,
+            issued_at=now,
+            expires_at=now + timedelta(minutes=5),
+            **kwargs,
         )
 
     def test_create_access_token(
@@ -143,42 +184,138 @@ class TestJWTTokenService:
         account_id: UUID,
         jwt_token_service: JWTTokenService,
     ) -> None:
-        now: datetime = datetime.now(UTC)
-        payload: dict[str, str | datetime] = {
-            "sub": str(account_id),
-            "type": TokenType.ACCESS,
-            "iat": now,
-            "exp": now + timedelta(minutes=5),
-        }
-        # source : https://cryptography.io/en/stable/hazmat/primitives/asymmetric/rsa/
+        # Right kid in the header, but signed with another private key.
         wrong_private_key: RSAPrivateKey = rsa.generate_private_key(
             public_exponent=65537,
             key_size=2048,
         )
-        token: str = jwt.encode(
-            payload,
-            key=wrong_private_key,
-            algorithm=jwt_token_service._algorithm,
+        token: str = self._valid_access_token(
+            jwt_token_service, account_id, key=wrong_private_key
         )
         with pytest.raises(InvalidTokenError):
             jwt_token_service.verify_access_token(token)
 
+    @pytest.mark.parametrize("claim", JWTTokenService.REQUIRED_CLAIMS)
     def test_raises_with_missing_claim(
         self,
         account_id: UUID,
         jwt_token_service: JWTTokenService,
+        claim: str,
     ) -> None:
+        token: str = self._valid_access_token(
+            jwt_token_service,
+            account_id,
+            missing=(claim,),
+        )
+
+        with pytest.raises(InvalidTokenError):
+            jwt_token_service.verify_access_token(token)
+
+    def test_access_token_carries_issuer_and_api_audience(
+        self,
+        account_id: UUID,
+        jwt_token_service: JWTTokenService,
+    ) -> None:
+        payload: dict[str, Any] = jwt.decode(
+            jwt_token_service.create_access_token(account_id),
+            options={"verify_signature": False},
+        )
+
+        assert payload["iss"] == security_settings.JWT_ISSUER
+        assert payload["aud"] == security_settings.JWT_ACCESS_AUDIENCE
+
+    def test_access_token_header_carries_rs256_and_key_id(
+        self,
+        account_id: UUID,
+        jwt_token_service: JWTTokenService,
+    ) -> None:
+        header: dict[str, Any] = jwt.get_unverified_header(
+            jwt_token_service.create_access_token(account_id)
+        )
+
+        assert header["alg"] == "RS256"
+        assert header["kid"] == JWTTokenService._compute_key_id(
+            security_settings.JWT_PUBLIC_KEY
+        )
+
+    def test_access_token_lifetime_follows_settings(
+        self,
+        account_id: UUID,
+        jwt_token_service: JWTTokenService,
+    ) -> None:
+        payload: dict[str, Any] = jwt.decode(
+            jwt_token_service.create_access_token(account_id),
+            options={"verify_signature": False},
+        )
+
+        expected: int = security_settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        assert payload["exp"] - payload["iat"] == expected
+
+    def test_raises_with_wrong_issuer(
+        self,
+        account_id: UUID,
+        jwt_token_service: JWTTokenService,
+    ) -> None:
+        token: str = self._valid_access_token(
+            jwt_token_service, account_id, overrides={"iss": "someone-else"}
+        )
+        with pytest.raises(InvalidTokenError):
+            jwt_token_service.verify_access_token(token)
+
+    def test_raises_with_wrong_audience(
+        self,
+        account_id: UUID,
+        jwt_token_service: JWTTokenService,
+    ) -> None:
+        token: str = self._valid_access_token(
+            jwt_token_service,
+            account_id,
+            overrides={"aud": "transcendence:public-api"},
+        )
+        with pytest.raises(InvalidTokenError):
+            jwt_token_service.verify_access_token(token)
+
+    def test_raises_with_unknown_key_id(
+        self,
+        account_id: UUID,
+        jwt_token_service: JWTTokenService,
+    ) -> None:
+        token: str = self._valid_access_token(
+            jwt_token_service, account_id, headers={"kid": "unknown-key"}
+        )
+        with pytest.raises(InvalidTokenError):
+            jwt_token_service.verify_access_token(token)
+
+    def test_raises_without_key_id(
+        self,
+        account_id: UUID,
+        jwt_token_service: JWTTokenService,
+    ) -> None:
+        token: str = self._valid_access_token(jwt_token_service, account_id, headers={})
+        with pytest.raises(InvalidTokenError):
+            jwt_token_service.verify_access_token(token)
+
+    def test_raises_with_alg_none(
+        self,
+        account_id: UUID,
+        jwt_token_service: JWTTokenService,
+    ) -> None:
+        # An unsigned token: if the verifier trusted the token's own "alg"
+        # header, anybody could forge one.
         now: datetime = datetime.now(UTC)
-        payload: dict[str, str | datetime] = {
-            "sub": str(account_id),
-            "type": TokenType.ACCESS,
-            "iat": now,
-            # exp is intentianally missing
-        }
         token: str = jwt.encode(
-            payload,
-            key=jwt_token_service._private_key.get_secret_value(),
-            algorithm=jwt_token_service._algorithm,
+            payload={
+                "iss": security_settings.JWT_ISSUER,
+                "aud": security_settings.JWT_ACCESS_AUDIENCE,
+                "jti": str(uuid4()),
+                "sub": str(account_id),
+                "type": TokenType.ACCESS,
+                "iat": now,
+                "exp": now + timedelta(minutes=5),
+            },
+            key="",
+            algorithm="none",
+            headers={"kid": jwt_token_service._key_id},
         )
         with pytest.raises(InvalidTokenError):
             jwt_token_service.verify_access_token(token)
@@ -323,3 +460,47 @@ class TestJWTTokenService:
 
         with pytest.raises(InvalidTokenError):
             jwt_token_service.verify_refresh_token(token)
+
+    def test_refresh_token_carries_issuer_and_identity_audience(
+        self,
+        account_id: UUID,
+        jwt_token_service: JWTTokenService,
+    ) -> None:
+        created: CreatedRefreshToken = jwt_token_service.create_refresh_token(account_id)
+
+        payload: dict[str, Any] = jwt.decode(
+            created.token, options={"verify_signature": False}
+        )
+
+        assert payload["iss"] == security_settings.JWT_ISSUER
+        assert payload["aud"] == security_settings.JWT_REFRESH_AUDIENCE
+
+
+    def test_refresh_token_lifetime_follows_settings(
+        self,
+        account_id: UUID,
+        jwt_token_service: JWTTokenService,
+    ) -> None:
+        created: CreatedRefreshToken = jwt_token_service.create_refresh_token(account_id)
+
+        payload: dict[str, Any] = jwt.decode(
+            created.token, options={"verify_signature": False}
+        )
+
+        expected: int = security_settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+        assert payload["exp"] - payload["iat"] == expected
+
+
+    def test_verify_access_token_rejects_a_refresh_audience_even_with_access_type(
+        self,
+        account_id: UUID,
+        jwt_token_service: JWTTokenService,
+    ) -> None:
+        # The audience alone is enough to refuse a token meant for refreshing.
+        token: str = self._valid_access_token(
+            jwt_token_service,
+            account_id,
+            overrides={"aud": security_settings.JWT_REFRESH_AUDIENCE},
+        )
+        with pytest.raises(InvalidTokenError):
+            jwt_token_service.verify_access_token(token)
