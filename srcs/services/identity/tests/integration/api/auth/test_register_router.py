@@ -8,6 +8,7 @@ from shared_errors import ErrorResponse
 from src.api.dependencies.account import get_register_account
 from src.domain.exception import EmailAlreadyRegisteredError
 from src.main import app
+from tests import routes
 from tests.fixtures.accounts import FakeRegisterAccount
 from tests.fixtures.sessions import build_account_session
 
@@ -51,7 +52,7 @@ class TestAuthRegisterRouter:
         use_register_account(fake_register_account)
 
         response: Response = client.post(
-            url="/api/auth/register",
+            url=routes.REGISTER,
             json={"email": VALID_EMAIL, "password": VALID_PASSWORD},
         )
 
@@ -77,7 +78,7 @@ class TestAuthRegisterRouter:
         use_register_account(fake_register_account)
 
         response: Response = client.post(
-            url="/api/auth/register",
+            url=routes.REGISTER,
             json={"email": VALID_EMAIL, "password": VALID_PASSWORD},
         )
 
@@ -99,6 +100,6 @@ class TestAuthRegisterRouter:
         client: TestClient,
         body: dict[str, str],
     ) -> None:
-        response: Response = client.post("/api/auth/register", json=body)
+        response: Response = client.post(routes.REGISTER, json=body)
 
         assert response.status_code == 422

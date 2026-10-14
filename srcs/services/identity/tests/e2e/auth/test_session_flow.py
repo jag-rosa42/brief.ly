@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from httpx2 import Response
 
+from tests import routes
 from tests.fixtures.factory import DEFAULT_ACCOUNT_EMAIL, DEFAULT_ACCOUNT_PASSWORD
 
 CREDENTIALS = {
@@ -12,7 +13,7 @@ CREDENTIALS = {
 class TestAuthSessionFlow:
     def _register(self, client: TestClient) -> dict[str, str]:
         response: Response = client.post(
-            "/api/auth/register",
+            routes.REGISTER,
             json=CREDENTIALS,
         )
         assert response.status_code == 201
@@ -20,7 +21,7 @@ class TestAuthSessionFlow:
 
     def _refresh(self, client: TestClient, refresh_token: str) -> Response:
         return client.post(
-            "/api/auth/refresh",
+            routes.REFRESH,
             json={"refresh_token": refresh_token},
         )
 
@@ -30,7 +31,7 @@ class TestAuthSessionFlow:
         session = self._register(client)
 
         response: Response = client.get(
-            "/api/accounts/me",
+            routes.ACCOUNTS_ME,
             headers={"Authorization": f"Bearer {session['access_token']}"},
         )
 
@@ -71,7 +72,7 @@ class TestAuthSessionFlow:
         session = self._register(client)
 
         logout = client.post(
-            "/api/auth/logout",
+            routes.LOGOUT,
             json={"refresh_token": session["refresh_token"]},
         )
 
@@ -81,12 +82,12 @@ class TestAuthSessionFlow:
     def test_logout_only_ends_that_session(self, client: TestClient) -> None:
         initial_session = self._register(client)
         refreshed_session = client.post(
-            "/api/auth/login",
+            routes.LOGIN,
             json=CREDENTIALS,
         ).json()
 
         client.post(
-            "/api/auth/logout", json={"refresh_token": initial_session["refresh_token"]}
+            routes.LOGOUT, json={"refresh_token": initial_session["refresh_token"]}
         )
 
         assert (
@@ -98,11 +99,11 @@ class TestAuthSessionFlow:
     ) -> None:
         device_a = self._register(client)
         device_b = client.post(
-            "/api/auth/login",
+            routes.LOGIN,
             json=CREDENTIALS,
         ).json()
         client.post(
-            "/api/auth/logout",
+            routes.LOGOUT,
             json={
                 "refresh_token": device_a["refresh_token"],
             },

@@ -3,6 +3,8 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 from httpx2 import Response
 
+from tests import routes
+
 
 class TestLoginEndpoint:
     VALID_EMAIL: str = f"john.doe-{uuid4()}@example.com"
@@ -14,7 +16,7 @@ class TestLoginEndpoint:
     ) -> None:
 
         register_response: Response = client.post(
-            "/api/auth/register",
+            routes.REGISTER,
             json={
                 "email": self.VALID_EMAIL,
                 "password": self.VALID_PASSWORD,
@@ -24,7 +26,7 @@ class TestLoginEndpoint:
         assert register_response.status_code == 201
 
         login_response: Response = client.post(
-            "/api/auth/login",
+            routes.LOGIN,
             json={
                 "email": self.VALID_EMAIL,
                 "password": self.VALID_PASSWORD,
@@ -43,7 +45,7 @@ class TestLoginEndpoint:
         client: TestClient,
     ) -> None:
         register_response: Response = client.post(
-            "/api/auth/register",
+            routes.REGISTER,
             json={
                 "email": self.VALID_EMAIL,
                 "password": self.VALID_PASSWORD,
@@ -53,7 +55,7 @@ class TestLoginEndpoint:
         assert register_response.status_code == 201
 
         login_response: Response = client.post(
-            "/api/auth/login",
+            routes.LOGIN,
             json={
                 "email": self.VALID_EMAIL,
                 "password": "wrong-password",

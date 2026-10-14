@@ -7,6 +7,7 @@ from httpx2 import Response
 from src.api.dependencies.account import get_current_account
 from src.domain.entities.account import Account
 from src.main import app
+from tests import routes
 
 
 @pytest.fixture
@@ -33,7 +34,7 @@ class TestAccountsRouter:
     ) -> None:
         use_current_account(account)
 
-        response: Response = client.get("/api/accounts/me")
+        response: Response = client.get(routes.ACCOUNTS_ME)
 
         assert response.status_code == 200
 
@@ -48,7 +49,7 @@ class TestAccountsRouter:
         client: TestClient,
     ) -> None:
         response: Response = client.get(
-            url="/api/accounts/me",
+            url=routes.ACCOUNTS_ME,
             headers={"Authorization": "Bearer not-a-jwt"}
         )
 
@@ -58,6 +59,6 @@ class TestAccountsRouter:
         self,
         client: TestClient,
     ) -> None:
-        response: Response = client.get("/api/accounts/me")
+        response: Response = client.get(routes.ACCOUNTS_ME)
 
         assert response.status_code == 401

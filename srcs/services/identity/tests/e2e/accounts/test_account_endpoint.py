@@ -3,6 +3,8 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 from httpx2 import Response
 
+from tests import routes
+
 
 class TestAccountsEndpoints:
     def test_returns_accounts_with_access_token_from_register(
@@ -13,7 +15,7 @@ class TestAccountsEndpoints:
         password: str = "super-secret"
 
         registered_account_response: Response = client.post(
-            "/api/auth/register",
+            routes.REGISTER,
             json={"email": email, "password": password},
         )
 
@@ -21,7 +23,7 @@ class TestAccountsEndpoints:
         access_token: str = registered_account_response.json()["access_token"]
 
         protected_response: Response = client.get(
-            url="/api/accounts/me",
+            url=routes.ACCOUNTS_ME,
             headers={
                 "Authorization": f"Bearer {access_token}",
             },
@@ -40,17 +42,17 @@ class TestAccountsEndpoints:
         email: str = f"john.doe-{uuid4()}@example.com"
         password: str = "super-secret"
 
-        client.post("/api/auth/register", json={"email": email, "password": password})
+        client.post(routes.REGISTER, json={"email": email, "password": password})
 
         login_response: Response = client.post(
-            "/api/auth/login",
+            routes.LOGIN,
             json={"email": email, "password": password},
         )
         assert login_response.status_code == 200
         access_token: str = login_response.json()["access_token"]
 
         protected_response: Response = client.get(
-            "/api/accounts/me",
+            routes.ACCOUNTS_ME,
             headers={"Authorization": f"Bearer {access_token}"},
         )
 
@@ -59,11 +61,11 @@ class TestAccountsEndpoints:
 
     def test_rejects_an_invalid_access_token(self, client: TestClient) -> None:
         response: Response = client.get(
-            "/api/accounts/me",
+            routes.ACCOUNTS_ME,
             headers={"Authorization": "Bearer not-a-real-token"},
         )
         assert response.status_code == 401
 
     def test_rejects_a_missing_access_token(self, client: TestClient) -> None:
-        response: Response = client.get("/api/accounts/me")
+        response: Response = client.get(routes.ACCOUNTS_ME)
         assert response.status_code == 401

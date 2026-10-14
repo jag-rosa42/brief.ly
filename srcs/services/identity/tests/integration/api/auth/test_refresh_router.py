@@ -12,6 +12,7 @@ from src.domain.exception import (
     TokenRevokedError,
 )
 from src.main import app
+from tests import routes
 from tests.fixtures.sessions import FakeRefreshAccountSession
 
 REFRESH_TOKEN: str = "current-refresh-token"
@@ -47,7 +48,7 @@ class TestAuthRefreshRouter:
         use_refresh_account_session(fake)
 
         response: Response = client.post(
-            url="/api/auth/refresh",
+            url=routes.REFRESH,
             json={"refresh_token": REFRESH_TOKEN},
         )
 
@@ -72,7 +73,7 @@ class TestAuthRefreshRouter:
         use_refresh_account_session(fake)
 
         response: Response = client.post(
-            url="/api/auth/refresh",
+            url=routes.REFRESH,
             json={"refresh_token": REFRESH_TOKEN},
         )
 
@@ -93,7 +94,7 @@ class TestAuthRefreshRouter:
         body: dict,
     ) -> None:
         response: Response = client.post(
-            url="/api/auth/refresh",
+            url=routes.REFRESH,
             json=body,
         )
 

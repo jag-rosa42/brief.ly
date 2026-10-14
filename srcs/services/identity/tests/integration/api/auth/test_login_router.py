@@ -8,6 +8,7 @@ from shared_errors import ErrorResponse
 from src.api.dependencies.account import get_login_account
 from src.domain.exception import InvalidCredentialsError
 from src.main import app
+from tests import routes
 from tests.fixtures.accounts import FakeLoginAccount
 
 VALID_EMAIL: str = "john.doe@example.com"
@@ -44,7 +45,7 @@ class TestAuthLoginAccount:
         use_login_account(fake_login_account)
 
         response: Response = client.post(
-            url="/api/auth/login",
+            url=routes.LOGIN,
             json={"email": VALID_EMAIL, "password": VALID_PASSWORD},
         )
 
@@ -70,7 +71,7 @@ class TestAuthLoginAccount:
         use_login_account(fake_login_account)
 
         response: Response = client.post(
-            url="/api/auth/login",
+            url=routes.LOGIN,
             json={"email": VALID_EMAIL, "password": VALID_PASSWORD},
         )
 
@@ -93,7 +94,7 @@ class TestAuthLoginAccount:
         body: dict[str, str],
     ) -> None:
         response: Response = client.post(
-            url="/api/auth/login",
+            url=routes.LOGIN,
             json=body,
         )
 

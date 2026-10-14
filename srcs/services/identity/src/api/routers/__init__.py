@@ -20,11 +20,16 @@ root_routers.include_router(health_router)
 # ---------------------------------------------------------------------------
 # API endpoints
 # ---------------------------------------------------------------------------
-# All routers registered here are exposed under the /api prefix.
+# Endpoints the frontend reaches through the gateway.
+#
+# There is no "/api" prefix here: the browser calls /api/identity/<path> and
+# the gateway removes "/api/identity" before forwarding, so this service only
+# ever sees its own paths.
 #
 # Example:
-#   auth_router -> POST /api/auth/...
+#   browser: POST /api/identity/auth/login
+#   service: POST /auth/login
 # ---------------------------------------------------------------------------
-api_routers = APIRouter(prefix="/api")
+api_routers = APIRouter()
 api_routers.include_router(auth_router)
 api_routers.include_router(account_router)
