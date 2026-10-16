@@ -1,19 +1,9 @@
-import { createContext, useContext, useState } from "react";
+import { useState } from "react";
 import type { ReactNode } from "react";
-
-interface AuthContextValue {
-	isLoggedIn: boolean;
-	profileComplete: boolean;
-	login: () => void;
-	signup: () => void;
-	completeProfile: () => void;
-	logout: () => void;
-}
-
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+import { AuthContext } from "@/app/AuthContextDefinition";
 
 interface AuthProviderProps {
-	children: ReactNode;
+        children: ReactNode;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -29,11 +19,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
 		setProfileComplete(true);
 	}
 
-	function signup() {
+	function signup(email: string, password: string): Promise<void> {
+		// Mock : les identifiants seront utilisés lors de l'intégration API.
+        void email;
+        void password;
+
 		localStorage.setItem("token", "fake-token");
 		localStorage.setItem("profileComplete", "false");
 		setIsLoggedIn(true);
 		setProfileComplete(false);
+
+		return Promise.resolve();
   	}
 
   	function completeProfile() {
@@ -42,23 +38,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   	}
 	function logout() {
 		localStorage.removeItem("token");
-		localStorage.setItem("profileComplete", "true");
+		localStorage.removeItem("profileComplete");
 		setIsLoggedIn(false);
 		setProfileComplete(false);
 	}
 
 	return (
-		<AuthContext.Provider value={{ isLoggedIn, profileComplete, login, signup, completeProfile, logout }}>
+		<AuthContext value={{ isLoggedIn, profileComplete, login, signup, completeProfile, logout }}>
 			{children}
-		</AuthContext.Provider>
+		</AuthContext>
 	);
 }
 
-export function useAuth() {
-	const context = useContext(AuthContext);
-
-	if (context === undefined) {
-		throw new Error("useAuth must be used within an AuthProvider");
-	}
-	return context;
-}

@@ -26,8 +26,8 @@ export function ArticleCard({
 			variant="dashboardcard"
 			className={`relative flex w-full cursor-pointer shadow-sm transition hover:-translate-y-0.5 hover:shadow-soft-hover ${className ?? ""}`}
 		>
-			<div className="flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wider text-accent">
-				<Text variant="body">{story.source}</Text>
+			<div className="flex items-center justify-between gap-2">
+				<Text variant="label" className="text-accent" >{story.source}</Text>
         		<Text variant="body" className="font-normal normal-case text-info">
           			{readingTime} min read
         		</Text>

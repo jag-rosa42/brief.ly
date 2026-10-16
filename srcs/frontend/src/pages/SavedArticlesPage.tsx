@@ -1,33 +1,21 @@
 import { useState } from "react";
 import { useDashboardData } from "@/utils/useDashboardData";
-import { useSavedArticles } from "@/app/SavedArticlesContext";
+import { useSavedArticles } from "@/app/useSavedArticles";
 import { Button } from "@/shared/components/Button";
 import { ArticleCard } from "@/shared/components/ArticleCard";
 import { ArticleModal, type Story } from "@/shared/components/ArticleModal";
 import { Dropdown } from "@/shared/components/Dropdown";
 import { Input } from "@/shared/components/Input";
 import { Text } from "@/shared/components/Text";
+import { Division } from "@/shared/components/Division"
 
 const ARTICLES_PER_PAGE = 4;
 const DEFAULT_READING_TIME = 4;
 
-/* Faux articles en attendant le backend.
-const fakeArticles: Article[] = [
-	{ id: "1", source: "Le Monde", category: "IA", title: "Les LLM en 2026", summary: "Un tour d'horizon des modèles de langage.", url: "https://www.lemonde.fr/", readingTime: 8 },
-	{ id: "2", source: "Le Monde", category: "Climat", title: "Un été record", summary: "Les températures battent de nouveaux records.", url: null, readingTime: 5 },
-	{ id: "3", source: "Wired", category: "IA", title: "Des agents partout", summary: "Les agents autonomes arrivent dans les entreprises.", url: null, readingTime: 12 },
-	{ id: "4", source: "Wired", category: "Sécurité", title: "Mots de passe : la fin ?", summary: "Les passkeys remplacent peu à peu les mots de passe.", url: null, readingTime: 4 },
-	{ id: "5", source: "Numerama", category: "Espace", title: "Retour sur la Lune", summary: "Le point sur les prochaines missions lunaires.", url: null, readingTime: 7 },
-	{ id: "6", source: "Numerama", category: "IA", title: "L'IA dans les écoles", summary: "Comment les enseignants s'adaptent aux nouveaux outils.", url: null, readingTime: 6 },
-	{ id: "7", source: "Le Monde", category: "Espace", title: "Un nouveau télescope", summary: "Des images inédites de galaxies lointaines.", url: null, readingTime: 3 },
-	{ id: "8", source: "Wired", category: "Climat", title: "Le coût du cloud", summary: "L'empreinte carbone des centres de données.", url: null, readingTime: 10 },
-	{ id: "9", source: "Numerama", category: "Sécurité", title: "Une faille géante", summary: "Des millions de routeurs concernés par une faille.", url: null, readingTime: 9 },
-	{ id: "10", source: "Le Monde", category: "IA", title: "Réguler l'IA", summary: "L'Europe précise ses règles sur les modèles de langage.", url: null, readingTime: 11 },
-	{ id: "11", source: "Wired", category: "Espace", title: "Internet par satellite", summary: "Les constellations de satellites encombrent l'orbite basse.", url: null, readingTime: 6 },
-	{ id: "12", source: "Numerama", category: "Climat", title: "Des batteries sans lithium", summary: "Le sodium pourrait changer le stockage de l'énergie.", url: null, readingTime: 14 },
-];*/
-
-
+const ORDER_OPTIONS = [
+	{ value: "asc", label: "Shortest first" },
+	{ value: "desc", label: "Longest first" },
+];
 
 // Renvoie les valeurs sans doublon, précédées de l'option "tout afficher".
 function buildOptions(values: string[], allLabel: string) {
@@ -36,6 +24,130 @@ function buildOptions(values: string[], allLabel: string) {
 		{ value: "all", label: allLabel },
 		...uniqueValues.map((value) => ({ value, label: value })),
 	];
+}
+
+function getSavedArticles(stories: Story[], savedIds: Set<string>): Story[] {
+	const uniqueStories = new Map(stories.map((story) => [story.id, story] as const));
+	return [...uniqueStories.values()].filter((story) => savedIds.has(story.id));
+}
+
+interface FilterValues {
+	search: string;
+	source: string;
+	topic: string;
+}
+
+function filterArticles(articles: Story[], { search, source, topic }: FilterValues): Story[] {
+	const keywords = search.toLowerCase().split(" ").filter((word) => word !== "");
+
+	return articles.filter((article) => {
+		const content = `${article.title} ${article.summary}`.toLowerCase();
+		const matchesSearch = keywords.every((word) => content.includes(word));
+		const matchesSource = source === "all" || article.source === source;
+		const matchesTopic = topic === "all" || article.category === topic;
+		return matchesSearch && matchesSource && matchesTopic;
+	});
+}
+
+function sortByReadingTime(articles: Story[], order: string): Story[] {
+	const sortedArticles = [...articles];
+
+	sortedArticles.sort((a, b) => {
+		let timeA = a.readingTime;
+		let timeB = b.readingTime;
+
+		timeA ??= DEFAULT_READING_TIME;
+  		timeB ??= DEFAULT_READING_TIME;
+
+		if (order === "asc") {
+			return timeA - timeB;
+		} else {
+			return timeB - timeA;
+		}
+	});
+
+	return sortedArticles;
+}
+
+interface SavedArticlesFiltersProps {
+	articles: Story[];
+	search: string;
+	source: string;
+	topic: string;
+	order: string;
+	onSearchChange: (value: string) => void;
+	onSourceChange: (value: string) => void;
+	onTopicChange: (value: string) => void;
+	onOrderChange: (value: string) => void;
+}
+
+function SavedArticlesFilters({
+	articles,
+	search,
+	source,
+	topic,
+	order,
+	onSearchChange,
+	onSourceChange,
+	onTopicChange,
+	onOrderChange,
+}: SavedArticlesFiltersProps) {
+	return (
+		<div className="flex flex-wrap items-end gap-4">
+			<Input
+				name="search"
+				label="Search"
+				variant="sub"
+				placeholder="Keywords..."
+				value={search}
+				onChange={(e) => onSearchChange(e.target.value)}
+			/>
+			<Dropdown
+				name="source"
+				label="Source"
+				variant="main"
+				options={buildOptions(articles.map((article) => article.source), "All sources")}
+				value={source}
+				onChange={(e) => onSourceChange(e.target.value)}
+			/>
+			<Dropdown
+				name="topic"
+				label="Topic"
+				variant="main"
+				options={buildOptions(articles.map((article) => article.category), "All topics")}
+				value={topic}
+				onChange={(e) => onTopicChange(e.target.value)}
+			/>
+			<Dropdown
+				name="order"
+				label="Reading time"
+				variant="main"
+				options={ORDER_OPTIONS}
+				value={order}
+				onChange={(e) => onOrderChange(e.target.value)}
+			/>
+		</div>
+	);
+}
+
+interface PaginationProps {
+	currentPage: number;
+	pageCount: number;
+	onPageChange: (page: number) => void;
+}
+
+function Pagination({ currentPage, pageCount, onPageChange }: PaginationProps) {
+	return (
+		<div className="flex items-center justify-center gap-4">
+			<Button variant="primary" disabled={currentPage === 1} onClick={() => onPageChange(currentPage - 1)}>
+				🡨
+			</Button>
+			<Text variant="body">Page {currentPage} / {pageCount}</Text>
+			<Button variant="primary" disabled={currentPage === pageCount} onClick={() => onPageChange(currentPage + 1)}>
+				🡪
+			</Button>
+		</div>
+	);
 }
 
 export function SavedArticles() {
@@ -56,43 +168,9 @@ export function SavedArticles() {
 			return (pref.stories);
 		});
 	}
-	//const allStories = data?.preferences.flatMap((pref) => pref.stories) ?? [];
-
-	const articlesMap = new Map(
-		allStories.map((story) => {
-			return([story.id, story] as const);
-	}));
-	const uniqueArticles = [...articlesMap.values()];
-	const articles = uniqueArticles.filter((story) => {
-		return (savedIds.has(story.id));
-	});
-
-	const keywords = search.toLowerCase().split(" ").filter((word) => word !== "");
-	const filteredArticles = articles.filter((article) => {
-		const content = `${article.title} ${article.summary}`.toLowerCase();
-		const matchesSearch = keywords.every((word) => content.includes(word));
-		const matchesSource = source === "all" || article.source === source;
-		const matchesTopic = topic === "all" || article.category === topic;
-		return matchesSearch && matchesSource && matchesTopic;
-	});
-
-	const sortedArticles = [...filteredArticles];
-	sortedArticles.sort((a,b) => {
-		let timeA = a.readingTime;
-		let timeB = b.readingTime;
-
-		if (timeA === undefined || timeA === null) {
-			timeA = DEFAULT_READING_TIME;
-		}
-		if (timeB === undefined || timeB === null) {
-			timeB = DEFAULT_READING_TIME;
-		}
-		if (order === "asc") {
-			return (timeA - timeB);
-		} else {
-			return (timeB - timeA);
-		}
-	});
+	const articles = getSavedArticles(allStories, savedIds);
+	const filteredArticles = filterArticles(articles, { search, source, topic });
+	const sortedArticles = sortByReadingTime(filteredArticles, order);
 
 	const pageCount = Math.max(1, Math.ceil(sortedArticles.length / ARTICLES_PER_PAGE));
 	// Si la dernière page se vide (article retiré), on recule sur la dernière page existante.
@@ -107,48 +185,21 @@ export function SavedArticles() {
 	}
 
 	return (
-		<div className="flex flex-col gap-6 p-6 max-w-4xl mx-auto">
+		<Division variant="dashboardpage" className="max-w-4xl gap-6">
 			<Text variant="title">Saved Articles</Text>
+			<SavedArticlesFilters
+				articles={articles}
+				search={search}
+				source={source}
+				topic={topic}
+				order={order}
+				onSearchChange={(value) => changeFilter(setSearch, value)}
+				onSourceChange={(value) => changeFilter(setSource, value)}
+				onTopicChange={(value) => changeFilter(setTopic, value)}
+				onOrderChange={(value) => changeFilter(setOrder, value)}
+			/>
 
-			<div className="flex flex-wrap items-end gap-4">
-				<Input
-					name="search"
-					label="Search"
-					variant="sub"
-					placeholder="Keywords..."
-					value={search}
-					onChange={(e) => changeFilter(setSearch, e.target.value)}
-				/>
-				<Dropdown
-					name="source"
-					label="Source"
-					variant="main"
-					options={buildOptions(articles.map((article) => article.source), "All sources")}
-					value={source}
-					onChange={(e) => changeFilter(setSource, e.target.value)}
-				/>
-				<Dropdown
-					name="topic"
-					label="Topic"
-					variant="main"
-					options={buildOptions(articles.map((article) => article.category), "All topics")}
-					value={topic}
-					onChange={(e) => changeFilter(setTopic, e.target.value)}
-				/>
-				<Dropdown
-					name="order"
-					label="Reading time"
-					variant="main"
-					options={[
-						{ value: "asc", label: "Shortest first" },
-						{ value: "desc", label: "Longest first" },
-					]}
-					value={order}
-					onChange={(e) => changeFilter(setOrder, e.target.value)}
-				/>
-			</div>
-
-			{visibleArticles.length === 0 && <Text variant="body">Aucun article trouvé.</Text>}
+			{visibleArticles.length === 0 && <Text variant="body">No article was found.</Text>}
 
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 				{visibleArticles.map((article) => (
@@ -161,18 +212,8 @@ export function SavedArticles() {
 					/>
 				))}
 			</div>
-
-			<div className="flex items-center justify-center gap-4">
-				<Button variant="primary" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>
-					🡨
-				</Button>
-				<Text variant="body">Page {currentPage} / {pageCount}</Text>
-				<Button variant="primary" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>
-					🡪
-				</Button>
-			</div>
-
+			<Pagination currentPage={currentPage} pageCount={pageCount} onPageChange={setPage} />
 			<ArticleModal story={openedArticle} onClose={() => setOpenedArticle(null)} />
-		</div>
+		</Division>
 	);
 }

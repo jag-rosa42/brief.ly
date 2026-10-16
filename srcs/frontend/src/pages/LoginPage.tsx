@@ -3,7 +3,7 @@ import type { SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useLocation } from "react-router-dom";
-import { useAuth } from "@/app/AuthContext";
+import { useAuth } from "@/app/useAuth";
 import { Form } from "@/shared/components/Form";
 import { Input } from "@/shared/components/Input";
 
@@ -13,6 +13,10 @@ import { Division } from "@/shared/components/Division";
 
 import isEmail from "validator/lib/isEmail";
 
+interface LoginLocationState {
+        message?: unknown;
+}
+
 function validateForm(email: string) {
 	if (!isEmail(email)) {
 		return "Enter a valid email address";
@@ -21,48 +25,45 @@ function validateForm(email: string) {
 }
 
 export function LoginPage() {
-	const [pass, setPassword] = useState("");
+	const [password, setPassword] = useState("");
 	const [email, setEmail] = useState("");
 	const [waiting, setWaiting] = useState(false);
 	const navigate = useNavigate();
 	const { login } = useAuth();
 	const location = useLocation();
-	const [errorMessage, setErrorMessage] = useState<string>(location.state?.message ?? "");
-
-	async function handleSubmit(e: SyntheticEvent) {
+	
+	const navigationState = location.state as LoginLocationState | null;
+	const initialMessage = typeof navigationState?.message === "string" ? navigationState.message : "";
+	const [errorMessage, setErrorMessage] = useState(initialMessage);
+	
+	function handleSubmit(e: SyntheticEvent) {
 		e.preventDefault();
 		setErrorMessage("");
-		setWaiting(true);
+		//setWaiting(true);
 
 		const error = validateForm(email);
 
 		if (error) {
     		setErrorMessage(error);
-			setWaiting(false);
+			//setWaiting(false);
     		return;
 		}
-		if (pass === "") {
+		if (password === "") {
 			setErrorMessage("Password is required");
-			setWaiting(false);
+			//setWaiting(false);
 			return;
 		}
 		//TODO add call API (mock behaviour here)
 		try {
-			await login();
-			navigate("/sidebar/brief");
-		} catch (err) {
+			login();
+			void navigate("/dashboard/brief");
+		} catch {
 			setErrorMessage("Login failed. Please try again");
 		} finally {
 			setWaiting(false);
 		}
 	}
 
-	async function oauth() {
-		setWaiting(true);
-		login();
-		navigate("*");
-		setWaiting(false);
-	}
 
 	return(
 		<Division variant = "page">
@@ -90,16 +91,6 @@ export function LoginPage() {
 									disabled={waiting}
 								>
 									{waiting ? "Logging in..." : "Log in"}
-								</Button>
-
-								<Button
-									type="button"
-									variant="primary"
-									className="w-full"
-									onClick={oauth}
-									disabled={waiting}
-								>
-									OAuth
 								</Button>
 							</div>
 						}

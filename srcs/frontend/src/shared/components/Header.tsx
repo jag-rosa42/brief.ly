@@ -1,15 +1,15 @@
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/app/AuthContext";
+import { useAuth } from "@/app/useAuth";
 import { Link } from "@/shared/components/Link"
 import { Button } from "@/shared/components/Button"
-
+import { Logo } from "@/shared/components/Logo"
 
 export function Header() {
 	const { isLoggedIn } = useAuth();
 
 	return (
 	<header className="flex justify-between items-center px-6 py-4">
-		<Link to="/" variant="title">Brief<span className="text-secondary">.ly</span></Link>
+		<Logo />
 		{isLoggedIn ? <NavbarLogged /> : <NavbarUnlogged />}
 	</header>
 	);
@@ -25,16 +25,16 @@ export function NavbarLogged(){
 				variant="primary"
 				onClick={() => {
 					logout();
-					navigate("/");
+					void navigate("/");
 				}}
 			>
 				Log out
 			</Button>
 			<Link
-				to={profileComplete ? "/sidebar/brief" : "/sidebar/preferences"}
+				to={profileComplete ? "/dashboard/brief" : "/dashboard/profile"}
 				variant="secondary"
 			>
-				{profileComplete ? "Morning Briefing" : "Preferences"}
+				{profileComplete ? "Morning Briefing" : "Profile"}
 			</Link>
 		</div>
 	);

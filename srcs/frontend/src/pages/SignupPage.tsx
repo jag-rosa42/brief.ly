@@ -5,12 +5,16 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/Button";
 import { Text } from "@/shared/components/Text";
 import { useLocation } from "react-router-dom";
-import { useAuth } from "@/app/AuthContext";
+import { useAuth } from "@/app/useAuth";
 import { Form } from "@/shared/components/Form";
 import { Input } from "@/shared/components/Input";
 import { Division } from "@/shared/components/Division";
 
 import isEmail from "validator/lib/isEmail";
+
+interface SignupLocationState {
+	message?: unknown;
+}
 
 function validateForm(email: string) {
 	if (!isEmail(email)) {
@@ -20,14 +24,16 @@ function validateForm(email: string) {
 }
 
 export function SignupPage() {
-	const [pass, setPassword] = useState("");
+	const [password, setPassword] = useState("");
 	const [confirmPass, setConfirmPass] = useState("");
 	const [email, setEmail] = useState("");
 	const [waiting, setWaiting] = useState(false);
 	const navigate = useNavigate();
 	const { signup } = useAuth();
 	const location = useLocation();
-	const [errorMessage, setErrorMessage] = useState<string>(location.state?.message ?? "");
+	const navigationState = location.state as SignupLocationState | null;
+	const initialMessage = typeof navigationState?.message === "string" ? navigationState.message : "";
+	const [errorMessage, setErrorMessage] = useState(initialMessage);
 
 	async function handleSubmit(e: SyntheticEvent)
 	{
@@ -43,13 +49,13 @@ export function SignupPage() {
 			setWaiting(false);
 			return;
 		}
-		if (pass !== confirmPass)
+		if (password !== confirmPass)
 		{
 			setErrorMessage("Passwords do not match");
 			setWaiting(false);
 			return;
 		}
-		else if (pass.length < 8)
+		else if (password.length < 8)
 		{
 			setErrorMessage("Password must be at least 8 characters");
 			setWaiting(false);
@@ -57,9 +63,9 @@ export function SignupPage() {
 		}
 		//TODO add call API (mock behaviour here)
 		try {
-			await signup();
-			navigate("/sidebar/preferences");
-		}	catch (err) {
+			await signup(email, password);
+			void navigate("/dashboard/profile");
+		}	catch  {
 			setErrorMessage("Login failed. Please try again");
 		}	finally {
 			setWaiting(false);
@@ -77,7 +83,7 @@ export function SignupPage() {
 				</Text>
 				<Division variant="featurecard" className="shadow-sm">
 					<Form
-					onSubmit={handleSubmit}
+					onSubmit={(e) => { void handleSubmit(e);}}
 					actions={
 						<div className="flex flex-col gap-3 w-full">
 							{errorMessage && (

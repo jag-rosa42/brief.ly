@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/app/AuthContext";
+import { useAuth } from "@/app/useAuth";
 import { useState } from "react";
 import type { SubmitEvent } from "react";
 import { Link } from "@/shared/components/Link";
@@ -11,7 +11,7 @@ import { Input } from "@/shared/components/Input";
 import { Button } from "@/shared/components/Button";
 import { FilterChip } from "@/shared/components/FilterChip";
 import type { FilterChipOption } from "@/shared/components/FilterChip";
-import { usePreferences } from "@/app/PreferencesContext";
+import { usePreferences } from "@/app/usePreferences";
 
 const MIN_INTERESTS = 1;
 const MAX_INTERESTS = 4;
@@ -42,7 +42,7 @@ type FieldName =
 
 type FormErrors = Partial<Record<FieldName, string>>;
 
-export function PreferencesPage() {
+export function ProfilePage() {
 	const { selectedPreferences: savedPreferences, updatePreferences } = usePreferences();
 
 	const [Name, setName] = useState("");
@@ -97,14 +97,14 @@ export function PreferencesPage() {
 		setSaved(true);
 		if (!profileComplete) {
 			completeProfile();
-			navigate("/sidebar/brief");
+			void navigate("/dashboard/brief");
 		}
 	}
 
 return (
-	<Division variant="page">
+	<Division variant="dashboardpage" className="items-center">
 		<Text variant="title" className="mb-10 text-center">
-			Preferences
+			Profile
 		</Text>
 		<div className="w-full max-w-sm">
 			<Text variant="subheading" className="mb-4">
