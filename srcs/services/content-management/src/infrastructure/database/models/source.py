@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import UUID
+from sqlalchemy import UUID, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.infrastructure.database.models.base import Base
@@ -16,7 +16,7 @@ class SourceModel(Base):
         default=uuid.uuid4,
     )
 
-    category: Mapped[str] = mapped_column()
+    category: Mapped[str] = mapped_column(ForeignKey("topics.id"))
     language: Mapped[str] = mapped_column()
     interval_seconds: Mapped[int] = mapped_column()
     enabled: Mapped[bool] = mapped_column()
