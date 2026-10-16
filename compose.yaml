@@ -47,7 +47,6 @@ x-backend-prestart: &backend-prestart
   environment:
     POSTGRES_HOST: pgsql
     POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
-    POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
     POSTGRES_DEFAULT_DB_NAME: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
   command:
     ["sh", "-c", "python -m src.infrastructure.database.bootstrap && alembic upgrade head"]
@@ -68,7 +67,6 @@ x-backend-service: &backend-service
   environment:
     POSTGRES_HOST: pgsql
     POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
-    POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
     POSTGRES_DEFAULT_DB_NAME: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
 
   secrets:
@@ -251,17 +249,6 @@ services:
   prestart-identity:
     <<: [*identity-image-build, *backend-prestart]
     container_name: prestart-identity
-    environment:
-      POSTGRES_HOST: pgsql
-      POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
-      POSTGRES_DEFAULT_DB_NAME: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
-      JWT_PRIVATE_KEY_FILE: /run/secrets/jwt_private_key
-      JWT_PUBLIC_KEY_FILE: /run/secrets/jwt_public_key
-    secrets:
-      - jwt_private_key
-      - jwt_public_key
-      - postgres_password
 
   identity:
     <<: [*identity-image-build, *backend-service]
@@ -270,13 +257,6 @@ services:
         condition: service_healthy
       prestart-identity:
         condition: service_completed_successfully
-    environment:
-      POSTGRES_HOST: pgsql
-      POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
-      POSTGRES_DEFAULT_DB_NAME: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
-      JWT_PRIVATE_KEY_FILE: /run/secrets/jwt_private_key
-      JWT_PUBLIC_KEY_FILE: /run/secrets/jwt_public_key
     secrets:
       - jwt_private_key
       - jwt_public_key
