@@ -1,0 +1,23 @@
+from sqlalchemy import Select, select
+from sqlalchemy.orm import Session
+
+from src.domain.entities import Topic
+from src.infrastructure.database.models.topic import TopicModel
+
+
+class SqlAlchemyTopicRepository:
+    def __init__(self, session: Session):
+        self._session: Session = session
+
+    def list_all(self):
+        statement: Select[tuple[TopicModel]] = select(TopicModel)
+        topic_list = []
+        for topic_model in self._session.scalars(statement):
+            topic_list.append(self._to_domain(topic_model))
+        return topic_list
+
+    @staticmethod
+    def _to_domain(topic_model: TopicModel) -> Topic:
+        return Topic(
+            id=topic_model.id,
+        )
