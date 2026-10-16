@@ -1,4 +1,3 @@
-
 import { StaticPage,StaticSection,} from "@/shared/components/StaticPage";
 
 export function PrivacyPolicyPage() {

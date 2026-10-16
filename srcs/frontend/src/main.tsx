@@ -6,8 +6,8 @@ import '@fontsource-variable/sofia-sans'
 import '@/index.css'
 import App from '@/App.tsx'
 import { AuthProvider } from "@/app/AuthContext";
-import { SavedArticlesProvider } from './app/SavedArticlesContext'
-import { PreferencesProvider } from './app/PreferencesContext'
+import { SavedArticlesProvider } from '@/app/SavedArticlesContext'
+import { PreferencesProvider } from '@/app/PreferencesContext'
 
 createRoot(document.getElementById('root')!).render(
 	<StrictMode>

@@ -1,6 +1,6 @@
 import { MOCK_DASHBOARD, type DashboardData } from "@/utils/mock";
 import { useMemo } from "react";
-import { usePreferences } from "@/app/PreferencesContext";
+import { usePreferences } from "@/app/usePreferences";
 
 interface UseDashboardData {
 	data: DashboardData | null;

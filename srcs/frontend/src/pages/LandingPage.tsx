@@ -1,14 +1,14 @@
 import { Link } from "@/shared/components/Link";
 import { Division } from "@/shared/components/Division";
 import { Text } from "@/shared/components/Text";
-import { useAuth } from "@/app/AuthContext";
+import { useAuth } from "@/app/useAuth";
 
 export function LandingPage() {
 	const { isLoggedIn, profileComplete } = useAuth();
 
 	let startLink = "/signup";
 	if (isLoggedIn) {
-		startLink = profileComplete ? "/sidebar/brief" : "/sidebar/preferences";
+		startLink = profileComplete ? "/dashboard/brief" : "/dashboard/profile";
 	}
 	return (
 		<main>

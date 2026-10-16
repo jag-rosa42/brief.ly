@@ -1,13 +1,6 @@
-import { createContext, useContext, useState } from "react";
+import { useState } from "react";
 import type { ReactNode } from "react";
-
-interface SavedArticlesContextValue {
-	savedIds: Set<string>;
-	isSaved: (id: string) => boolean;
-	toggleSave: (id:string) => void;
-}
-
-const SavedArticlesContext = createContext<SavedArticlesContextValue | undefined>(undefined);
+import { SavedArticlesContext } from "@/app/SavedArticlesContextDefinition";
 
 interface SavedArticlesProviderProps {
 	children: ReactNode;
@@ -31,16 +24,8 @@ export function SavedArticlesProvider({ children }: SavedArticlesProviderProps) 
 		}); 
 	}
 	return (
-		<SavedArticlesContext.Provider value={{ savedIds, isSaved, toggleSave}}>
+		<SavedArticlesContext value={{ savedIds, isSaved, toggleSave}}>
 			{children}
-		</SavedArticlesContext.Provider>
+		</SavedArticlesContext>
 	);
-}
-
-export function useSavedArticles() {
-	const context = useContext(SavedArticlesContext);
-	if (context === undefined) {
-		throw new Error("useSavedArticles must be used within a SavedArticlesProvider");
-	}
-	return (context);
 }

@@ -1,18 +1,21 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { Layout } from "@/app/Layout";
 import { LandingPage } from "@/pages/LandingPage";
 import { TermsOfServicePage } from "@/pages/TermsOfServicePage";
 import { PrivacyPolicyPage } from "@/pages/PrivacyPolicyPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
-import { DesignSystem } from "@/pages/DesignSystem";
 import { SignupPage } from "@/pages/SignupPage";
 import { LoginPage } from "@/pages/LoginPage";
-import { SidebarPage } from "@/pages/SidebarPage";
+import { DashboardPage } from "@/pages/DashboardPage";
 //import { NotificationTestPage } from "@/pages/NotificationTestPage";
-import { useAuth } from "@/app/AuthContext";
+import { useAuth } from "@/app/useAuth";
+
+function ProtectedRoute() {
+	const { isLoggedIn } = useAuth();
+	return isLoggedIn ? <Outlet /> : <Navigate to="/" replace />;
+}
 
 export function AppRouter() {
-	const { isLoggedIn } = useAuth();
 	return (
 		<Routes>
   			<Route element={<Layout />}>
@@ -26,22 +29,15 @@ export function AppRouter() {
 					element={<SignupPage />}/>
 				<Route path="/login"
 					element={<LoginPage/>}/>
-				<Route path="/designsystem"
-					element={<DesignSystem />}/>
 				{/*<Route path="/notificationtest"
 					element={<NotificationTestPage />}/>*/}
 				<Route path="*"
 					element={<NotFoundPage />}/>
 			</Route>
-			<Route 
-				path="/sidebar"
-				element={<Navigate to="/sidebar/brief" replace />}/>
-			<Route 
-				path="/sidebar/:tab"
-				element={
-					isLoggedIn ? <SidebarPage /> : <Navigate to="/" replace />
-				}
-				/>
+				<Route element={<ProtectedRoute />}>
+					<Route path="/dashboard/:tab" element={<DashboardPage />} />
+					<Route path="/dashboard" element={<Navigate to="/dashboard/brief" replace />} />
+			</Route>
 		</Routes>
 	);
 }

@@ -1,12 +1,7 @@
-import { createContext, useContext, useState } from "react";
+import { useState } from "react";
 import type { ReactNode } from "react";
 
-interface PreferencesContextValue {
-	selectedPreferences: string[];
-	updatePreferences: (preferences: string[]) => void;
-}
-
-const PreferencesContext = createContext<PreferencesContextValue | undefined>(undefined);
+import { PreferencesContext } from "@/app/PreferencesContextDefinition";
 
 interface PreferencesProviderProps {
 	children: ReactNode;
@@ -24,22 +19,10 @@ export function PreferencesProvider({
 	}
 
 	return (
-		<PreferencesContext.Provider
+		<PreferencesContext
 			value={{ selectedPreferences, updatePreferences }}
 		>
 			{children}
-		</PreferencesContext.Provider>
+		</PreferencesContext>
 	);
-}
-
-export function usePreferences() {
-	const context = useContext(PreferencesContext);
-
-	if (context === undefined) {
-		throw new Error(
-			"usePreferences must be used within a PreferencesProvider"
-		);
-	}
-
-	return context;
 }

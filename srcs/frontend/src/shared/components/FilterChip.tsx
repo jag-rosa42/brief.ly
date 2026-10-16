@@ -1,9 +1,9 @@
 import { Button } from "@/shared/components/Button";
 
-export type FilterChipOption = {
+export interface FilterChipOption {
 	value: string;
 	label: string;
-};
+}
 
 export interface FilterChipProps {
 	selected: boolean;
