@@ -29,6 +29,14 @@ def get_db() -> Generator[Session]:
     finally:
         # Return the database connection to SQLAlchemy's connection pool.
         #
+        # close() also rolls back any transaction still open. The first query
+        # of a request opens one implicitly ("BEGIN (implicit)" in the logs),
+        # even for a read. So a read-only request such as GET /accounts/me
+        # always ends with a ROLLBACK: that is expected, there is nothing to
+        # commit, and the connection goes back to the pool clean.
+        # Requests that commit through the UnitOfWork have no transaction left
+        # open here, so no ROLLBACK is logged for them.
+        #
         # The Session should not be reused after it is closed.
         db.close()
 

@@ -48,6 +48,15 @@ class SqlAlchemyUnitOfWork:
         exception: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
+        # Always roll back, never commit here: a use case must call commit()
+        # explicitly. Forgetting it discards the changes instead of saving
+        # half-finished work.
+        #
+        # - After a successful commit(): no transaction is open anymore, so
+        #   this does nothing (no ROLLBACK reaches the database).
+        # - On an exception: undoes what was not committed and releases the
+        #   SELECT ... FOR UPDATE row locks. Returning None lets the
+        #   exception propagate.
         self._session.rollback()
 
     def flush(self) -> None:
