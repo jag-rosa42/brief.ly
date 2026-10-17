@@ -16,6 +16,7 @@ from src.application.use_cases.session.refresh_account_session import (
 from src.application.use_cases.session.refresh_token_validator import (
     RefreshTokenValidator,
 )
+from src.domain.exception import InvalidTokenError
 from src.domain.repositories.refresh_token_repository import RefreshTokenRepository
 from src.infrastructure.database.repositories.sqlalchemy_refresh_token_repository import (
     SqlAlchemyRefreshTokenRepository,
@@ -49,9 +50,31 @@ TokenServiceDep = Annotated[TokenService, Depends(get_token_service)]
 # ---------------------------------------------------------------------------
 # Requires a Bearer access token in the Authorization header for protected endpoints.
 # Will extracts the access token from the Authorization: Bearer <token> header.
-bearer_token_scheme = HTTPBearer()
+#
+# auto_error=False: without it, HTTPBearer raises its own HTTPException
+# ({"detail": "Not authenticated"}), which bypasses our error format.
+# It now returns None instead (missing header, or a scheme other than Bearer),
+# and get_access_token turns that None into our INVALID_TOKEN error.
+bearer_token_scheme = HTTPBearer(auto_error=False)
 
-AccessTokenDep = Annotated[HTTPAuthorizationCredentials, Depends(bearer_token_scheme)]
+OptionalAccessTokenDep = Annotated[
+    HTTPAuthorizationCredentials | None,
+    Depends(bearer_token_scheme),
+]
+
+
+def get_access_token(
+    credentials: OptionalAccessTokenDep,
+) -> HTTPAuthorizationCredentials:
+    """
+    Require the Bearer access token. Without it there is no authenticated account.
+    """
+    if credentials is None:
+        raise InvalidTokenError()
+    return credentials
+
+
+AccessTokenDep = Annotated[HTTPAuthorizationCredentials, Depends(get_access_token)]
 
 
 # ---------------------------------------------------------------------------
