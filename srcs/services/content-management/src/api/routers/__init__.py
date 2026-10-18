@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from src.api.routers.health.router import router as health_router
+from src.api.routers.topics.router import router as topic_router
 
 # ---------------------------------------------------------------------------
 # Root-level endpoints
@@ -29,3 +30,7 @@ root_routers.include_router(health_router)
 #   service: POST /auth/login
 # ---------------------------------------------------------------------------
 api_routers = APIRouter()
+api_routers.include_router(
+    topic_router,
+    prefix="/internal/v1",
+)
