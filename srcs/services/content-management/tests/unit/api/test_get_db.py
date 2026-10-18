@@ -1,5 +1,5 @@
 """
-Tests for the get_db dependency (src/api/dependencies.py).
+Tests for the get_db dependency (src/api/dependencies/database.py).
 
 get_db is a generator: it yields a Session, and only runs its cleanup
 (`db.close()`) once the generator is driven to completion. FastAPI does
@@ -18,8 +18,8 @@ import pytest
 from sqlalchemy import Connection, text
 from sqlalchemy.orm import Session
 
-from src.api import dependencies
-from src.api.dependencies import get_db
+from src.api.dependencies import database as database_dependencies
+from src.api.dependencies.database import get_db
 
 
 @pytest.fixture
@@ -29,8 +29,8 @@ def bind_get_db_to_test_connection(
     """
     Make get_db use the test database connection instead of the real database.
 
-    get_db uses dependencies.SessionFactory, so we replace that reference with a factory
-    that creates a Session bound to the test connection.
+    get_db uses database_dependencies.SessionFactory, so we replace that reference
+    with a factory that creates a Session bound to the test connection.
 
     The monkeypatch is automatically undone after each test.
     """
@@ -38,7 +38,11 @@ def bind_get_db_to_test_connection(
     def test_session_factory() -> Session:
         return Session(bind=db_connection, join_transaction_mode="create_savepoint")
 
-    monkeypatch.setattr(dependencies, "SessionFactory", test_session_factory)
+    monkeypatch.setattr(
+        database_dependencies,
+        "SessionFactory",
+        test_session_factory,
+    )
 
 
 def test_get_db_yields_a_working_session(bind_get_db_to_test_connection) -> None:
