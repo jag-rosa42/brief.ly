@@ -14,19 +14,6 @@ NAME := Transcendence
 OS := $(shell uname -s)
 
 # ============================================================================ #
-#                               VARIABLES & FLAGS                              #
-# ============================================================================ #
-
-MAKE_CMD ?= $(MAKE)
-COMPOSE := podman-compose
-CONTAINER_CMD := podman
-DEV_COMPOSE = $(COMPOSE) $(addprefix -f ,$(DEV_COMPOSE_FILE))
-PROD_COMPOSE = $(COMPOSE) $(addprefix -f ,$(PROD_COMPOSE_FILE))
-COMPOSE_PROFILES := frontend backend databases
-COMPOSE_PROFILES_ALL := $(addprefix --profile ,$(COMPOSE_PROFILES))
-COMPOSE_CLEAN_PROFILES_ALL := $(COMPOSE_PROFILES_ALL) --profile front-test
-
-# ============================================================================ #
 #                                DIRECTORIES                                   #
 # ============================================================================ #
 
@@ -35,18 +22,63 @@ FRONTEND_DIR := srcs/frontend
 SERVICES_DIR := srcs/services
 
 # ============================================================================ #
-#                                  SOURCES                                     #
+#                               VARIABLES & FLAGS                              #
+# ============================================================================ #
+
+MAKE_CMD ?= $(MAKE)
+COMPOSE := docker compose
+CONTAINER_CMD := docker
+ENV_FILE := .env
+ENV_EXAMPLE_FILES := .env.example $(wildcard $(SERVICES_DIR)/*/.env.example)
+
+
+# ============================================================================ #
+#                                  DOCKER VARS                                 #
 # ============================================================================ #
 
 PROD_COMPOSE_FILE := compose.yaml
 DEV_COMPOSE_FILE := compose.yaml compose.override.yaml
-ENV_FILE := .env
-ENV_EXAMPLE_FILES := .env.example $(wildcard $(SERVICES_DIR)/*/.env.example)
+DEV_COMPOSE = $(COMPOSE) $(addprefix -f ,$(DEV_COMPOSE_FILE))
+PROD_COMPOSE = $(COMPOSE) $(addprefix -f ,$(PROD_COMPOSE_FILE))
+COMPOSE_PROFILES := frontend backend databases
+COMPOSE_PROFILES_ALL := $(addprefix --profile ,$(COMPOSE_PROFILES))
+COMPOSE_CLEAN_PROFILES_ALL := $(COMPOSE_PROFILES_ALL) --profile front-test
 
 #for mac OS
 ifeq ($(OS),Darwin)
 DEV_COMPOSE_FILE += compose.mac.yaml
 endif
+
+# ============================================================================ #
+#                                  VM VARS                                     #
+# ============================================================================ #
+
+#override from .env file
+VM_DIR ?= $(CURDIR)/vm
+SSH_PUBLIC_KEY ?= $(HOME)/.ssh/id_rsa.pub
+VM_SSH_PORT ?= 2222
+
+VM_NETWORK_MODE ?= dev
+VM_SCRIPT=./shared/script/create-vm.sh
+VM_USERNAME=$(shell id -un)
+VM_REMOTE_DIR ?= /home/$(VM_USERNAME)/ft_transcendance
+VM_SSH_OPTIONS := -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
+	-o ConnectTimeout=5 -p $(VM_SSH_PORT)
+VM_SSH := ssh $(VM_SSH_OPTIONS) $(VM_USERNAME)@127.0.0.1
+VM_SSH_TTY := ssh -tt $(VM_SSH_OPTIONS) $(VM_USERNAME)@127.0.0.1
+VM_RSYNC_SSH := ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -p $(VM_SSH_PORT)
+VM_QEMU_ENV := VM_DIR="$(VM_DIR)" VM_USERNAME="$(VM_USERNAME)" \
+	SSH_PUBLIC_KEY="$(SSH_PUBLIC_KEY)" \
+	SSH_PORT="$(VM_SSH_PORT)" VM_NETWORK_MODE="$(VM_NETWORK_MODE)" \
+	GATEWAY_PORT="$(GATEWAY_PORT)" FRONTEND_PORT="$(FRONTEND_PORT)" \
+	ADMINER_PORT="$(ADMINER_PORT)" IDENTITY_PORT="$(IDENTITY_PORT)" \
+	PERSONALIZATION_PORT="$(PERSONALIZATION_PORT)" \
+	CONTENT_MANAGEMENT_PORT="$(CONTENT_MANAGEMENT_PORT)" \
+	AI_PROCESSING_PORT="$(AI_PROCESSING_PORT)" \
+	MORNING_BRIEFING_PORT="$(MORNING_BRIEFING_PORT)" \
+	POSTGRES_PORT="$(POSTGRES_PORT)" AI_POSTGRES_PORT="$(AI_POSTGRES_PORT)"
+VM_DOCKER_TARGETS := logs ps down re clean reset-db frontend-test
+
 
 # ============================================================================ #
 #                                  🫡HELP                                      #
@@ -60,43 +92,49 @@ help:
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) frontend-install            $(CYAN_COLOR)Install frontend dependencies$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) frontend-build              $(CYAN_COLOR)Build the frontend$(DEFAULT_COLOR)\n"
 	@printf "$(GREEN_COLOR)  Databases$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) dev-databases               $(CYAN_COLOR)Start PostgreSQL and pgvector containers$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) vm-databases                $(CYAN_COLOR)Start PostgreSQL and pgvector in the VM for local backend development$(DEFAULT_COLOR)\n"
 	@printf "$(GREEN_COLOR)  Backend$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) init-env                    $(CYAN_COLOR)Force generating .env files from their .env.example templates$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) test SERVICE=<name>         $(CYAN_COLOR)Run service tests locally with test database$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) test SERVICE=<name>         $(CYAN_COLOR)Run service tests locally with a VM test database$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) lint SERVICE=<name>         $(CYAN_COLOR)Lint a service locally$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) run SERVICE=<name>          $(CYAN_COLOR)Run a service locally with database$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) run SERVICE=<name>          $(CYAN_COLOR)Run one backend locally with databases in the VM$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) sync SERVICE=<name>         $(CYAN_COLOR)Synchronize service dependencies$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) typecheck SERVICE=<name>    $(CYAN_COLOR)Type-check a service locally$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) status SERVICE=<name>       $(CYAN_COLOR)Show service status$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) status SERVICE=<name>       $(CYAN_COLOR)Show migration status against the VM database$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) clear-cache SERVICE=<name>  $(CYAN_COLOR)Clear service cache$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) migration SERVICE=<name>    $(CYAN_COLOR)Create a migration$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) upgrade SERVICE=<name>      $(CYAN_COLOR)Apply migrations$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) downgrade SERVICE=<name>    $(CYAN_COLOR)Revert migrations$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) list-services               $(CYAN_COLOR)List available backend services$(DEFAULT_COLOR)\n\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) migration SERVICE=<name>    $(CYAN_COLOR)Create a migration using the VM database$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) upgrade SERVICE=<name>      $(CYAN_COLOR)Apply migrations to the VM database$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) downgrade SERVICE=<name>    $(CYAN_COLOR)Revert migrations in the VM database$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) list-services               $(CYAN_COLOR)List available backend services$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) reinstall SERVICE=<name>    $(CYAN_COLOR)Reinstall dependencies for a service$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── 🐳 Dev Docker ─────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
-	@printf "$(GREEN_COLOR)  Frontend$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) dev-docker SERVICE=frontend $(CYAN_COLOR)Run only the frontend$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) frontend-test               $(CYAN_COLOR)Run frontend tests in Docker$(DEFAULT_COLOR)\n"
-	@printf "$(GREEN_COLOR)  Backend$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) dev-docker SERVICE=<name>   $(CYAN_COLOR)Run one backend service with its database dependencies$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) dev-docker                  $(CYAN_COLOR)Run the complete development stack (frontend, backends, and databases)$(DEFAULT_COLOR)\n\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) docker                      $(CYAN_COLOR)Run the complete development stack in host Docker$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) docker SERVICE=<name>       $(CYAN_COLOR)Run one Compose service and its dependencies in host Docker$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) frontend-test               $(CYAN_COLOR)Run frontend tests in Docker$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── 🚀 Production ─────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) prod                        $(CYAN_COLOR)Build and run the complete production stack$(DEFAULT_COLOR)\n\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) prod                        $(CYAN_COLOR)Build and run the production stack inside the VM$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) secrets                     $(CYAN_COLOR)Create missing secrets$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── 📦 Shared container tools ────────────────────────────────────────────$(DEFAULT_COLOR)\n"
+	@printf "$(CYAN_COLOR)  Add -vm to logs, ps, down, reset-db, clean, re, or fclean to run them in the VM.$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) logs [SERVICE=<name>]       $(CYAN_COLOR)Follow container logs$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ps                          $(CYAN_COLOR)Show container status$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) down                        $(CYAN_COLOR)Stop containers$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) reset-db                    $(CYAN_COLOR)Reset database data 🚨$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) clean                       $(CYAN_COLOR)Stop containers and remove project images$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) re                          $(CYAN_COLOR)Clean and rebuild the stack$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) fclean                      $(CYAN_COLOR)Reset database data and remove project images 🚨$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) secrets                     $(CYAN_COLOR)Create missing secrets$(DEFAULT_COLOR)\n\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) fclean                      $(CYAN_COLOR)Reset database data and remove project images 🚨$(DEFAULT_COLOR)\n\n"
+	@printf "$(ROSE_COLOR)── 🖥️  VM development ───────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) vm                          $(CYAN_COLOR)Run the complete development stack inside the VM$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) vm SERVICE=<name>           $(CYAN_COLOR)Run one Compose service and its dependencies inside the VM$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) create-vm                   $(CYAN_COLOR)Confirm and recreate vm/, then leave the new VM running$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) launch-vm                   $(CYAN_COLOR)Start the development VM, wait for SSH, and sync this project$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) connect-vm                  $(CYAN_COLOR)Open an interactive SSH session in the VM$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) stop-vm                     $(CYAN_COLOR)Shut down the guest cleanly$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) debug-create-vm             $(CYAN_COLOR)Start QEMU interactively for boot troubleshooting$(DEFAULT_COLOR)\n\n"
 
 
 # ============================================================================ #
-#                                  LOCAL DEV (no Docker)                       #
+#                                  LOCAL DEV                                  #
 # ============================================================================ #
 
 # ---- Frontend dispatch ----
@@ -141,39 +179,80 @@ init-env:
 dev-databases: secrets
 	@$(call print,$(GREEN_COLOR),[DATABASES] Starting PostgreSQL and pgvector...)
 	@$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d pgsql pgvector >/dev/null
-	@until $(CONTAINER_CMD) exec pgsql pg_isready -U "$(POSTGRES_USER)" -d postgres; \
-		do sleep 1; \
+	@attempt=1; until $(CONTAINER_CMD) exec pgsql pg_isready -U "$(POSTGRES_USER)" -d postgres >/dev/null 2>&1; do \
+		if [ "$$attempt" -ge 60 ]; then \
+			$(call print,$(RED_COLOR),[DATABASES] PostgreSQL did not become ready within 60 seconds.); \
+			$(DEV_COMPOSE) ps pgsql; exit 1; \
+		fi; \
+		attempt=$$((attempt + 1)); sleep 1; \
 	done
-	@until $(CONTAINER_CMD) exec pgvector pg_isready -U "$(POSTGRES_USER)" -d postgres; \
-		do sleep 1; \
+	@attempt=1; until $(CONTAINER_CMD) exec pgvector pg_isready -U "$(POSTGRES_USER)" -d postgres >/dev/null 2>&1; do \
+		if [ "$$attempt" -ge 60 ]; then \
+			$(call print,$(RED_COLOR),[DATABASES] pgvector did not become ready within 60 seconds.); \
+			$(DEV_COMPOSE) ps pgvector; exit 1; \
+		fi; \
+		attempt=$$((attempt + 1)); sleep 1; \
 	done
 	@$(call print,$(GREEN_COLOR),✓ [DATABASES] Local development databases are running and healthy👩🏻‍⚕️.)
 
 check-service:
 ifndef SERVICE
-	$(error SERVICE is not set. Usage: make $@ SERVICE=<service-name>)
+	$(error SERVICE is not set. Usage: make $(firstword $(MAKECMDGOALS)) SERVICE=<service-name>)
 endif
 ifeq ($(wildcard $(SERVICES_DIR)/$(SERVICE)),)
 	$(error Unknown service '$(SERVICE)'. Available: $(notdir $(wildcard $(SERVICES_DIR)/*)))
 endif
 
-#database operations
-migration upgrade downgrade run: check-service dev-databases
+# SERVICE is passed to Compose locally or through SSH, so accept only simple
+# Compose service names before starting containers or restarting the VM.
+check-compose-service:
+	@if [ -n "$$SERVICE" ]; then \
+		case "$$SERVICE" in \
+			[!a-z]*|*[!a-z0-9-]*) \
+				printf "Invalid Compose service name: %s\n" "$$SERVICE"; exit 2 ;; \
+		esac; \
+	fi
 
+
+# The backend stays on the host. QEMU forwards the VM's database ports to
+# localhost, matching the service Makefile's POSTGRES_HOST setting. Reuse the VM
+# only when SSH and both database ports belong to the same QEMU process and
+# that process does not also forward app ports (the dev VM mode).
+# QEMU's port forwards are fixed at boot, so any other mode needs a restart.
+vm-databases: secrets
+	@if command -v lsof >/dev/null 2>&1 && $(VM_SSH) true >/dev/null 2>&1; then \
+		ssh_pid=$$(lsof -nP -t -iTCP:$(VM_SSH_PORT) -sTCP:LISTEN); \
+		pgsql_pid=$$(lsof -nP -t -iTCP:$(POSTGRES_PORT) -sTCP:LISTEN); \
+		pgvector_pid=$$(lsof -nP -t -iTCP:$(AI_POSTGRES_PORT) -sTCP:LISTEN); \
+	fi; \
+	if [ -n "$$ssh_pid" ] && [ "$$ssh_pid" = "$$pgsql_pid" ] && [ "$$ssh_pid" = "$$pgvector_pid" ] && \
+		! lsof -nP -a -p "$$ssh_pid" -iTCP:$(FRONTEND_PORT) -sTCP:LISTEN >/dev/null 2>&1; then \
+		$(call print,$(GREEN_COLOR),[VM] Reusing VM with database ports forwarded.); \
+		$(MAKE) --no-print-directory vm-sync; \
+	else \
+		$(call print,$(CYAN_COLOR),[VM] Restarting VM with database ports forwarded...); \
+		$(MAKE) --no-print-directory stop-vm && \
+		$(MAKE) --no-print-directory launch-vm VM_NETWORK_MODE=local-backend; \
+	fi
+	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && make dev-databases'
+
+run: check-service vm-databases
+	@$(call print,$(CYAN_COLOR),[SERVICE] Running $(SERVICE) locally with VM databases...)
+	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) ensure-databases -s
+	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) run -s
+
+#service testing
+test: check-service vm-databases
+	@$(call print,$(CYAN_COLOR),[SERVICE] $(SERVICE) -> make $@)
+	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) $@ -s
+
+#service development tools
+migration upgrade downgrade status shell: check-service vm-databases
 	@$(call print,$(CYAN_COLOR),[SERVICE] $(SERVICE) -> make $@)
 	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) ensure-databases -s
 	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) $@ -s
 
-#service testing
-test: check-service dev-databases
-
-	@$(call print,$(CYAN_COLOR),[SERVICE] $(SERVICE) -> make $@)
-	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) $@ -s
-
-
-#service development tools
-sync lint typecheck shell status clear-cache reinstall: check-service
-
+sync lint typecheck clear-cache reinstall: check-service
 	@$(call print,$(CYAN_COLOR),[SERVICE] $(SERVICE) -> make $@)
 	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) $@ -s
 
@@ -182,29 +261,24 @@ list-services:
 	@ls $(SERVICES_DIR)
 
 # ============================================================================ #
-#                                  DEV-DOCKER                                  #
+#                                  DOCKER                                      #
 # ============================================================================ #
 
-# Without SERVICE, start the complete development stack. With SERVICE, Compose
-# starts only that service and its declared `depends_on` graph (its databases).
-dev-docker: secrets
-
-ifeq ($(strip $(SERVICE)),)
-	@$(call print,$(GREEN_COLOR),[DOCKER] Starting all services in dev mode...)
-	$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d --build
-
-else
-	@$(call print,$(GREEN_COLOR),[DOCKER] Starting $(SERVICE) and its dependencies in dev mode...)
-	@$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d --build $(SERVICE)
-endif
+# Start the complete development stack, or one service and its dependencies.
+docker: check-compose-service secrets
+	@if [ -n "$$SERVICE" ]; then \
+		$(call print,$(GREEN_COLOR),[DOCKER] Starting $$SERVICE and its dependencies in dev mode...); \
+		$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d --build "$$SERVICE"; \
+	else \
+		$(call print,$(GREEN_COLOR),[DOCKER] Starting all services in dev mode...); \
+		$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d --build; \
+	fi
 	@$(call print,$(GREEN_COLOR),✓ [DOCKER] $(NAME) development environment started successfully! 🥳🥳🥳)
 
 
-# ============================================================================ #
-#                                  PROD-DOCKER#
-# ============================================================================ #
-
-prod: secrets
+# Build and run production Compose in the current environment. The prod target
+# invokes this from inside the VM after selecting production port forwarding.
+prod-docker: secrets
 	@$(call print,$(GREEN_COLOR),[DOCKER] Starting all services in production mode...)
 	$(PROD_COMPOSE) $(COMPOSE_PROFILES_ALL) build --no-cache && \
 	$(PROD_COMPOSE) $(COMPOSE_PROFILES_ALL) up
@@ -212,7 +286,7 @@ prod: secrets
 
 
 # ============================================================================ #
-#                                  DOCKER-CMDS                                 #
+#                                  DOCKER TOOLS CMDS                           #
 # ============================================================================ #
 
 #Follow logs
@@ -234,7 +308,7 @@ down:
 ps:
 	@$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) ps
 
-re: clean dev-docker
+re: clean docker
 
 #Stop and remove the images
 clean:
@@ -262,6 +336,146 @@ fclean:
 
 
 # ============================================================================ #
+#                                  VM DEVELOPMENT                              #
+# ============================================================================ #
+
+# The VM disk is intentionally visible at ./vm. Recreating it removes all VM
+# state (Ubuntu changes, Docker images, and database volumes), so confirmation
+# is required. Restrict deletion to this repository's visible vm/ directory.
+create-vm: secrets
+	@printf "‼️🚨‼️Recreate $(VM_DIR)? This permanently removes all VM and Docker data in that directory. [y/N] "; read -r confirm; \
+	case "$$confirm" in \
+		[yY]|[yY][eE][sS]) \
+			vm_dir="$(VM_DIR)"; repo_dir="$(CURDIR)"; \
+			if [ "$$vm_dir" != "$$repo_dir/vm" ]; then \
+				printf "$(RED_COLOR)Refusing unsafe VM_DIR: %s$(DEFAULT_COLOR)\\n" "$$vm_dir"; exit 1; \
+			fi; \
+			$(MAKE) --no-print-directory stop-vm || exit $$?; \
+			if lsof "$$vm_dir"/ubuntu-server-cloud-*.qcow2 >/dev/null 2>&1; then \
+				printf "$(RED_COLOR)Refusing to delete a VM disk still opened by another process.$(DEFAULT_COLOR)\\n"; exit 1; \
+			fi; \
+			rm -rf "$$vm_dir" || exit $$?; \
+			ssh-keygen -R "[127.0.0.1]:$(VM_SSH_PORT)" >/dev/null 2>&1 || true; \
+			ssh-keygen -R "[localhost]:$(VM_SSH_PORT)" >/dev/null 2>&1 || true; \
+			$(MAKE) --no-print-directory launch-vm || exit $$?; \
+			$(call print,$(GREEN_COLOR),✓ [VM] Fresh VM provisioned and synced. It is running.) ;; \
+		*) $(call print,$(YELLOW_COLOR),[VM] Recreate cancelled.) ;; \
+	esac
+
+# Start the existing VM only when SSH cannot already reach it. QEMU's network
+# forwarding mode is selected at boot, so run `make stop-vm` before changing
+# VM_NETWORK_MODE between dev and prod.
+launch-vm: secrets
+	@if $(VM_SSH) true >/dev/null 2>&1; then \
+		$(call print,$(GREEN_COLOR),[VM] Already running; syncing the project.); \
+	else \
+		$(call print,$(GREEN_COLOR),[VM] Starting in $(VM_NETWORK_MODE) mode...); \
+		$(VM_QEMU_ENV) $(VM_SCRIPT); \
+	fi
+	@$(MAKE) --no-print-directory vm-sync
+
+# Prepare the VM as usual, then replace this recipe shell with an interactive
+# SSH session. Exit the session with `exit` to return to the host terminal.
+# Warning: the modifications inside vm will NOT be synched to host!!
+# So dont do make secrets and change only files on host then sync
+connect-vm: launch-vm
+	@$(call print,$(CYAN_COLOR),[VM] Opening interactive SSH session. Use exit to return to the host.)
+	@$(VM_SSH_TTY)
+
+# Wait for both the SSH service and cloud-init. Cloud-init installs Docker and
+# Make on a fresh guest, so Docker commands must not run before this completes.
+vm-wait:
+	@attempt=1; until $(VM_SSH) true >/dev/null 2>&1; do \
+		if [ "$$attempt" -gt 60 ]; then \
+			printf "$(RED_COLOR)[VM] SSH did not become ready within 60 seconds.$(DEFAULT_COLOR)\\n"; exit 1; \
+		fi; \
+		printf "$(CYAN_COLOR)[VM] Waiting for SSH (%s/60)...$(DEFAULT_COLOR)\\n" "$$attempt"; \
+		attempt=$$((attempt + 1)); sleep 1; \
+	done
+	@$(call print,$(CYAN_COLOR),[VM] Waiting for cloud-init...)
+	@$(VM_SSH) 'cloud-init status --wait; cloud_status=$$?; \
+		if [ "$$cloud_status" -eq 2 ]; then \
+			echo "[VM] cloud-init completed with recoverable errors; inspect cloud-init status --long if provisioning looks incomplete."; \
+		elif [ "$$cloud_status" -ne 0 ]; then \
+			exit "$$cloud_status"; \
+		fi'
+
+# Copy host source into the VM. vm/ is excluded so QEMU disk images can never
+# be recursively copied into the guest. This intentionally copies .env and the
+# project's local secret files; the VM is a trusted development environment.
+vm-sync: secrets vm-wait
+	@$(VM_SSH) 'mkdir -p "$(VM_REMOTE_DIR)"'
+	@rsync -az \
+		--exclude '/vm/' \
+		--exclude '.venv/' \
+		--exclude 'node_modules/' \
+		--exclude '__pycache__/' \
+		--exclude '.pytest_cache/' \
+		--exclude '.mypy_cache/' \
+		-e '$(VM_RSYNC_SSH)' \
+		./ $(VM_USERNAME)@127.0.0.1:$(VM_REMOTE_DIR)/
+	@$(call print,$(GREEN_COLOR),✓ [VM] Project synchronized.)
+
+stop-vm:
+	@if ! command -v lsof >/dev/null 2>&1; then \
+		$(call print,$(RED_COLOR),[VM] lsof is required to verify that QEMU has stopped.); exit 1; \
+	fi; \
+	vm_pid=$$(lsof -nP -t -iTCP:$(VM_SSH_PORT) -sTCP:LISTEN); \
+	if [ -z "$$vm_pid" ]; then \
+		$(call print,$(YELLOW_COLOR),[VM] No VM is listening on SSH port $(VM_SSH_PORT).); \
+	elif ! lsof -nP -a -p "$$vm_pid" "$(VM_DIR)"/ubuntu-server-cloud-*.qcow2 >/dev/null 2>&1; then \
+		$(call print,$(RED_COLOR),[VM] Port $(VM_SSH_PORT) is not held by the configured VM disk.); exit 1; \
+	elif ! $(VM_SSH) true >/dev/null 2>&1; then \
+		$(call print,$(RED_COLOR),[VM] SSH is unreachable but QEMU still holds port $(VM_SSH_PORT).); exit 1; \
+	else \
+		$(call print,$(CYAN_COLOR),[VM] Requesting clean guest shutdown...); \
+		$(VM_SSH) 'sudo poweroff' >/dev/null 2>&1 || true; \
+		attempt=0; while kill -0 "$$vm_pid" 2>/dev/null; do \
+			if [ "$$attempt" -ge 60 ]; then \
+				$(call print,$(RED_COLOR),[VM] QEMU did not exit within 60 seconds.); exit 1; \
+			fi; \
+			attempt=$$((attempt + 1)); sleep 1; \
+		done; \
+		$(call print,$(GREEN_COLOR),✓ [VM] Guest stopped.); \
+	fi
+
+# Use only for diagnosing early boot or cloud-init failures. It keeps QEMU in
+# the foreground and does not attempt automatic rsync or shutdown.
+debug-create-vm: secrets
+	@$(VM_QEMU_ENV) VM_DEBUG=1 $(VM_SCRIPT)
+
+# QEMU's port forwards are fixed at boot. Restart in development mode so all
+# browser-facing service ports are reachable from the host.
+vm: check-compose-service secrets
+	@if [ -n "$$SERVICE" ]; then \
+		$(call print,$(CYAN_COLOR),[VM] Starting $$SERVICE and its dependencies in the VM...); \
+	else \
+		$(call print,$(CYAN_COLOR),[VM] Starting complete development stack in the VM...); \
+	fi
+	@$(MAKE) --no-print-directory stop-vm
+	@$(MAKE) --no-print-directory launch-vm VM_NETWORK_MODE=dev
+	@remote_cmd='cd "$(VM_REMOTE_DIR)" && make docker'; \
+		if [ -n "$$SERVICE" ]; then remote_cmd="$$remote_cmd SERVICE=$$SERVICE"; fi; \
+		$(VM_SSH) "$$remote_cmd"
+
+# Forward existing Docker-oriented Make targets into the synchronized VM.
+$(addsuffix -vm,$(VM_DOCKER_TARGETS)): launch-vm
+	@$(call print,$(CYAN_COLOR),[VM] Running make $(patsubst %-vm,%,$@) in the guest...)
+	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && make $(patsubst %-vm,%,$@) $(if $(SERVICE),SERVICE=$(SERVICE),)'
+
+# Production changes the QEMU boundary to the single public GATEWAY_PORT. It
+# stops a development-mode VM first because QEMU forwarding is fixed at boot.
+prod: secrets
+	@$(MAKE) --no-print-directory stop-vm
+	@$(MAKE) --no-print-directory launch-vm VM_NETWORK_MODE=prod
+	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && make prod-docker'
+
+# fclean asks for confirmation in the guest, so force a terminal allocation.
+fclean-vm: launch-vm
+	@$(VM_SSH_TTY) 'cd "$(VM_REMOTE_DIR)" && make fclean'
+
+
+# ============================================================================ #
 #                              MAKEFILE SETTING                                #
 # ============================================================================ #
 
@@ -271,8 +485,9 @@ fclean:
 #Delete target files if command fails
 .DELETE_ON_ERROR:
 
-.PHONY: clean fclean logs down reset-db secrets \
+.PHONY: clean fclean logs down reset-db secrets check-service check-compose-service vm-databases \
 		frontend frontend-install frontend-build frontend-test \
-		dev dev-databases dev-docker sync run migration upgrade downgrade \
+		dev dev-databases docker vm sync run migration upgrade downgrade \
 		test lint typecheck shell list-services status clear-cache reinstall \
-		up build ps logs init-env
+		up build ps logs init-env create-vm launch-vm stop-vm debug-create-vm \
+		connect-vm vm-wait vm-sync prod prod-docker fclean-vm $(addsuffix -vm,$(VM_DOCKER_TARGETS))
