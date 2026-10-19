@@ -7,40 +7,40 @@ x-ai-processing-dev-image-build: &ai-processing-dev-image-build
   build:
     dockerfile: Dockerfile.dev
   volumes:
-    - ./srcs/services/ai-processing:/app/srcs/services/ai-processing:Z
-    - ./shared/packages/shared_errors:/app/shared/packages/shared_errors:Z
+    - ./srcs/services/ai-processing:/app/srcs/services/ai-processing
+    - ./shared/packages/shared_errors:/app/shared/packages/shared_errors
 
 # Content-management
 x-content-management-dev-image-build: &content-management-dev-image-build
   build:
     dockerfile: Dockerfile.dev
   volumes:
-    - ./srcs/services/content-management:/app/srcs/services/content-management:Z
-    - ./shared/packages/shared_errors:/app/shared/packages/shared_errors:Z
+    - ./srcs/services/content-management:/app/srcs/services/content-management
+    - ./shared/packages/shared_errors:/app/shared/packages/shared_errors
 
 # Identity
 x-identity-dev-image-build: &identity-dev-image-build
   build:
     dockerfile: Dockerfile.dev
   volumes:
-    - ./srcs/services/identity:/app/srcs/services/identity:Z
-    - ./shared/packages/shared_errors:/app/shared/packages/shared_errors:Z
+    - ./srcs/services/identity:/app/srcs/services/identity
+    - ./shared/packages/shared_errors:/app/shared/packages/shared_errors
 
 # Morning-briefing
 x-morning-briefing-dev-image-build: &morning-briefing-dev-image-build
   build:
     dockerfile: Dockerfile.dev
   volumes:
-    - ./srcs/services/morning-briefing:/app/srcs/services/morning-briefing:Z
-    - ./shared/packages/shared_errors:/app/shared/packages/shared_errors:Z
+    - ./srcs/services/morning-briefing:/app/srcs/services/morning-briefing
+    - ./shared/packages/shared_errors:/app/shared/packages/shared_errors
 
 # Personalization
 x-personalization-dev-image-build: &personalization-dev-image-build
   build:
     dockerfile: Dockerfile.dev
   volumes:
-    - ./srcs/services/personalization:/app/srcs/services/personalization:Z
-    - ./shared/packages/shared_errors:/app/shared/packages/shared_errors:Z
+    - ./srcs/services/personalization:/app/srcs/services/personalization
+    - ./shared/packages/shared_errors:/app/shared/packages/shared_errors
 
 
 # ==============================================================================
@@ -58,7 +58,7 @@ services:
     ports:
       - "${FRONTEND_PORT:?Variable not set}:5173"
     volumes:
-      - ./srcs/frontend/:/app:Z # :Z is important on Fedora/SELinux.
+      - ./srcs/frontend/:/app
       - frontend_node_modules:/app/node_modules
     environment:
       VITE_USE_POLLING: ${VITE_USE_POLLING:-false}
@@ -70,7 +70,7 @@ services:
       context: ./srcs/frontend/
       dockerfile: Dockerfile.dev
     volumes:
-      - ./srcs/frontend/:/app:Z # :Z is important on Fedora/SELinux.
+      - ./srcs/frontend/:/app
       - frontend_node_modules:/app/node_modules
     command: ["npm", "run", "test", "--", "--watch"]
     profiles:
@@ -109,6 +109,7 @@ services:
 
   ai-processing:
     <<: *ai-processing-dev-image-build
+    restart: "no"
     ports:
       - "${AI_PROCESSING_PORT:?Variable not set}:${SERVICE_CONTAINER_PORT:?Variable not set}"
     environment:
@@ -122,6 +123,7 @@ services:
 
   content-management:
     <<: *content-management-dev-image-build
+    restart: "no"
     ports:
       - "${CONTENT_MANAGEMENT_PORT:?Variable not set}:${SERVICE_CONTAINER_PORT:?Variable not set}"
     environment:
@@ -134,6 +136,7 @@ services:
 
   identity:
     <<: *identity-dev-image-build
+    restart: "no"
     ports:
       - "${IDENTITY_PORT:?Variable not set}:${SERVICE_CONTAINER_PORT:?Variable not set}"
     environment:
@@ -146,6 +149,7 @@ services:
 
   morning-briefing:
     <<: *morning-briefing-dev-image-build
+    restart: "no"
     ports:
       - "${MORNING_BRIEFING_PORT:?Variable not set}:${SERVICE_CONTAINER_PORT:?Variable not set}"
     environment:
@@ -158,6 +162,7 @@ services:
 
   personalization:
     <<: *personalization-dev-image-build
+    restart: "no"
     ports:
       - "${PERSONALIZATION_PORT:?Variable not set}:${SERVICE_CONTAINER_PORT:?Variable not set}"
     environment:

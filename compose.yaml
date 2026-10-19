@@ -156,7 +156,9 @@ services:
     container_name: frontend
     pull_policy: build
     ports:
-      - 8080:${FRONTEND_PORT:?Variable not set}
+      # Production Nginx listens on port 8080 inside its container. The public
+      # edge port is intentionally separate from Vite's development port.
+      - "${GATEWAY_PORT:?Variable not set}:8080"
     profiles:
       - frontend
 
