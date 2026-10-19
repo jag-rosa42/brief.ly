@@ -21,11 +21,10 @@ The production environment loads `compose.yaml`. Development commands also load 
 
 | Command | Description |
 | --- | --- |
-| `make dev-docker` | Build and start all enabled development services in the background. |
-| `make dev-docker SERVICE=frontend` | Build and start the frontend service and its declared dependencies. |
-| `make dev-docker SERVICE=<service>` | Build and start the backend service and its declared dependencies. |
+| `make docker` | Build and start all enabled development services in the background. |
+| `make docker SERVICE=frontend` | Build and start the frontend service and its declared dependencies. |
+| `make docker SERVICE=<service>` | Build and start the backend service and its declared dependencies. |
 | `make frontend-test` | Build and run frontend tests in the development container. |
-| `make prod` | Build all production images without cache, then start all enabled production services in the foreground. |
 
 ### Inspect
 
