@@ -7,8 +7,8 @@ from src.api.dependencies.account import (
 from src.api.dependencies.database import SessionDep, UnitOfWorkDep
 from src.api.dependencies.security import (
     AccessTokenDep,
+    AntiCsrfGuard,
     CreateAccountSessionDep,
-    CrossSiteGuardRequest,
     OptionalRefreshTokenCookieDep,
     PasswordHasherDep,
     RefreshAccountSessionDep,
@@ -20,8 +20,8 @@ from src.api.dependencies.security import (
 
 __all__: list[str] = [
     "AccessTokenDep",
+    "AntiCsrfGuard",
     "CreateAccountSessionDep",
-    "CrossSiteGuardRequest",
     "CurrentAccountDep",
     "LoginAccountDep",
     "LogoutAccountDep",

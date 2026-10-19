@@ -44,7 +44,7 @@ class JWTTokenService:
             TokenType.ACCESS: security_settings.JWT_ACCESS_AUDIENCE,
             TokenType.REFRESH: security_settings.JWT_REFRESH_AUDIENCE,
         }
-        self._lifetime: dict[TokenType, timedelta] = {
+        self._lifetimes: dict[TokenType, timedelta] = {
             TokenType.ACCESS: timedelta(
                 minutes=security_settings.ACCESS_TOKEN_EXPIRE_MINUTES
             ),
@@ -100,7 +100,7 @@ class JWTTokenService:
     def _create_token(self, account_id: UUID, token_type: TokenType) -> CreatedToken:
         now: datetime = datetime.now(UTC)
         token_id: UUID = uuid4()
-        expires_at: datetime = now + self._lifetime[token_type]
+        expires_at: datetime = now + self._lifetimes[token_type]
         payload: dict[str, Any] = {
             "iss": self._issuer,
             "aud": self._audiences[token_type],
