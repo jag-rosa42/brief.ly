@@ -15,22 +15,13 @@ from src.api.routers.topics.router import router as topic_router
 root_routers = APIRouter()
 root_routers.include_router(health_router)
 
+# ---------------------------------------------------------------------------
+# Internal API endpoints
+# ---------------------------------------------------------------------------
+# All business endpoints exposed by this service are internal and versioned
+# under /internal/v1. Individual routers define only their resource prefix,
+# such as /topics and /articles.
+# ---------------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# API endpoints
-# ---------------------------------------------------------------------------
-# Endpoints the frontend reaches through the gateway.
-#
-# There is no "/api" prefix here: the browser calls /api/identity/<path> and
-# the gateway removes "/api/identity" before forwarding, so this service only
-# ever sees its own paths.
-#
-# Example:
-#   browser: POST /api/identity/auth/login
-#   service: POST /auth/login
-# ---------------------------------------------------------------------------
-api_routers = APIRouter()
-api_routers.include_router(
-    topic_router,
-    prefix="/internal/v1",
-)
+api_routers = APIRouter(prefix="/internal/v1")
+api_routers.include_router(topic_router)

@@ -8,5 +8,4 @@ class TopicModel(Base):
 
     id: Mapped[str] = mapped_column(
             primary_key=True,
-            nullable=False,
             )
