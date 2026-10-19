@@ -132,18 +132,18 @@ RefreshTokenCookieDep = Annotated[str, Depends(get_refresh_token)]
 ANTI_CSRF_HEADER_NAME: str = "X-Transcendence-Client"
 ANTI_CSRF_HEADER_VALUE: str = "web"
 
-CsrfRequest = Annotated[
+AntiCsrfHeader = Annotated[
     str | None,
     Header(alias=ANTI_CSRF_HEADER_NAME),
 ]
 
 
-def reject_cross_site_request(client: CsrfRequest = None) -> None:
+def require_anti_csrf_header(client: AntiCsrfHeader = None) -> None:
     if client != ANTI_CSRF_HEADER_VALUE:
         raise CsrfCheckFailedError()
 
 
-CrossSiteGuardRequest = Depends(reject_cross_site_request)
+AntiCsrfGuard = Depends(require_anti_csrf_header)
 
 
 # ---------------------------------------------------------------------------

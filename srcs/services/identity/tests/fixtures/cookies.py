@@ -35,7 +35,7 @@ def get_refresh_cookie(response: Response) -> Morsel:
         cookie.load(header)
 
     if REFRESH_COOKIE_NAME not in cookie:
-        pytest.fail(f"the response did not set the {REFRESH_COOKIE_NAME!r} cookiew")
+        pytest.fail(f"the response did not set the {REFRESH_COOKIE_NAME!r} cookie")
     return cookie[REFRESH_COOKIE_NAME]
 
 

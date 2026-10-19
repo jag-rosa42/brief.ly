@@ -13,7 +13,7 @@ live on `cookie_session_router`, which is protected against CSRF.
 from fastapi import APIRouter, Response, status
 
 from src.api.dependencies import (
-    CrossSiteGuardRequest,
+    AntiCsrfGuard,
     LoginAccountDep,
     LogoutAccountDep,
     OptionalRefreshTokenCookieDep,
@@ -87,7 +87,7 @@ def login(
 # Router dependencies run before the endpoint's own dependencies:
 # a request without the header is refused (403) before the cookie is even read.
 
-cookie_session_router = APIRouter(dependencies=[CrossSiteGuardRequest])
+cookie_session_router = APIRouter(dependencies=[AntiCsrfGuard])
 
 
 @cookie_session_router.post(
