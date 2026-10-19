@@ -1,117 +1,59 @@
-# Local development guide
+# Local development
 
-This guide is for running the frontend and backend services directly on your machine. For containerised development and production environments, see [README.docker.md](README.docker.md).
+Run the frontend and backend processes on your machine. PostgreSQL and pgvector run in a development virtual machine (VM), with their ports available to local backend processes. For VM setup and management, see [README.dev.vm.md](README.dev.vm.md). For containers on the host, see [README.docker.md](README.docker.md).
 
-## Initial setup
+## Prerequisites and configuration
 
-Generate the shared environment file and configuration files for all services:
+Install Node.js (see `.node-version`), npm, Python, and `uv` for the processes you run locally. The database command below also needs the host tools and SSH key listed in [VM prerequisites](README.dev.vm.md#prerequisites-and-configuration).
 
-```bash
-make env
-```
-
-`make env` copies every `.env.example` file to its matching `.env` file.
-It **overwrites existing `.env` files**, so do not run it after adding local
-configuration or secrets unless you have backed them up. To configure a single
-service manually, copy its template instead; for example:
+From the repository root, create the shared configuration and each service configuration you need:
 
 ```bash
+cp .env.example .env
 cp srcs/services/identity/.env.example srcs/services/identity/.env
 ```
 
-## Frontend
+Repeat the second command for other backend services. `make init-env` copies **all** `.env.example` files, but overwrites existing `.env` files; use it only when you intend to replace local configuration. The root Makefile reads `.env`, so create it before running Make commands. Keep local `.env` files and generated secrets out of Git. `make vm-databases` creates missing files in `shared/secrets/` on the host through `make secrets`, then synchronizes them into the VM.
 
-From the repository root:
+## Local Make commands
 
-```bash
-make frontend-install  # install dependencies
-make frontend          # start Vite
-make frontend-build    # build for production
-```
+### Frontend
 
-The frontend listens on `FRONTEND_PORT` (default `5173`). For direct npm, testing, and linting commands, see [srcs/frontend/DEV_DOC.md](srcs/frontend/DEV_DOC.md).
+| Command | Description |
+| --- | --- |
+| `make frontend-install` | Install frontend dependencies. |
+| `make frontend` | Start Vite on `FRONTEND_PORT` (default `5173`). |
+| `make frontend-build` | Check the production build. |
 
-## Local backend services
+For direct npm, test, and lint commands, see [srcs/frontend/DEV_DOC.md](srcs/frontend/DEV_DOC.md).
 
-Start a backend service from the repository root:
+### Backend
 
-```bash
-make run SERVICE=identity
-```
+| Command | Description |
+| --- | --- |
+| `make list-services` | List available backend service names. |
+| `make sync SERVICE=identity` | Install the selected service's Python dependencies. |
+| `make run SERVICE=identity` | Start the service locally after starting VM databases and ensuring its database exists. |
+| `make test SERVICE=identity` | Run service tests locally with VM databases available. |
+| `make lint SERVICE=identity` | Lint the service locally. |
+| `make typecheck SERVICE=identity` | Type-check the service locally. |
+| `make status SERVICE=identity` | Show the service's migration status. |
+| `make migration SERVICE=identity MESSAGE="add users table"` | Generate an Alembic database migration. Review it before applying it. |
+| `make upgrade SERVICE=identity` | Apply database migrations. |
+| `make downgrade SERVICE=identity` | Revert the latest migration by default. |
 
-This command starts the PostgreSQL containers if needed, waits until they are
-healthy, and creates the selected service's database when it does not already
-exist. The same database setup is performed before `migration`, `upgrade`, and
-`downgrade` commands.
+Run `make sync SERVICE=identity` after cloning or when that service's dependencies change. `run`, `test`, and the migration commands start or reuse the VM in `local-backend` network mode and start PostgreSQL and pgvector there. `run` and migration commands also ensure the service database exists. Each backend owns its own database and migrations; do not edit another service's database directly.
 
-Available service commands include:
+## Databases in the VM
 
-```bash
-make migration SERVICE=identity
-make upgrade SERVICE=identity
-make downgrade SERVICE=identity
-make test SERVICE=identity
-make lint SERVICE=identity
-make typecheck SERVICE=identity
-make shell SERVICE=identity
-make list-services
-```
-
-`make test SERVICE=<name>` also starts the database containers when needed.
-The test suite creates its test database and applies migrations automatically.
-
-## Database containers for local services
-
-Backend services run locally, while PostgreSQL and pgvector run in containers.
-Database-aware backend commands start both containers automatically. Start them
-explicitly when you want the databases available without running a service:
+Start just the databases when you want them available without starting a backend:
 
 ```bash
-make dev-databases
+make vm-databases
 ```
 
-The databases are available from the host at:
+The command starts or reuses the VM in `local-backend` network mode, starts the database containers, and makes PostgreSQL available at `localhost:5432` (`POSTGRES_PORT`) and pgvector at `localhost:5433` (`AI_POSTGRES_PORT`). Local backends use `POSTGRES_HOST=localhost` from `.env`. If the VM is running in another network mode, the command restarts it so those database ports are forwarded. For database logs or VM shutdown, see [VM Make commands](README.dev.vm.md#vm-make-commands).
 
-- `pgsql`: `POSTGRES_PORT` (default `5432`)
-- `pgvector`: `AI_POSTGRES_PORT` (default `5433`)
+## Next step
 
-### Adminer
-
-Adminer runs as a container, so start it with:
-
-```bash
-make dev-docker SERVICE=adminer
-```
-
-Open `http://localhost:8086` (or `ADMINER_PORT`). Fill the form as follows:
-
-| Field | PostgreSQL | pgvector |
-| --- | --- | --- |
-| System | PostgreSQL | PostgreSQL |
-| Server | `pgsql` | `pgvector` |
-| Username | value of `POSTGRES_USER` | value of `POSTGRES_USER` |
-| Password | contents of `shared/secrets/postgres_password` | same |
-| Database | `postgres`, or `identity_db` after identity bootstrap | same |
-
-Inspect the database containers and their logs with:
-
-```bash
-make ps
-make logs SERVICE=pgsql
-make logs SERVICE=pgvector
-```
-
-Stop the Compose environment when you are finished:
-
-```bash
-make down
-```
-
-pgsql and pgvector use named volumes, so their data persists across
-container stops and restarts. Use the following cleanup commands deliberately:
-
-```bash
-make clean    # stop containers and remove project images; preserve database data
-make reset-db # stop containers and remove Compose-managed volumes
-make fclean   # confirm before removing database data and project images
-```
+Run `make vm-databases`, then `make run SERVICE=identity` in one terminal and `make frontend` in another. Verify that the frontend opens at `http://localhost:5173` and the identity service can connect to its database.
