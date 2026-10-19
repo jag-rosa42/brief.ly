@@ -219,7 +219,7 @@ check-compose-service:
 # only when SSH and both database ports belong to the same QEMU process and
 # that process does not also forward app ports (the dev VM mode).
 # QEMU's port forwards are fixed at boot, so any other mode needs a restart.
-vm-databases: secrets
+vm-databases:
 	@if command -v lsof >/dev/null 2>&1 && $(VM_SSH) true >/dev/null 2>&1; then \
 		ssh_pid=$$(lsof -nP -t -iTCP:$(VM_SSH_PORT) -sTCP:LISTEN); \
 		pgsql_pid=$$(lsof -nP -t -iTCP:$(POSTGRES_PORT) -sTCP:LISTEN); \
@@ -234,7 +234,7 @@ vm-databases: secrets
 		$(MAKE) --no-print-directory stop-vm && \
 		$(MAKE) --no-print-directory launch-vm VM_NETWORK_MODE=local-backend; \
 	fi
-	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && make dev-databases'
+	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && make dev-databases SECRETS_MODE=validate'
 
 run: check-service vm-databases
 	@$(call print,$(CYAN_COLOR),[SERVICE] Running $(SERVICE) locally with VM databases...)
@@ -342,7 +342,7 @@ fclean:
 # The VM disk is intentionally visible at ./vm. Recreating it removes all VM
 # state (Ubuntu changes, Docker images, and database volumes), so confirmation
 # is required. Restrict deletion to this repository's visible vm/ directory.
-create-vm: secrets
+create-vm:
 	@printf "‼️🚨‼️Recreate $(VM_DIR)? This permanently removes all VM and Docker data in that directory. [y/N] "; read -r confirm; \
 	case "$$confirm" in \
 		[yY]|[yY][eE][sS]) \
@@ -365,7 +365,7 @@ create-vm: secrets
 # Start the existing VM only when SSH cannot already reach it. QEMU's network
 # forwarding mode is selected at boot, so run `make stop-vm` before changing
 # VM_NETWORK_MODE between dev and prod.
-launch-vm: secrets
+launch-vm:
 	@if $(VM_SSH) true >/dev/null 2>&1; then \
 		$(call print,$(GREEN_COLOR),[VM] Already running; syncing the project.); \
 	else \
@@ -405,8 +405,10 @@ vm-wait:
 # project's local secret files; the VM is a trusted development environment.
 vm-sync: secrets vm-wait
 	@$(VM_SSH) 'mkdir -p "$(VM_REMOTE_DIR)"'
-	@rsync -az \
+	@$(call print,$(CYAN_COLOR),[VM] Synchronizing project files...)
+	@rsync -az --progress \
 		--exclude '/vm/' \
+		--exclude '.git/' \
 		--exclude '.venv/' \
 		--exclude 'node_modules/' \
 		--exclude '__pycache__/' \
@@ -441,12 +443,12 @@ stop-vm:
 
 # Use only for diagnosing early boot or cloud-init failures. It keeps QEMU in
 # the foreground and does not attempt automatic rsync or shutdown.
-debug-create-vm: secrets
+debug-create-vm:
 	@$(VM_QEMU_ENV) VM_DEBUG=1 $(VM_SCRIPT)
 
 # QEMU's port forwards are fixed at boot. Restart in development mode so all
 # browser-facing service ports are reachable from the host.
-vm: check-compose-service secrets
+vm: check-compose-service
 	@if [ -n "$$SERVICE" ]; then \
 		$(call print,$(CYAN_COLOR),[VM] Starting $$SERVICE and its dependencies in the VM...); \
 	else \
@@ -454,21 +456,21 @@ vm: check-compose-service secrets
 	fi
 	@$(MAKE) --no-print-directory stop-vm
 	@$(MAKE) --no-print-directory launch-vm VM_NETWORK_MODE=dev
-	@remote_cmd='cd "$(VM_REMOTE_DIR)" && make docker'; \
+	@remote_cmd='cd "$(VM_REMOTE_DIR)" && make docker SECRETS_MODE=validate'; \
 		if [ -n "$$SERVICE" ]; then remote_cmd="$$remote_cmd SERVICE=$$SERVICE"; fi; \
 		$(VM_SSH) "$$remote_cmd"
 
 # Forward existing Docker-oriented Make targets into the synchronized VM.
 $(addsuffix -vm,$(VM_DOCKER_TARGETS)): launch-vm
 	@$(call print,$(CYAN_COLOR),[VM] Running make $(patsubst %-vm,%,$@) in the guest...)
-	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && make $(patsubst %-vm,%,$@) $(if $(SERVICE),SERVICE=$(SERVICE),)'
+	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && make $(patsubst %-vm,%,$@) SECRETS_MODE=validate $(if $(SERVICE),SERVICE=$(SERVICE),)'
 
 # Production changes the QEMU boundary to the single public GATEWAY_PORT. It
 # stops a development-mode VM first because QEMU forwarding is fixed at boot.
-prod: secrets
+prod:
 	@$(MAKE) --no-print-directory stop-vm
 	@$(MAKE) --no-print-directory launch-vm VM_NETWORK_MODE=prod
-	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && make prod-docker'
+	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && make prod-docker SECRETS_MODE=validate'
 
 # fclean asks for confirmation in the guest, so force a terminal allocation.
 fclean-vm: launch-vm
