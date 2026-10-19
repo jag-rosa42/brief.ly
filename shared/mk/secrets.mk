@@ -9,10 +9,28 @@ JWT_PRIVATE_KEY := $(SECRET_DIR)/jwt_private_key
 JWT_PUBLIC_KEY  := $(SECRET_DIR)/jwt_public_key
 
 
-.PHONY: secrets secrets-banner secrets-dir secrets-random secrets-jwt-keys
+# VM commands validate the host-owned files copied by vm-sync.
+# Direct host commands retain the existing generation behavior.
+SECRETS_MODE ?= generate
 
+.PHONY: secrets secrets-check secrets-banner secrets-dir secrets-random secrets-jwt-keys
+
+ifeq ($(SECRETS_MODE),validate)
+secrets: secrets-check
+else ifeq ($(SECRETS_MODE),generate)
 secrets: secrets-banner secrets-random secrets-jwt-keys
 	@$(call print,$(GREEN_COLOR),✓ All secrets are ready.)
+else
+$(error SECRETS_MODE must be generate or validate)
+endif
+
+secrets-check:
+	@for secret in $(SECRET_FILES) $(JWT_PRIVATE_KEY) $(JWT_PUBLIC_KEY); do \
+		if [ ! -r "$$secret" ] || [ ! -s "$$secret" ]; then \
+			printf '[SECRETS] Missing, empty, or unreadable file: %s. Run make vm-sync on the host.\n' "$$secret" >&2; \
+			exit 1; \
+		fi; \
+	done
 
 secrets-banner:
 	@printf "$(CYAN_COLOR)🔍🔍🔍 Verifying and generating secrets at current directory 🕵️$(DEFAULT_COLOR)\n"
