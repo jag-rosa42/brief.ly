@@ -275,6 +275,27 @@ class TestJWTTokenService:
         with pytest.raises(InvalidTokenError):
             jwt_token_service.verify_access_token(token)
 
+    @pytest.mark.parametrize(
+        "audience",
+        [
+            [security_settings.JWT_ACCESS_AUDIENCE],
+            [security_settings.JWT_ACCESS_AUDIENCE, "transcendence:public-api"],
+        ],
+    )
+    def test_raises_with_audience_list(
+        self,
+        account_id: UUID,
+        jwt_token_service: JWTTokenService,
+        audience: list[str],
+    ) -> None:
+        # PyJWT accepts a list that contains the expected audience, so only
+        # JWTTokenPayload enforces "one token, one audience".
+        token: str = self._valid_access_token(
+            jwt_token_service, account_id, overrides={"aud": audience}
+        )
+        with pytest.raises(InvalidTokenError):
+            jwt_token_service.verify_access_token(token)
+
     def test_raises_with_unknown_key_id(
         self,
         account_id: UUID,
