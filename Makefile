@@ -339,25 +339,18 @@ fclean:
 #                                  VM DEVELOPMENT                              #
 # ============================================================================ #
 
-# The VM disk is intentionally visible at ./vm. Recreating it removes all VM
-# state (Ubuntu changes, Docker images, and database volumes), so confirmation
-# is required. Restrict deletion to this repository's visible vm/ directory.
+# Recreate only the current guest's disk and boot state, preserving VM_DIR.
 create-vm:
-	@printf "‼️🚨‼️Recreate $(VM_DIR)? This permanently removes all VM and Docker data in that directory. [y/N] "; read -r confirm; \
+	@vm_dir="$(VM_DIR)"; \
+	if [ -z "$$vm_dir" ]; then printf 'VM_DIR must not be empty.\n'; exit 1; fi; \
+	printf "‼️🚨‼️Recreate the current guest in %s? Its disk, database data, first-boot files and firmware state will be deleted. Cached images and unrelated files are kept. [y/N] " "$$vm_dir"; read -r confirm; \
 	case "$$confirm" in \
 		[yY]|[yY][eE][sS]) \
-			vm_dir="$(VM_DIR)"; repo_dir="$(CURDIR)"; \
-			if [ "$$vm_dir" != "$$repo_dir/vm" ]; then \
-				printf "$(RED_COLOR)Refusing unsafe VM_DIR: %s$(DEFAULT_COLOR)\\n" "$$vm_dir"; exit 1; \
-			fi; \
-			$(MAKE) --no-print-directory stop-vm || exit $$?; \
-			if lsof "$$vm_dir"/ubuntu-server-cloud-*.qcow2 >/dev/null 2>&1; then \
-				printf "$(RED_COLOR)Refusing to delete a VM disk still opened by another process.$(DEFAULT_COLOR)\\n"; exit 1; \
-			fi; \
-			rm -rf "$$vm_dir" || exit $$?; \
+			$(MAKE) --no-print-directory stop-vm VM_DIR="$$vm_dir" || exit $$?; \
+			$(VM_QEMU_ENV) VM_DIR="$$vm_dir" $(VM_SCRIPT) --reset-state || exit $$?; \
 			ssh-keygen -R "[127.0.0.1]:$(VM_SSH_PORT)" >/dev/null 2>&1 || true; \
 			ssh-keygen -R "[localhost]:$(VM_SSH_PORT)" >/dev/null 2>&1 || true; \
-			$(MAKE) --no-print-directory launch-vm || exit $$?; \
+			$(MAKE) --no-print-directory launch-vm VM_DIR="$$vm_dir" || exit $$?; \
 			$(call print,$(GREEN_COLOR),✓ [VM] Fresh VM provisioned and synced. It is running.) ;; \
 		*) $(call print,$(YELLOW_COLOR),[VM] Recreate cancelled.) ;; \
 	esac

@@ -7,6 +7,7 @@ usage() {
     cat <<'USAGE'
 Usage:
   make launch-vm
+  make create-vm  # Confirm replacement of the current guest's state.
   VM_NETWORK_MODE=prod GATEWAY_PORT=8080 ./shared/script/create-vm.sh
 
 On Linux, the default VM directory is /goinfre/$USER/vm and QEMU uses KVM.
@@ -48,17 +49,27 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
     usage
     exit 0
 fi
-(( $# == 0 )) || { usage >&2; exit 2; }
+reset_state=false
+if [[ "${1:-}" == "--reset-state" && $# == 1 ]]; then
+    # Internal Makefile operation: confirmation and shutdown happen there.
+    reset_state=true
+elif (( $# != 0 )); then
+    usage >&2; exit 2
+fi
 
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 module_dir=$script_dir/create-vm
-for module in config network image seed qemu; do
+for module in config network image seed qemu reset; do
     source "$module_dir/$module.sh"
 done
 
 main() {
     # config.sh: detect the host, set VM options, and validate the SSH key.
     init_config
+    if [[ "$reset_state" == true ]]; then
+        reset_vm_state
+        return
+    fi
     # network.sh: validate supplied ports and build QEMU forwarding rules.
     configure_network
     # image.sh: verify or create the VM disk; download_image.py verifies Ubuntu.

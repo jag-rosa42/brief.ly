@@ -78,6 +78,7 @@ init_config() {
     image_dir=$vm_dir/images
     base_image=$image_dir/ubuntu-24.04-server-cloudimg-$image_arch-$ubuntu_image_release.img
     seed_dir=$vm_dir/cloud-init-$ubuntu_image_release
+    firmware_vars=$vm_dir/$image_arch-uefi-vars-$ubuntu_image_release.fd
     [[ "$vm_username" =~ ^[a-z_][a-z0-9_-]*[$]?$ ]] || fail \
         "VM_USERNAME must be a valid simple Linux username."
     [[ "$vm_hostname" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ ]] || fail \
