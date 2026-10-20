@@ -27,7 +27,6 @@ build_qemu_args() {
             "AMD64 OVMF UEFI code firmware was not found; install the host OVMF package or set AMD64_UEFI_CODE."
         [[ -r "$firmware_vars_template" ]] || fail \
             "AMD64 OVMF UEFI variables template was not found; install the host OVMF package or set AMD64_UEFI_VARS."
-        firmware_vars=$vm_dir/amd64-uefi-vars-$ubuntu_image_release.fd
         if [[ ! -e "$firmware_vars" ]]; then
             cp "$firmware_vars_template" "$firmware_vars"
             chmod 600 "$firmware_vars"
@@ -56,7 +55,6 @@ build_qemu_args() {
             "ARM64 UEFI code firmware was not found; install QEMU with Homebrew or set ARM_UEFI_CODE."
         [[ -r "$firmware_vars_template" ]] || fail \
             "ARM64 UEFI variables template was not found; install QEMU with Homebrew or set ARM_UEFI_VARS."
-        firmware_vars=$vm_dir/arm64-uefi-vars-$ubuntu_image_release.fd
         if [[ ! -e "$firmware_vars" ]]; then
             cp "$firmware_vars_template" "$firmware_vars"
             chmod 600 "$firmware_vars"
