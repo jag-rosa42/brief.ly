@@ -23,12 +23,13 @@ from fastapi.testclient import TestClient
 from httpx2 import Response
 
 from src.api.dependencies import get_db
-from src.infrastructure.database.config import settings
+from src.infrastructure.config.app import app_settings
 from src.main import app
+from tests import routes
 
 
 def test_app_title_matches_settings() -> None:
-    assert app.title == settings.PROJECT_NAME
+    assert app.title == app_settings.PROJECT_NAME
 
 
 class _BrokenSession:
@@ -63,7 +64,7 @@ def test_health_check_reports_503_when_database_is_down() -> None:
     app.dependency_overrides[get_db] = _broken_get_db
     try:
         with TestClient(app) as test_client:
-            response: Response = test_client.get("health")
+            response: Response = test_client.get(routes.HEALTH)
     finally:
         app.dependency_overrides.pop(get_db, None)
 

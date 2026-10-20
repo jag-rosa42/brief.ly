@@ -9,18 +9,18 @@ These tests verify that the engine:
 from sqlalchemy import Engine
 from sqlalchemy.pool import QueuePool
 
-from src.infrastructure.database.config import engine, settings
+from src.infrastructure.database.config import database_settings, engine
 
 
 def test_engine_is_configured_for_the_right_database():
     assert isinstance(engine, Engine)
     assert engine.url.drivername == (
-        f"{settings.DATABASE_DIALECT}+{settings.DATABASE_DRIVER}"
+        f"{database_settings.DATABASE_DIALECT}+{database_settings.DATABASE_DRIVER}"
     )
-    assert engine.url.host == settings.POSTGRES_HOST
-    assert engine.url.port == settings.POSTGRES_PORT
-    assert engine.url.database == settings.POSTGRES_DB_NAME
-    assert engine.url.username == settings.POSTGRES_USER
+    assert engine.url.host == database_settings.POSTGRES_HOST
+    assert engine.url.port == database_settings.POSTGRES_PORT
+    assert engine.url.database == database_settings.POSTGRES_DB_NAME
+    assert engine.url.username == database_settings.POSTGRES_USER
 
 
 def test_engine_pool_settings():
