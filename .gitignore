@@ -58,6 +58,7 @@ dkms.conf
 # Transcendence specific files
 *env
 *secrets/
+/vm/
 
 # front
 node_modules
