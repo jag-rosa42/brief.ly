@@ -10,9 +10,11 @@ class AppSettings(ServiceSettings):
     Only the running service loads it; the migration container does not need
     any of these values.
     """
+
     PROJECT_NAME: str
 
     # Origins allowed to call this API from a browser (CORS).
     BACKEND_CORS_ORIGINS: list[str] = Field(default_factory=list)
+
 
 app_settings = AppSettings()
