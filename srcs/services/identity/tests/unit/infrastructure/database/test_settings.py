@@ -1,11 +1,11 @@
 """
-Tests for Settings (src/infrastructure/database/config/settings.py).
+Tests for DatabaseSettings (src/infrastructure/database/config/settings.py).
 
-These tests verify that Settings:
+These tests verify that DatabaseSettings:
 - loads database configuration from the environment
 - builds the expected SQLAlchemy database URI
 - protects the database password when represented as text
-- uses explicitly provided values when creating a Settings instance
+- uses explicitly provided values when creating a DatabaseSettings instance
 - adds the `_test` suffix to the database name
 - uses the synchronous PostgreSQL driver
 """
@@ -20,7 +20,7 @@ from src.infrastructure.database.config.settings import (
 
 
 def test_settings_loads_values_from_environment():
-    """The module-level `settings` instance should have picked up .env."""
+    """The module-level database settings should have picked up .env."""
     assert app_settings.PROJECT_NAME
     assert database_settings.POSTGRES_HOST
     assert database_settings.POSTGRES_USER
@@ -56,9 +56,9 @@ def test_password_is_not_leaked_in_repr():
 
 def test_database_uri_reflects_explicit_overrides():
     """
-    Building a second Settings instance with explicit kwargs (bypassing the
-    .env file) confirms the URI is actually derived from the fields, rather
-    than e.g. some other hardcoded default.
+    Building a second DatabaseSettings instance with explicit kwargs
+    (bypassing the .env file) confirms the URI is actually derived from the
+    fields, rather than e.g. some other hardcoded default.
     """
     custom = DatabaseSettings(
         _env_file=None,
