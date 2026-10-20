@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import ClassVar, Literal
 
 from pydantic import (
@@ -6,35 +5,17 @@ from pydantic import (
     SecretStr,
     computed_field,
 )
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
-BASE_DIR = Path(__file__).resolve().parents[4]
-_container_secrets = Path("/run/secrets")
-
-if _container_secrets.exists():
-    SECRETS_DIR = _container_secrets
-else:
-    ROOT_DIR = Path(__file__).resolve().parents[7]
-    SECRETS_DIR = ROOT_DIR / "shared" / "secrets"
-
-# TODO: debug prints to remove later
-print(f"SECRET_DIR={SECRETS_DIR}")
+from src.infrastructure.config.base import ServiceSettings
 
 
-class Settings(BaseSettings):
+class DatabaseSettings(ServiceSettings):
     """
     Application configuration loaded from environment variables.
 
     BaseSettings automatically reads values from the environment and
     converts them to the declared Python types.
     """
-
-    model_config = SettingsConfigDict(
-        env_file=BASE_DIR / ".env",
-        env_file_encoding="utf-8",
-        extra="ignore",
-        secrets_dir=SECRETS_DIR,
-    )
 
     # -----------------------------------------------------------------------
     # Database
@@ -44,7 +25,6 @@ class Settings(BaseSettings):
 
     # Driver used by the application.
     DATABASE_DRIVER: Literal["psycopg", "asyncpg"] = "psycopg"
-    PROJECT_NAME: str
     POSTGRES_HOST: str
     POSTGRES_PORT: int = 5432
     POSTGRES_USER: str
@@ -57,13 +37,6 @@ class Settings(BaseSettings):
 
     # Synchronous SQLAlchemy / Alembic driver.
     _SYNC_DRIVER: ClassVar[str] = "psycopg"
-
-    # -----------------------------------------------------------------------
-    # CORS
-    # -----------------------------------------------------------------------
-
-    # Origins allowed to call this API from a browser (CORS).
-    BACKEND_CORS_ORIGINS: list[str] = []
 
     # -----------------------------------------------------------------------
     # Database URL builder
@@ -152,16 +125,16 @@ class Settings(BaseSettings):
         return self.SQLALCHEMY_DATABASE_URI.replace("+asyncpg", "+psycopg")
 
 
-settings = Settings()
+database_settings = DatabaseSettings()
 
 # TODO: debug prints to remove later
-print("DB HOST:", settings.POSTGRES_HOST)
-print("DB PORT:", settings.POSTGRES_PORT)
-print("DB USER:", settings.POSTGRES_USER)
-print("DB NAME:", settings.POSTGRES_DB_NAME)
+print("DB HOST:", database_settings.POSTGRES_HOST)
+print("DB PORT:", database_settings.POSTGRES_PORT)
+print("DB USER:", database_settings.POSTGRES_USER)
+print("DB NAME:", database_settings.POSTGRES_DB_NAME)
 print(
     "DB URI:",
-    settings.SQLALCHEMY_DATABASE_URI.replace(
-        settings.POSTGRES_PASSWORD.get_secret_value(), "***"
+    database_settings.SQLALCHEMY_DATABASE_URI.replace(
+        database_settings.POSTGRES_PASSWORD.get_secret_value(), "***"
     ),
 )

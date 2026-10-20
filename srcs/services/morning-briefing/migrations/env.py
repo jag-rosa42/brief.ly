@@ -5,7 +5,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 import src.infrastructure.database.models  # noqa: F401
-from src.infrastructure.database.config import settings
+from src.infrastructure.database.config import database_settings
 from src.infrastructure.database.models.base import Base
 
 # this is the Alembic Config object, which provides
@@ -42,7 +42,7 @@ database_url: str | None = config.get_main_option("sqlalchemy.url")
 if not database_url:
     config.set_main_option(
         "sqlalchemy.url",
-        settings.SQLALCHEMY_DATABASE_URI,
+        database_settings.SQLALCHEMY_DATABASE_URI,
     )
 
 # ---------------------------------------------------------------------------

@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from httpx2 import Response
 
 from src.main import app
+from tests import routes
 
 EXPECTED_TOPIC_IDS = {
     "business",
@@ -17,7 +18,7 @@ EXPECTED_TOPIC_IDS = {
 
 @pytest.mark.integration
 def test_get_topics_returns_every_fixed_topic(client: TestClient):
-    response: Response = client.get("/internal/v1/topics")
+    response: Response = client.get(routes.TOPICS)
 
     assert response.status_code == 200
 
@@ -30,8 +31,8 @@ def test_topics_api_exposes_only_the_collection_get_operation():
     topic_paths = {
         path: path_item
         for path, path_item in app.openapi()["paths"].items()
-        if path.startswith("/internal/v1/topics")
+        if path.startswith(routes.TOPICS)
     }
 
-    assert set(topic_paths) == {"/internal/v1/topics"}
-    assert set(topic_paths["/internal/v1/topics"]) == {"get"}
+    assert set(topic_paths) == {routes.TOPICS}
+    assert set(topic_paths[routes.TOPICS]) == {"get"}
