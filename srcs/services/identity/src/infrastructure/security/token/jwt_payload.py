@@ -12,8 +12,9 @@ class JWTTokenPayload(BaseModel):
         validate_by_alias=True,
     )
     issuer: str = Field(alias="iss")
-    # RFC 7519 allows `aud` to be a single string or a list of strings.
-    audience: str | list[str] = Field(alias="aud")
+    # RFC 7519 allows `aud` to be a string or a list of strings. We only
+    # accept a single string: each token is meant for exactly one audience.
+    audience: str = Field(alias="aud")
     token_id: str = Field(alias="jti")
     subject: str = Field(alias="sub")
     token_type: TokenType = Field(alias="type")
