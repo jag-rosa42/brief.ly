@@ -18,4 +18,8 @@ DOMAIN_ERROR_STATUS_MAP: dict[ErrorCode, HttpErrorConfig] = {
     ErrorCode.INVALID_INTERESTS: HttpErrorConfig(
         status_code=status.HTTP_422_UNPROCESSABLE_CONTENT
     ),
+    ErrorCode.PROFILE_NOT_FOUND: HttpErrorConfig(status_code=status.HTTP_404_NOT_FOUND),
+    ErrorCode.INVALID_ACCOUNT_ID: HttpErrorConfig(
+        status_code=status.HTTP_401_UNAUTHORIZED
+    ),
 }

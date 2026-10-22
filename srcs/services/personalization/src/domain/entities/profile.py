@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Self
 from uuid import UUID
 
@@ -15,6 +16,8 @@ class Profile:
     account_id: UUID
     name: str
     topic_ids: frozenset[str]
+    created_at: datetime | None = field(default=None, compare=False)
+    updated_at: datetime | None = field(default=None, compare=False)
 
     @classmethod
     def create(cls, account_id: UUID, name: str, topic_ids: list[str]) -> Self:

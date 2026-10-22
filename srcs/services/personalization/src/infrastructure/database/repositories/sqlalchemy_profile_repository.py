@@ -16,10 +16,14 @@ class SqlAlchemyProfileRepository:
         self._session = session
 
     def find_by_id(self, account_id: UUID) -> Profile | None:
-        name = self._session.execute(
-            select(ProfileModel.name).where(ProfileModel.account_id == account_id)
-        ).scalar_one_or_none()
-        if name is None:
+        row = self._session.execute(
+            select(
+                ProfileModel.name,
+                ProfileModel.created_at,
+                ProfileModel.updated_at,
+            ).where(ProfileModel.account_id == account_id)
+        ).one_or_none()
+        if row is None:
             return None
         topic_ids = (
             self._session.execute(
@@ -32,8 +36,10 @@ class SqlAlchemyProfileRepository:
         )
         return Profile(
             account_id=account_id,
-            name=name,
+            name=row.name,
             topic_ids=frozenset(topic_ids),
+            created_at=row.created_at,
+            updated_at=row.updated_at,
         )
 
     def _insert_profile(self, profile: Profile) -> bool:
