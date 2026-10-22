@@ -1,0 +1,100 @@
+[project]
+name = "shared-auth"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.14"
+
+
+# Runtime dependencies installed with the application.
+dependencies = [
+    "fastapi[standard]>=0.141.1",
+    "httpx2>=2.12.0",
+    "jwcrypto>=1.6.1",
+    "pydantic-settings>=2.16.0",
+    "pyjwt[crypto]>=2.15.1",
+]
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+# ============================================================================
+# Development dependencies
+# ============================================================================
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.1",   # Linter and formatter
+    "ty>=0.0.65",     # Static type checker
+]
+
+
+# ============================================================================
+# UV
+# ============================================================================
+# Used when working on this package on its own (its own .venv and tests).
+# Services that install shared-auth declare this source themselves too.
+#
+# editable = true is REQUIRED here, not just convenient: uv also reads this
+# source when a service installs shared-auth, and services declare
+# shared-errors as editable. Both must agree, or `uv lock` fails with
+# "conflicting URLs for package shared-errors".
+[tool.uv.sources]
+shared-errors = { path = "../shared_errors", editable = true }
+
+# ============================================================================
+# Ruff
+# ============================================================================
+
+[tool.ruff]
+line-length = 90
+target-version = "py314"
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle
+    "F",    # Pyflakes
+    "I",    # Import sorting
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "SIM",  # flake8-simplify
+    "C4",   # flake8-comprehensions
+    "RET",  # flake8-return
+    "RUF",  # Ruff-specific rules
+]
+
+# Allow Ruff to automatically fix any fixable issue.
+fixable = ["ALL"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["shared_auth"]
+
+
+# ============================================================================
+# ty
+# ============================================================================
+
+[tool.ty]
+
+# No configuration required yet.
+# Add options here if the project grows and needs them.
+
+
+# ============================================================================
+# pytest
+# ============================================================================
+
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "CRITICAL"
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "integration: needs a real Postgres reachable at the configured DSN",
+]
