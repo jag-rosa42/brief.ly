@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from src.api.routers.health.router import router as health_router
+from src.api.routers.profile.router import router as profile_router
 
 # ---------------------------------------------------------------------------
 # Root-level endpoints
@@ -14,14 +15,18 @@ from src.api.routers.health.router import router as health_router
 root_routers = APIRouter()
 root_routers.include_router(health_router)
 
-
 # ---------------------------------------------------------------------------
 # API endpoints
 # ---------------------------------------------------------------------------
-# All routers registered here are exposed under the /api prefix.
+# Endpoints the frontend reaches through the gateway.
+#
+# There is no "/api" prefix here: the browser calls /api/personalization/<path>
+# and the gateway removes "/api/personalization" before forwarding, so this
+# service only ever sees its own paths.
 #
 # Example:
-#   auth_router -> POST /api/auth/...
+#   browser: GET /api/personalization/me/profile
+#   service: GET /me/profile
 # ---------------------------------------------------------------------------
-api_routers = APIRouter(prefix="/api")
-# api_routers.include_router()
+api_routers = APIRouter()
+api_routers.include_router(profile_router)

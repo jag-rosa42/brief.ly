@@ -52,3 +52,15 @@ def test_upsert_does_not_touch_other_profiles(db_session: Session) -> None:
     profile.replace_interests(["sports"])
     repository.upsert(profile)
     assert repository.find_by_id(another_profile.account_id) == another_profile
+
+
+def test_find_by_id_returns_the_timestamps(db_session: Session) -> None:
+    repository = SqlAlchemyProfileRepository(db_session)
+    profile = Profile.create(account_id=uuid4(), name="John", topic_ids=["science"])
+    repository.upsert(profile)
+
+    result = repository.find_by_id(profile.account_id)
+
+    assert result is not None
+    assert result.created_at is not None
+    assert result.updated_at is not None
