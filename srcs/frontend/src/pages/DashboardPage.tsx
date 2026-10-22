@@ -5,11 +5,13 @@ import { SavedArticles } from "@/pages/SavedArticlesPage";
 import { BriefPage } from "@/pages/BriefPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { Sidebar } from "@/shared/components/Sidebar";
+import { ApiKeyPage } from "@/pages/ApiKeyPage";
 
 const tabs: TabItem[] = [
 	{ value: "brief", label: "Morning Briefing" },
 	{ value: "profile", label: "Profile" },
 	{ value: "saved", label: "Saved Articles" },
+	{ value: "key", label: "Add a key"},
 ];
 
 export function DashboardPage() {
@@ -40,6 +42,7 @@ const visibleTabs = tabs.map((tab) => ({
 				{activeTab === "brief" && <BriefPage />}
 				{activeTab === "profile" && <ProfilePage />}
 				{activeTab === "saved" && <SavedArticles />}
+				{activeTab === "key" && <ApiKeyPage/>}
 			</main>
 		</div>
 	);

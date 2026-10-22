@@ -12,6 +12,8 @@ import { Division } from "@/shared/components/Division";
 
 import isEmail from "validator/lib/isEmail";
 
+import { ApiError } from "@/shared/components/api/client";
+
 interface SignupLocationState {
 	message?: unknown;
 }
@@ -38,10 +40,12 @@ export function SignupPage() {
 	async function handleSubmit(e: SyntheticEvent)
 	{
 		e.preventDefault();
+		if (waiting)
+			return;
 		setErrorMessage("");
 		setWaiting(true);
 
-		const error = validateForm(email);
+		const error = validateForm(email.trim());
 
 		if (error)
 		{
@@ -61,12 +65,19 @@ export function SignupPage() {
 			setWaiting(false);
 			return;
 		}
-		//TODO add call API (mock behaviour here)
 		try {
-			await signup(email, password);
+			await signup(email.trim(), password);
 			void navigate("/dashboard/profile");
-		}	catch  {
-			setErrorMessage("Login failed. Please try again");
+		}	catch (err) {
+			if (err instanceof ApiError && err.code === "EMAIL_ALREADY_REGISTERED") {
+				setErrorMessage("This email is already registered");
+			} else if (err instanceof ApiError && err.code === "VALIDATION_ERROR") {
+				setErrorMessage("Some fields are invalid, please check your input");
+			} else if (err instanceof ApiError) {
+				setErrorMessage("Something went wrong, please try again");
+			} else {
+				setErrorMessage("Unable to reach the server");
+			}
 		}	finally {
 			setWaiting(false);
 		}

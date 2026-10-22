@@ -9,10 +9,14 @@ import { LoginPage } from "@/pages/LoginPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 //import { NotificationTestPage } from "@/pages/NotificationTestPage";
 import { useAuth } from "@/app/useAuth";
+import { ApiKeyPage } from "@/pages/ApiKeyPage";
+import { Spinner } from "@/shared/components/Spinner";
 
 function ProtectedRoute() {
-	const { isLoggedIn } = useAuth();
-	return isLoggedIn ? <Outlet /> : <Navigate to="/" replace />;
+	const { isLoggedIn, isLoading } = useAuth();
+	if (isLoading)
+		return <Spinner />;
+	return (isLoggedIn ? <Outlet /> : <Navigate to="/" replace />);
 }
 
 export function AppRouter() {
@@ -35,6 +39,7 @@ export function AppRouter() {
 					element={<NotFoundPage />}/>
 			</Route>
 				<Route element={<ProtectedRoute />}>
+  					<Route path="/api-keys" element={<ApiKeyPage />} />
 					<Route path="/dashboard/:tab" element={<DashboardPage />} />
 					<Route path="/dashboard" element={<Navigate to="/dashboard/brief" replace />} />
 			</Route>
