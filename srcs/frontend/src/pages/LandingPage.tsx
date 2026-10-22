@@ -16,7 +16,7 @@ export function LandingPage() {
 				<Text variant="title" className="text-5xl md:text-6xl tracking-tight mb-5">
 					Your daily digest, tuned to what actually matters to you
 				</Text>
-				<Text variant="lead" className="max-w-2xl mx-auto">
+				<Text variant="body" className="max-w-2xl mx-auto">
 					Brief.ly reads the sources so you don't have to —
 					pick your topics, and get sharp, personalized summaries
 					delivered every day.

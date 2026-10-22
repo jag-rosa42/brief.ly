@@ -23,6 +23,14 @@ export default defineConfig({
 		host: true,
 		port: 5173,
 		strictPort: true,
+		proxy: {
+			"/api/identity": {
+				target: "http://localhost:8081",
+				secure: false,
+				changeOrigin: true,
+				rewrite: (p) => p.replace(/^\/api\/identity/,""),
+			},
+		},
 		...(hmrHost
 			? {
 				hmr: {
