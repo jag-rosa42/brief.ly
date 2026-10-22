@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Self
 from uuid import UUID
 
-from src.domain.exception import InvalidInterests, InvalidName
+from src.domain.exception import InvalidInterestsError, InvalidNameError
 
 NAME_MIN_LENGTH = 1
 NAME_MAX_LENGTH = 50
@@ -14,10 +14,10 @@ MIN_TOPICS = 1
 class Profile:
     account_id: UUID
     name: str
-    topic_ids: frozenset[UUID]
+    topic_ids: frozenset[str]
 
     @classmethod
-    def create(cls, account_id: UUID, name: str, topic_ids: list[UUID]) -> Self:
+    def create(cls, account_id: UUID, name: str, topic_ids: list[str]) -> Self:
         return cls(
             account_id=account_id,
             name=cls._validate_name(name),
@@ -27,24 +27,24 @@ class Profile:
     def rename(self, new_name: str) -> None:
         self.name = self._validate_name(new_name)
 
-    def replace_interests(self, new_topic_ids: list[UUID]) -> None:
+    def replace_interests(self, new_topic_ids: list[str]) -> None:
         self.topic_ids = self._validate_topics(new_topic_ids)
 
     @staticmethod
     def _validate_name(name: str) -> str:
         trimmed_name = name.strip()
         if not NAME_MIN_LENGTH <= len(trimmed_name) <= NAME_MAX_LENGTH:
-            raise InvalidName()
+            raise InvalidNameError()
         return trimmed_name
 
     @staticmethod
-    def _validate_topics(topic_ids: list[UUID]) -> frozenset[UUID]:
+    def _validate_topics(topic_ids: list[str]) -> frozenset[str]:
         topics = frozenset(topic_ids)
 
         if len(topics) != len(topic_ids):
-            raise InvalidInterests()
+            raise InvalidInterestsError()
 
         if not MIN_TOPICS <= len(topics) <= MAX_TOPICS:
-            raise InvalidInterests()
+            raise InvalidInterestsError()
 
         return topics

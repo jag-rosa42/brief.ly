@@ -17,14 +17,14 @@ class DomainError(Exception):
         super().__init__(message)
 
 
-class InvalidName(DomainError):
+class InvalidNameError(DomainError):
     code = ErrorCode.INVALID_NAME
 
     def __init__(self):
         super().__init__("Invalid name")
 
 
-class InvalidInterests(DomainError):
+class InvalidInterestsError(DomainError):
     code = ErrorCode.INVALID_INTERESTS
 
     def __init__(self):
