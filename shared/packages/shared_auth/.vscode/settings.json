@@ -1,0 +1,26 @@
+{
+  // ============================================================
+  // Python interpreter
+  // ============================================================
+  // Use the project's local virtual environment.
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+
+  // ============================================================
+  // Files - Generated caches
+  // ============================================================
+  // Hide generated Python/tooling cache directories from the
+  // VS Code Explorer. These files are not part of the source code.
+  "files.exclude": {
+      // Python bytecode cache
+      "**/__pycache__": true,
+
+      // mypy type-checking cache
+      "**/.mypy_cache": true,
+
+      // pytest test-run cache
+      "**/.pytest_cache": true,
+
+      // Ruff linter/formatter cache
+      "**/.ruff_cache": true
+  }
+}

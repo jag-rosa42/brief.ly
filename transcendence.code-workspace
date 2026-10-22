@@ -11,6 +11,15 @@
         "ty.interpreter": ["${workspaceFolder}/.venv/bin/python"]
       }
     },
+    //############################## Shared Auth ###############################
+    {
+      "name": "shared_auth",
+      "path": "shared/packages/shared_auth",
+      "settings": {
+        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+        "ty.interpreter": ["${workspaceFolder}/.venv/bin/python"]
+      }
+    },
     //################################ identity ################################
     {
       "name": "identity",
@@ -61,6 +70,7 @@
     "files.exclude": {
       "srcs/frontend": true,
       "shared/packages/shared_errors": true,
+      "shared/packages/shared_auth": true,
       "srcs/services/identity": true,
       "srcs/services/personalization": true,
       "srcs/services/content-management": true,
