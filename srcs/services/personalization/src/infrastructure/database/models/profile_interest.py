@@ -2,9 +2,9 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
-    UUID,
     DateTime,
     ForeignKey,
+    String,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -20,8 +20,8 @@ class ProfileInterest(Base):
         primary_key=True,
     )
 
-    topic_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    topic_id: Mapped[str] = mapped_column(
+        String(),
         primary_key=True,
     )
 

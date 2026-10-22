@@ -16,5 +16,12 @@ class AppSettings(ServiceSettings):
     # Origins allowed to call this API from a browser (CORS).
     BACKEND_CORS_ORIGINS: list[str] = Field(default_factory=list)
 
+    # -----------------------------------------------------------------------
+    # Content Management (topic catalog)
+    # -----------------------------------------------------------------------
+
+    # Base URL of Content Management, e.g. http://content-management:8000
+    CONTENT_MANAGEMENT_URL: str
+
 
 app_settings = AppSettings()
