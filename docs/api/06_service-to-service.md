@@ -70,11 +70,14 @@ Related name to look up: the **Content Enricher** pattern in *Enterprise Integra
    stores new articles with summary = null
 
 2. SUMMARY RUN (manual: make summarize)
-   AI Processing ──GET /internal/v1/articles?summary=missing──▶ Content Management
+   AI Processing ──GET /internal/v1/articles?summary=missing──▶ Content Management   max 25, no cursor
    AI Processing ──article text──▶ LLM ──▶ summary
    AI Processing ──PUT /internal/v1/articles/{id}/summary──▶ Content Management   stores it
    AI Processing ──PUT /internal/v1/topics/{id}/summary────▶ Content Management   stores it
-   (repeat until no article is missing a summary)
+   repeat the article loop until the GET returns an empty list or AI Processing
+   reaches 3 consecutive failures to add a summary; a successful write resets
+   the global failure counter
+   (this failure definition is provisional and may change during development)
 
 3. DASHBOARD (each request)
    Morning Briefing ──GET /internal/v1/me/profile──▶ Personalization   (user token)

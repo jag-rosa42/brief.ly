@@ -6,7 +6,7 @@ A topic is never hard-deleted, so a profile can never point at a missing topic. 
 
 | Kind | Method | Service path | Auth | Success | Status |
 | --- | --- | --- | --- | --- | --- |
-| Internal | POST | `/internal/v1/ingestion-runs` | Service (`ingestion:run`) | 201 | To do |
+| Internal | POST | `/internal/v1/ingestion-runs` | Service (`ingestion:run`) | 201 | ~To do~ |
 | Internal | GET | `/internal/v1/topics` | Service (`topics:read`) | 200 | Partial (see below) |
 | Internal | GET | `/internal/v1/articles?topic_id={topic_id}` | Service (`articles:read`) | 200 | To do |
 | Internal | GET | `/internal/v1/articles?summary=missing` | Service (`articles:read`) | 200 | To do |
@@ -84,9 +84,15 @@ Two filters, exactly one of them required:
 | Query | Used by | Returns |
 | --- | --- | --- |
 | `topic_id={topic_id}` | Morning Briefing | The topic's articles, with their summaries |
-| `summary=missing` | AI Processing | Articles that have no summary yet, oldest first |
+| `summary=missing` | AI Processing | Articles that have no summary yet. ~~Oldest first.~~ |
 
-`limit` (optional, 1-100, default 50) caps the number of items.
+`limit` (optional, 1-25, default 25) caps the number of items. A response never
+contains more than 25 articles. The endpoint does not accept or return a cursor.
+
+Articles are not sorted chronologically, and consumers do not distinguish recent
+articles from older ones. Articles have no expiration or automatic deletion: once
+stored, they remain in the database. This does not affect `summarized_at`, which is
+metadata about summary generation rather than article age.
 
 ```text
 Header: Authorization: Bearer <service token>

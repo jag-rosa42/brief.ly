@@ -26,8 +26,6 @@ Dashboard        Morning Briefing ──▶ Content Management     articles arri
 Save an article  Personalization  ──▶ Content Management     article arrives WITH its summary
 ```
 
-(*) Suggested: how ingestion is started is not decided yet.
-
 **Result:** at most 6 internal calls per dashboard instead of about 50, and **nobody calls AI Processing** while a user is waiting.
 
 ## 3. Impact for each service
@@ -39,6 +37,12 @@ Save an article  Personalization  ──▶ Content Management     article arriv
 | **Personalization** | Never calls AI Processing. When a user saves an article, it gets the article from Content Management (summary included) and stores a copy. **Also:** topic IDs are strings (`"business"`), so `profile_interest.topic_id` must change from `UUID` to `String`. |
 | Morning Briefing | Never calls AI Processing; gets topics and articles, with summaries, from Content Management. |
 
+The article-summary loop reads batches of at most 25 articles, without a cursor.
+It stops on an empty response or after three consecutive failures to add summaries
+to Content Management; any successful write resets this global counter. This is a
+provisional safety guard whose precise failure definition may change during
+development.
+
 ## 4. What everyone must handle
 
 - **`summary` can be `null`**: an article fetched since the last `make summarize` has no summary yet. The frontend hides it or shows "summary coming soon".
@@ -49,6 +53,6 @@ Save an article  Personalization  ──▶ Content Management     article arriv
 
 1. AI Processing owner: OK to write summaries into Content Management instead of serving them?
 2. Content Management owner: OK to store them and add the three routes?
-3. Which articles does a **topic** summary cover: the last 24 hours, or the latest N articles?
+3. ~~Which articles does a **topic** summary cover: the last 24 hours, or the latest N articles?~~ No chronological selection is applied.
 
 *Details: `docs/api/04_content-management.md`, `05_ai-processing.md`, `06_service-to-service.md` (section "Summaries").*
