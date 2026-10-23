@@ -10,7 +10,17 @@ On `main`, AI Processing only has `/health`. Its API router still uses the old `
 
 | Command | What it does | Calls | Status |
 | --- | --- | --- | --- |
-| `summarize` (e.g. `make summarize`) | Summarizes every article without a summary, then every topic from its articles | `GET /internal/v1/articles?summary=missing`, `GET /internal/v1/topics`, `GET /internal/v1/articles?topic_id=`, `PUT .../summary` on Content Management, with its service token | To do |
+| `summarize` (e.g. `make summarize`) | Processes article summaries in a bounded loop, then summarizes every topic from its articles | `GET /internal/v1/articles?summary=missing`, `GET /internal/v1/topics`, `GET /internal/v1/articles?topic_id=`, `PUT .../summary` on Content Management, with its service token | To do |
 | `embed` (later) | Stores article embeddings in its own pgvector database | `GET /internal/v1/articles...` on Content Management | To do |
+
+The article-summary loop fetches at most 25 articles per response and uses no
+cursor. It stops when Content Management returns an empty list or when AI
+Processing reaches three consecutive failures to add summaries to Content
+Management. A successful summary write resets the global consecutive-failure
+counter to zero.
+
+For this guard, the current working definition of a failure is an attempt for an
+article that ends without its summary being successfully stored in Content
+Management. This definition is provisional and may be refined during development.
 
 Its own database (pgvector) holds only its working data: embeddings, for grouping similar articles and for RAG later. It never stores summaries.
