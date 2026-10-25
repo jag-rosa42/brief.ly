@@ -12,8 +12,8 @@ function validateName(value: string): string | null {
 	const name = value.trim();
 	if (name.length < 2)
 		return "Key name must be at least 2 characters.";
-	if (name.length > 28)
-		return "Key name must be at most 28 characters.";
+	if (name.length > 30)
+		return "Key name must be at most 30 characters.";
 	return null;
 }
 
