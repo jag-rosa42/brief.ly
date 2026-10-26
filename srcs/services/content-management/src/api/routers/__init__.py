@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from src.api.routers.health.router import router as health_router
+from src.api.routers.ingestion_runs.router import router as ingestion_run_router
 from src.api.routers.topics.router import router as topic_router
 
 # ---------------------------------------------------------------------------
@@ -24,4 +25,5 @@ root_routers.include_router(health_router)
 # ---------------------------------------------------------------------------
 
 api_routers = APIRouter(prefix="/internal/v1")
+api_routers.include_router(ingestion_run_router)
 api_routers.include_router(topic_router)
