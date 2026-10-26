@@ -8,12 +8,16 @@ SECRET_FILES := \
 JWT_PRIVATE_KEY := $(SECRET_DIR)/jwt_private_key
 JWT_PUBLIC_KEY  := $(SECRET_DIR)/jwt_public_key
 
+# Provider credentials are supplied by developers/operators and never generated.
+NEWS_API_KEY := $(SECRET_DIR)/news_api_key
+
 
 # VM commands validate the host-owned files copied by vm-sync.
 # Direct host commands retain the existing generation behavior.
 SECRETS_MODE ?= generate
 
-.PHONY: secrets secrets-check secrets-banner secrets-dir secrets-random secrets-jwt-keys
+.PHONY: secrets secrets-check secrets-banner secrets-dir secrets-random secrets-jwt-keys \
+		news-api-secret-check
 
 ifeq ($(SECRETS_MODE),validate)
 secrets: secrets-check
@@ -51,6 +55,13 @@ secrets-random: | secrets-dir
 			printf "$(GREEN_COLOR)✓ $$secret already exists, skipping ㊙️$(DEFAULT_COLOR)\n"; \
 		fi; \
 	done
+
+# --- Externally supplied provider credentials ---
+news-api-secret-check: | secrets-dir
+	@if [ ! -r "$(NEWS_API_KEY)" ] || [ ! -s "$(NEWS_API_KEY)" ]; then \
+		printf '$(RED_COLOR)[SECRETS] Add your NewsAPI key to $(NEWS_API_KEY).$(DEFAULT_COLOR)\n' >&2; \
+		exit 1; \
+	fi
 
 # --- JWT keys ---
 secrets-jwt-keys: | secrets-dir
