@@ -1,16 +1,12 @@
 import logging
 from datetime import datetime
 
-from src.application.ports import (
-    ArticleDiscoverer,
-    ArticleExtractor,
-    NormalizedArticleRepository,
-    SourceRepository,
-)
+from src.application.port import ArticleDiscoverer, ArticleExtractor
 from src.domain.entities import (
     DiscoveredArticle,
     Source,
 )
+from src.domain.repositories import NormalizedArticleRepository, SourceRepository
 
 logger = logging.getLogger(__name__)
 
