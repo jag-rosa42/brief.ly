@@ -12,4 +12,5 @@ the route names remain unchanged.
 from src.main import app
 
 HEALTH: str = app.url_path_for("health_check")
+INGESTION_RUNS: str = app.url_path_for("create_ingestion_run")
 TOPICS: str = app.url_path_for("list_topics")

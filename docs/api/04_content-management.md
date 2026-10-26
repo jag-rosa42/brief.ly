@@ -6,7 +6,7 @@ A topic is never hard-deleted, so a profile can never point at a missing topic. 
 
 | Kind | Method | Service path | Auth | Success | Status |
 | --- | --- | --- | --- | --- | --- |
-| Internal | POST | `/internal/v1/ingestion-runs` | Service (`ingestion:run`) | 201 | ~To do~ |
+| Internal | POST | `/internal/v1/ingestion-runs` | Service (`ingestion:run`) | 201 | Partial (see below) |
 | Internal | GET | `/internal/v1/topics` | Service (`topics:read`) | 200 | Partial (see below) |
 | Internal | GET | `/internal/v1/articles?topic_id={topic_id}` | Service (`articles:read`) | 200 | To do |
 | Internal | GET | `/internal/v1/articles?summary=missing` | Service (`articles:read`) | 200 | To do |
@@ -18,6 +18,8 @@ A topic is never hard-deleted, so a profile can never point at a missing topic. 
 **`GET /internal/v1/topics` is Partial.** It exists on `main` (`srcs/services/content-management/src/api/routers/topics/router.py`, schema `srcs/services/content-management/src/api/schemas/topic.py`), with two things missing:
 1. Topics have no `summary` / `summarized_at` yet (ADR-0010).
 2. No token is checked yet (the known gap below; service tokens are not built yet).
+
+**`POST /internal/v1/ingestion-runs` is Partial.** It triggers a synchronous ingestion and reports whether it succeeded fully or partially, but does not check a service token yet.
 
 - Only AI Processing's client may get the `summaries:write` scope (Identity's client registry, ADR-0008).
 - Known gap: until service tokens exist (ADR-0008), these routes are unauthenticated and protected only by not being routed and by the `backend` network. Service tokens are built before the Public API.
@@ -53,13 +55,23 @@ Each endpoint below shows the request and every possible response.
 
 ### POST /internal/v1/ingestion-runs
 
-Fetches new articles (with newspaper3k) and stores them, with `summary: null`. Started by a manual trigger (see open questions for how).
+Fetches new articles (with newspaper3k) and stores them, with `summary: null`. It is started manually with `make ingest`; a source becomes eligible again after 30 minutes.
+
+An ingestion is partially successful when at least one article was stored despite other article or source failures. It fails only when errors occurred and no article was stored. A run without errors remains successful when there was no new article to store. Only one ingestion may run at a time; a concurrent request is rejected without waiting.
 
 ```text
 Header: Authorization: Bearer <service token>
 Body: none
 
-201 Created           response body to define
+201 Created           {"status": "succeeded" | "partial"}
+500 Internal Server Error
+{
+  "error": {
+    "code": "INGESTION_FAILED",
+    "message": "Article ingestion completed with errors."
+  }
+}
+409 Conflict             INGESTION_ALREADY_RUNNING
 401 Unauthorized
 403 Forbidden         INSUFFICIENT_SCOPE
 ```
