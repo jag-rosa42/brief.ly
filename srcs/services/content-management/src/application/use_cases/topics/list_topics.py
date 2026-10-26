@@ -1,9 +1,9 @@
-from src.application.ports import TopicRepository
 from src.domain.entities import Topic
+from src.domain.repositories import TopicRepository
 
 
 class ListTopics:
-    def __init__(self, repository: TopicRepository):
+    def __init__(self, repository: TopicRepository) -> None:
         self._repository = repository
 
     def execute(self) -> list[Topic]:

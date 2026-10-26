@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from src.application.extract_article import ExtractArticle
+from src.application.use_cases.articles import ExtractArticle
 
 
 def test_extract_article_delegates_the_discovered_article(discovered_article):

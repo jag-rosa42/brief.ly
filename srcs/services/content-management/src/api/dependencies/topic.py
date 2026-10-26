@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import Depends
 
 from src.api.dependencies.database import SessionDep
-from src.application.list_topics import ListTopics
-from src.application.ports import TopicRepository
+from src.application.use_cases.topics import ListTopics
+from src.domain.repositories import TopicRepository
 from src.infrastructure.database.repositories import SqlAlchemyTopicRepository
 
 

@@ -1,13 +1,9 @@
 import logging
 from unittest.mock import Mock
 
-from src.application.ports import (
-    ArticleDiscoverer,
-    ArticleExtractor,
-    NormalizedArticleRepository,
-    SourceRepository,
-)
-from src.application.synchronize_sources import SynchronizeSources
+from src.application.port import ArticleDiscoverer, ArticleExtractor
+from src.application.use_cases.ingestion import SynchronizeSources
+from src.domain.repositories import NormalizedArticleRepository, SourceRepository
 
 
 # Synchronization and save new normalized_article
@@ -152,7 +148,7 @@ def test_error_isolated_from_other_sources(
     # ---------- ACT ------------------------
     with caplog.at_level(
         logging.ERROR,
-        logger="src.application.synchronize_sources",
+        logger="src.application.use_cases.ingestion.synchronize_sources",
     ):
         SynchronizeSources(
             source_repository,
