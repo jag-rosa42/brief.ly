@@ -95,6 +95,7 @@ help:
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) vm-databases                $(CYAN_COLOR)Start PostgreSQL and pgvector in the VM for local backend development$(DEFAULT_COLOR)\n"
 	@printf "$(GREEN_COLOR)  Backend$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) init-env                    $(CYAN_COLOR)Force generating .env files from their .env.example templates$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ingest                      $(CYAN_COLOR)Trigger ingestion through a running content-management service$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) test SERVICE=<name>         $(CYAN_COLOR)Run service tests locally with a VM test database$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) lint SERVICE=<name>         $(CYAN_COLOR)Lint a service locally$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) run SERVICE=<name>          $(CYAN_COLOR)Run one backend locally with databases in the VM$(DEFAULT_COLOR)\n"
@@ -240,6 +241,9 @@ run: check-service vm-databases
 	@$(call print,$(CYAN_COLOR),[SERVICE] Running $(SERVICE) locally with VM databases...)
 	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) ensure-databases -s
 	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) run -s
+
+ingest:
+	@$(MAKE) -C $(SERVICES_DIR)/content-management $@ -s
 
 #service testing
 test: check-service vm-databases
@@ -488,7 +492,7 @@ fclean-vm: launch-vm
 .PHONY: clean fclean logs down reset-db secrets check-service check-compose-service \
 		check-provider-secrets vm-databases \
 		frontend frontend-install frontend-build frontend-test \
-		dev dev-databases docker vm sync run migration upgrade downgrade \
+		dev dev-databases docker vm sync run ingest migration upgrade downgrade \
 		test lint typecheck shell list-services status clear-cache reinstall \
 		up build ps logs init-env create-vm launch-vm stop-vm debug-create-vm \
 		connect-vm vm-wait vm-sync prod prod-docker fclean-vm $(addsuffix -vm,$(VM_DOCKER_TARGETS))

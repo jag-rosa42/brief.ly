@@ -26,6 +26,8 @@ Dashboard        Morning Briefing ──▶ Content Management     articles arri
 Save an article  Personalization  ──▶ Content Management     article arrives WITH its summary
 ```
 
+Ingestion is started manually with `make ingest`.
+
 **Result:** at most 6 internal calls per dashboard instead of about 50, and **nobody calls AI Processing** while a user is waiting.
 
 ## 3. Impact for each service
