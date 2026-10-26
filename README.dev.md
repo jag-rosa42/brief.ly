@@ -13,7 +13,13 @@ cp .env.example .env
 cp srcs/services/identity/.env.example srcs/services/identity/.env
 ```
 
-Repeat the second command for other backend services. `make init-env` copies **all** `.env.example` files, but overwrites existing `.env` files; use it only when you intend to replace local configuration. The root Makefile reads `.env`, so create it before running Make commands. Keep local `.env` files and generated secrets out of Git. `make vm-databases` creates missing files in `shared/secrets/` on the host through `make secrets`, then synchronizes them into the VM.
+Repeat the second command for other backend services. `make init-env` copies **all** `.env.example` files, but overwrites existing `.env` files; use it only when you intend to replace local configuration. The root Makefile reads `.env`, so create it before running Make commands. Keep local `.env` files and generated secrets out of Git. `make vm-databases` creates generated files in `shared/secrets/` on the host through `make secrets`, then synchronizes them into the VM.
+
+Content Management additionally requires the externally supplied NewsAPI key in `shared/secrets/news_api_key`. Create that file with restrictive permissions and add the key with an editor; it is validated only when Content Management or the complete stack is started:
+
+```bash
+install -m 600 /dev/null shared/secrets/news_api_key
+```
 
 ## Local Make commands
 

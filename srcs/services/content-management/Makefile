@@ -7,6 +7,8 @@ PORT      = $(CONTENT_MANAGEMENT_PORT)
 include $(ROOT_DIR)/shared/mk/service.mk
 include $(ROOT_DIR)/.env
 
+NEWS_API_SECRET := $(ROOT_DIR)/shared/secrets/news_api_key
+
 # ======== TMP TEST WITH LOGS ===============
 # TODO: Format loggers
 
@@ -26,4 +28,12 @@ test-tmp: check-env
 
 ##################################### RULES ####################################
 
-.PHONY: logs test
+.PHONY: check-news-api-secret logs test
+
+check-news-api-secret:
+	@if [ ! -r "$(NEWS_API_SECRET)" ] || [ ! -s "$(NEWS_API_SECRET)" ]; then \
+		$(call print,$(RED_COLOR),[SECRETS] Add your NewsAPI key to $(NEWS_API_SECRET).); \
+		exit 1; \
+	fi
+
+run: check-news-api-secret
