@@ -4,7 +4,9 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from src.application.port.unit_of_work import UnitOfWork
 from src.infrastructure.database.config import SessionFactory
+from src.infrastructure.database.unit_of_work import SqlAlchemyUnitOfWork
 
 
 def get_db() -> Generator[Session]:
@@ -41,3 +43,18 @@ def get_db() -> Generator[Session]:
 #
 #     db: SessionDep
 SessionDep = Annotated[Session, Depends(get_db)]
+
+
+# ---------------------------------------------------------------------------
+# Unit of Work
+# ---------------------------------------------------------------------------
+# FastAPI caches dependencies per request: SessionDep resolves to the SAME
+# Session for the UnitOfWork and for every repository of the request.
+#
+# This is what makes uow.commit() include the changes staged by the
+# repositories. Never build a repository or a UnitOfWork from another Session.
+def get_unit_of_work(session: SessionDep) -> UnitOfWork:
+    return SqlAlchemyUnitOfWork(session)
+
+
+UnitOfWorkDep = Annotated[UnitOfWork, Depends(get_unit_of_work)]

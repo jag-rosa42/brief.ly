@@ -16,13 +16,25 @@ class SqlAlchemyProfileRepository:
         self._session = session
 
     def find_by_id(self, account_id: UUID) -> Profile | None:
-        row = self._session.execute(
-            select(
-                ProfileModel.name,
-                ProfileModel.created_at,
-                ProfileModel.updated_at,
-            ).where(ProfileModel.account_id == account_id)
-        ).one_or_none()
+        return self._find(account_id, lock=False)
+
+    def find_by_id_for_update(self, account_id: UUID) -> Profile | None:
+        """Load the profile and lock its row until the transaction ends.
+
+        SELECT ... FOR UPDATE: a concurrent transaction locking the same profile
+        waits until this one commits or rolls back, then reads the new values.
+        """
+        return self._find(account_id, lock=True)
+
+    def _find(self, account_id: UUID, lock: bool) -> Profile | None:
+        statement = select(
+            ProfileModel.name,
+            ProfileModel.created_at,
+            ProfileModel.updated_at,
+        ).where(ProfileModel.account_id == account_id)
+        if lock:
+            statement = statement.with_for_update(of=ProfileModel)
+        row = self._session.execute(statement).one_or_none()
         if row is None:
             return None
         topic_ids = (
