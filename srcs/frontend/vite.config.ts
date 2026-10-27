@@ -25,7 +25,7 @@ export default defineConfig({
 		strictPort: true,
 		proxy: {
 			"/api/identity": {
-				target: "http://localhost:8081",
+				target: "http://identity:8000",
 				secure: false,
 				changeOrigin: true,
 				rewrite: (p) => p.replace(/^\/api\/identity/,""),
