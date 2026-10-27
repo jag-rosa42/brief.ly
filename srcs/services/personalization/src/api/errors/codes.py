@@ -22,4 +22,7 @@ DOMAIN_ERROR_STATUS_MAP: dict[ErrorCode, HttpErrorConfig] = {
     ErrorCode.INVALID_ACCOUNT_ID: HttpErrorConfig(
         status_code=status.HTTP_401_UNAUTHORIZED
     ),
+    ErrorCode.VALIDATION_ERROR: HttpErrorConfig(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT
+    ),
 }

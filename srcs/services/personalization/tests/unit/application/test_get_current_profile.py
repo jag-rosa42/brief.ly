@@ -22,6 +22,9 @@ class FakeProfileRepository:
     def find_by_id(self, account_id: UUID) -> Profile | None:
         return self._profiles_by_id.get(account_id)
 
+    def find_by_id_for_update(self, account_id: UUID) -> Profile | None:
+        return self.find_by_id(account_id)
+
 
 def test_execute_raises_when_profile_does_not_exist() -> None:
     profile_repository = FakeProfileRepository()
