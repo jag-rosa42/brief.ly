@@ -1,5 +1,7 @@
 import logging
+from dataclasses import dataclass
 from datetime import datetime
+from typing import Literal
 
 from src.application.port import (
     ArticleDiscoverer,
@@ -12,6 +14,22 @@ from src.domain.entities import DiscoveredArticle, Source
 from src.domain.repositories import NormalizedArticleRepository, SourceRepository
 
 logger = logging.getLogger(__name__)
+
+ArticleSynchronizationOutcome = Literal["created", "unchanged", "failed"]
+
+
+@dataclass(frozen=True)
+class SynchronizationResult:
+    articles_created: int = 0
+    failures: int = 0
+
+    @property
+    def has_failures(self) -> bool:
+        return self.failures > 0
+
+    @property
+    def succeeded(self) -> bool:
+        return not self.has_failures or self.articles_created > 0
 
 
 class SynchronizeSources:
@@ -31,16 +49,27 @@ class SynchronizeSources:
         self._article_discoverer = article_discoverer
         self._article_extractor = article_extractor
 
-    def execute(self, synchronized_at: datetime) -> None:
+    def execute(self, synchronized_at: datetime) -> SynchronizationResult:
         with self._uow:
             sources = self._source_repository.list_due(synchronized_at)
+            result = SynchronizationResult()
 
             for source in sources:
-                self._sync_source(source, synchronized_at)
+                source_result = self._sync_source(source, synchronized_at)
+                result = SynchronizationResult(
+                    articles_created=(
+                        result.articles_created + source_result.articles_created
+                    ),
+                    failures=result.failures + source_result.failures,
+                )
 
             self._uow.commit()
 
-    def _sync_source(self, source: Source, synchronized_at: datetime) -> None:
+        return result
+
+    def _sync_source(
+        self, source: Source, synchronized_at: datetime
+    ) -> SynchronizationResult:
         try:
             discovered_articles = self._article_discoverer.discover(source)
         except ArticleDiscoveryError:
@@ -48,10 +77,18 @@ class SynchronizeSources:
                 "source synchronization failed",
                 extra={"source_id": source.id},
             )
-            return
+            return SynchronizationResult(failures=1)
+
+        articles_created = 0
+        article_failures = 0
 
         for discovered in discovered_articles:
-            self._process_article(source, discovered)
+            outcome = self._process_article(source, discovered)
+            articles_created += outcome == "created"
+            article_failures += outcome == "failed"
+
+        if article_failures > 0 and articles_created == 0:
+            return SynchronizationResult(failures=article_failures)
 
         self._source_repository.update_last_successful_sync(
             source.id,
@@ -60,17 +97,25 @@ class SynchronizeSources:
 
         logger.info(
             "source synchronization completed",
-            extra={"source_id": source.id},
+            extra={
+                "source_id": source.id,
+                "articles_created": articles_created,
+                "article_failures": article_failures,
+            },
+        )
+        return SynchronizationResult(
+            articles_created=articles_created,
+            failures=article_failures,
         )
 
     def _process_article(
         self, source: Source, discovered: DiscoveredArticle
-    ) -> None:
+    ) -> ArticleSynchronizationOutcome:
         if self._normalized_article_repository.exists(
             source.id,
             discovered.external_id,
         ):
-            return
+            return "unchanged"
 
         try:
             normalized_article = self._article_extractor.extract(discovered)
@@ -79,6 +124,7 @@ class SynchronizeSources:
                 "article synchronization failed",
                 extra={"discovered": discovered.external_id},
             )
-            return
+            return "failed"
 
         self._normalized_article_repository.save(source.id, normalized_article)
+        return "created"
