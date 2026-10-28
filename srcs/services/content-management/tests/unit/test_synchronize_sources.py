@@ -1,3 +1,4 @@
+import logging
 from unittest.mock import Mock
 
 import pytest
@@ -5,9 +6,10 @@ import pytest
 from src.application.port import (
     ArticleDiscoverer,
     ArticleDiscoveryError,
+    ArticleExtractionError,
     ArticleExtractor,
 )
-from src.application.use_cases.ingestion import SynchronizeSources
+from src.application.use_cases.ingestion import SynchronizationResult, SynchronizeSources
 from src.domain.repositories import NormalizedArticleRepository, SourceRepository
 from tests.fixtures.unit_of_work import FakeUnitOfWork
 
@@ -38,7 +40,7 @@ def dependencies():
     }
 
 
-def test_commits_a_successful_synchronization(
+def test_synchronizes_and_saves_a_new_article(
     source,
     discovered_article,
     normalized_article,
@@ -51,7 +53,7 @@ def test_commits_a_successful_synchronization(
     dependencies["normalized_article_repository"].exists.return_value = False
     dependencies["article_extractor"].extract.return_value = normalized_article
 
-    build_synchronize_sources(uow, **dependencies).execute(synchronization_time)
+    result = build_synchronize_sources(uow, **dependencies).execute(synchronization_time)
 
     dependencies["normalized_article_repository"].save.assert_called_once_with(
         source.id, normalized_article
@@ -59,10 +61,34 @@ def test_commits_a_successful_synchronization(
     dependencies["source_repository"].update_last_successful_sync.assert_called_once_with(
         source.id, synchronization_time
     )
+    assert result == SynchronizationResult(articles_created=1)
+    assert uow.commit_count == 1
+
+
+def test_ignores_an_existing_article(
+    source,
+    discovered_article,
+    synchronization_time,
+    uow,
+    dependencies,
+) -> None:
+    dependencies["source_repository"].list_due.return_value = [source]
+    dependencies["article_discoverer"].discover.return_value = [discovered_article]
+    dependencies["normalized_article_repository"].exists.return_value = True
+
+    result = build_synchronize_sources(uow, **dependencies).execute(synchronization_time)
+
+    dependencies["article_extractor"].extract.assert_not_called()
+    dependencies["normalized_article_repository"].save.assert_not_called()
+    dependencies["source_repository"].update_last_successful_sync.assert_called_once_with(
+        source.id, synchronization_time
+    )
+    assert result == SynchronizationResult()
     assert uow.commit_count == 1
 
 
 def test_isolates_an_expected_source_failure(
+    caplog,
     source,
     source_b,
     discovered_article,
@@ -77,11 +103,71 @@ def test_isolates_an_expected_source_failure(
     ]
     dependencies["normalized_article_repository"].exists.return_value = True
 
-    build_synchronize_sources(uow, **dependencies).execute(synchronization_time)
+    with caplog.at_level(
+        logging.ERROR,
+        logger="src.application.use_cases.ingestion.synchronize_sources",
+    ):
+        result = build_synchronize_sources(uow, **dependencies).execute(
+            synchronization_time
+        )
 
     dependencies["source_repository"].update_last_successful_sync.assert_called_once_with(
         source_b.id, synchronization_time
     )
+    assert result == SynchronizationResult(failures=1)
+    assert not result.succeeded
+    assert uow.commit_count == 1
+
+
+def test_commits_a_partial_source_when_an_article_was_created(
+    source,
+    discovered_article,
+    normalized_article,
+    synchronization_time,
+    uow,
+    dependencies,
+) -> None:
+    failed_article = Mock(external_id="failed-article")
+    dependencies["source_repository"].list_due.return_value = [source]
+    dependencies["article_discoverer"].discover.return_value = [
+        discovered_article,
+        failed_article,
+    ]
+    dependencies["normalized_article_repository"].exists.return_value = False
+    dependencies["article_extractor"].extract.side_effect = [
+        normalized_article,
+        ArticleExtractionError("article unavailable"),
+    ]
+
+    result = build_synchronize_sources(uow, **dependencies).execute(synchronization_time)
+
+    assert result == SynchronizationResult(articles_created=1, failures=1)
+    assert result.succeeded
+    assert result.has_failures
+    dependencies["source_repository"].update_last_successful_sync.assert_called_once_with(
+        source.id, synchronization_time
+    )
+    assert uow.commit_count == 1
+
+
+def test_failed_articles_without_creation_leave_the_source_due(
+    source,
+    discovered_article,
+    synchronization_time,
+    uow,
+    dependencies,
+) -> None:
+    dependencies["source_repository"].list_due.return_value = [source]
+    dependencies["article_discoverer"].discover.return_value = [discovered_article]
+    dependencies["normalized_article_repository"].exists.return_value = False
+    dependencies["article_extractor"].extract.side_effect = ArticleExtractionError(
+        "article unavailable"
+    )
+
+    result = build_synchronize_sources(uow, **dependencies).execute(synchronization_time)
+
+    assert result == SynchronizationResult(failures=1)
+    dependencies["source_repository"].update_last_successful_sync.assert_not_called()
     assert uow.commit_count == 1
 
 
