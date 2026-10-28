@@ -8,13 +8,21 @@ from src.api.dependencies.profile import (
     ProfileRepositoryDep,
     UpsertCurrentProfileDep,
 )
+from src.api.dependencies.saved_article import (
+    DeleteSavedArticleDep,
+    ListSavedArticlesDep,
+    SavedArticleRepositoryDep,
+)
 from src.api.dependencies.topic_catalog import TopicCatalogDep
 
 __all__: list[str] = [
     "ACCOUNT_ID_HEADER_NAME",
     "CurrentAccountIdDep",
+    "DeleteSavedArticleDep",
     "GetCurrentProfileDep",
+    "ListSavedArticlesDep",
     "ProfileRepositoryDep",
+    "SavedArticleRepositoryDep",
     "SessionDep",
     "TopicCatalogDep",
     "UnitOfWorkDep",

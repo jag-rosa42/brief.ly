@@ -152,7 +152,7 @@ Body: none
 404 Not Found         PROFILE_NOT_FOUND
 404 Not Found         ARTICLE_NOT_FOUND (unknown to Content Management)
 409 Conflict          ARTICLE_ALREADY_SAVED
-409 Conflict          SAVED_ARTICLES_LIMIT_REACHED (max 10)
+409 Conflict          SAVED_ARTICLES_LIMIT_REACHED (max 12)
 422 Unprocessable     VALIDATION_ERROR (article_id not a UUID)
 503 Unavailable       SERVICE_UNAVAILABLE
 ```
