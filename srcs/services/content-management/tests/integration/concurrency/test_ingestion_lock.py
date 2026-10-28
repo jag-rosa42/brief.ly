@@ -1,16 +1,20 @@
 import pytest
 from sqlalchemy import Engine
-from sqlalchemy.orm import Session
 
 from src.infrastructure.database.ingestion_lock import PostgresIngestionLock
 
 
 @pytest.mark.integration
-def test_only_one_transaction_can_hold_the_ingestion_lock(engine: Engine) -> None:
-    with Session(engine) as holder, Session(engine) as contender:
-        assert PostgresIngestionLock(holder).try_acquire()
-        assert not PostgresIngestionLock(contender).try_acquire()
+def test_only_one_session_can_hold_the_ingestion_lock(engine: Engine) -> None:
+    holder = PostgresIngestionLock(engine)
+    contender = PostgresIngestionLock(engine)
+    try:
+        assert holder.try_acquire()
+        assert not contender.try_acquire()
 
-        holder.rollback()
+        holder.release()
 
-        assert PostgresIngestionLock(contender).try_acquire()
+        assert contender.try_acquire()
+    finally:
+        holder.release()
+        contender.release()

@@ -3,7 +3,7 @@ from src.infrastructure.database.repositories import (
 )
 
 
-def test_exists_returns_true_for_existing_normalized_article(
+def test_returns_existing_external_ids_for_source(
     db_session,
     source_model,
     normalized_article_model,
@@ -15,7 +15,14 @@ def test_exists_returns_true_for_existing_normalized_article(
 
     repository = SqlAlchemyNormalizedArticleRepository(db_session)
 
-    assert repository.exists(
+    existing_external_ids = repository.find_existing_external_ids(
         source_id=source_model.id,
-        external_id=(normalized_article_model.discovered_article_external_id),
+        external_ids=[
+            normalized_article_model.discovered_article_external_id,
+            "missing-article",
+        ],
     )
+
+    assert existing_external_ids == {
+        normalized_article_model.discovered_article_external_id
+    }

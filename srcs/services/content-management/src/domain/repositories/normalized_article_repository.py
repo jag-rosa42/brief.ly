@@ -5,12 +5,11 @@ from src.domain.entities import NormalizedArticle
 
 
 class NormalizedArticleRepository(Protocol):
-    def exists(
+    def find_existing_external_ids(
         self,
         source_id: UUID,
-        discovered_article_external_id: str,
-        /,
-    ) -> bool: ...
+        external_ids: list[str],
+    ) -> set[str]: ...
 
     def save(
         self,

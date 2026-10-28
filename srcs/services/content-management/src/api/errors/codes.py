@@ -13,13 +13,13 @@ class HttpErrorConfig:
 
 
 DOMAIN_ERROR_STATUS_MAP: dict[ErrorCode, HttpErrorConfig] = {
-    ErrorCode.INGESTION_ALREADY_RUNNING: HttpErrorConfig(
+    ErrorCode.ARTICLE_INGESTION_ALREADY_RUNNING: HttpErrorConfig(
         status_code=status.HTTP_409_CONFLICT
     ),
 }
 
 API_ERROR_STATUS_MAP: dict[ApiErrorCode, HttpErrorConfig] = {
-    ApiErrorCode.INGESTION_FAILED: HttpErrorConfig(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+    ApiErrorCode.ARTICLE_INGESTION_FAILED: HttpErrorConfig(
+        status_code=status.HTTP_502_BAD_GATEWAY
     ),
 }

@@ -268,13 +268,8 @@ list-services:
 #                                  DOCKER                                      #
 # ============================================================================ #
 
-check-provider-secrets:
-	@if [ -z "$$SERVICE" ] || [ "$$SERVICE" = "content-management" ]; then \
-		$(MAKE) --no-print-directory news-api-secret-check; \
-	fi
-
 # Start the complete development stack, or one service and its dependencies.
-docker: check-compose-service secrets check-provider-secrets
+docker: check-compose-service secrets
 	@if [ -n "$$SERVICE" ]; then \
 		$(call print,$(GREEN_COLOR),[DOCKER] Starting $$SERVICE and its dependencies in dev mode...); \
 		$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d --build "$$SERVICE"; \
@@ -287,7 +282,7 @@ docker: check-compose-service secrets check-provider-secrets
 
 # Build and run production Compose in the current environment. The prod target
 # invokes this from inside the VM after selecting production port forwarding.
-prod-docker: secrets news-api-secret-check
+prod-docker: secrets
 	@$(call print,$(GREEN_COLOR),[DOCKER] Starting all services in production mode...)
 	$(PROD_COMPOSE) $(COMPOSE_PROFILES_ALL) build --no-cache && \
 	$(PROD_COMPOSE) $(COMPOSE_PROFILES_ALL) up
@@ -490,7 +485,7 @@ fclean-vm: launch-vm
 .DELETE_ON_ERROR:
 
 .PHONY: clean fclean logs down reset-db secrets check-service check-compose-service \
-		check-provider-secrets vm-databases \
+		vm-databases \
 		frontend frontend-install frontend-build frontend-test \
 		dev dev-databases docker vm sync run ingest migration upgrade downgrade \
 		test lint typecheck shell list-services status clear-cache reinstall \

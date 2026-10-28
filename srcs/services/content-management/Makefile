@@ -32,14 +32,21 @@ test-tmp: check-env
 .PHONY: check-news-api-secret ingest logs test
 
 check-news-api-secret:
-	@if [ ! -r "$(NEWS_API_SECRET)" ] || [ ! -s "$(NEWS_API_SECRET)" ]; then \
-		$(call print,$(RED_COLOR),[SECRETS] Add your NewsAPI key to $(NEWS_API_SECRET).); \
+	@if [ ! -e "$(NEWS_API_SECRET)" ]; then \
+		$(call print,$(RED_COLOR),[SECRETS] Missing NewsAPI key file: $(NEWS_API_SECRET).); \
+		exit 1; \
+	elif [ ! -f "$(NEWS_API_SECRET)" ]; then \
+		$(call print,$(RED_COLOR),[SECRETS] NewsAPI key path is not a regular file: $(NEWS_API_SECRET).); \
+		exit 1; \
+	elif [ ! -r "$(NEWS_API_SECRET)" ]; then \
+		$(call print,$(RED_COLOR),[SECRETS] NewsAPI key file is not readable: $(NEWS_API_SECRET).); \
+		exit 1; \
+	elif [ ! -s "$(NEWS_API_SECRET)" ]; then \
+		$(call print,$(RED_COLOR),[SECRETS] NewsAPI key file is empty: $(NEWS_API_SECRET).); \
 		exit 1; \
 	fi
 
-run: check-news-api-secret
-
-ingest:
+ingest: check-news-api-secret
 	@if ! command -v curl >/dev/null 2>&1; then \
 		$(call print,$(RED_COLOR),Error: curl is required to trigger ingestion.); \
 		exit 1; \

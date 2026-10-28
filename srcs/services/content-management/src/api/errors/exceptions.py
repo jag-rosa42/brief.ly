@@ -2,7 +2,7 @@ from enum import StrEnum
 
 
 class ApiErrorCode(StrEnum):
-    INGESTION_FAILED = "INGESTION_FAILED"
+    ARTICLE_INGESTION_FAILED = "ARTICLE_INGESTION_FAILED"
 
 
 class ApiError(Exception):
@@ -12,8 +12,8 @@ class ApiError(Exception):
         super().__init__(message)
 
 
-class IngestionFailedError(ApiError):
-    code = ApiErrorCode.INGESTION_FAILED
+class ArticleIngestionFailedError(ApiError):
+    code = ApiErrorCode.ARTICLE_INGESTION_FAILED
 
     def __init__(self) -> None:
         super().__init__("Article ingestion completed with errors.")

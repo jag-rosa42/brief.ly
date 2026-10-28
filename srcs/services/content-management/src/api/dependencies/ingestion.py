@@ -14,6 +14,7 @@ from src.infrastructure.clients.article_extraction.newspaper_article_extractor i
     NewspaperArticleExtractor,
 )
 from src.infrastructure.config.news_api import NewsApiSettings
+from src.infrastructure.database.config import engine
 from src.infrastructure.database.ingestion_lock import PostgresIngestionLock
 from src.infrastructure.database.repositories import (
     SqlAlchemyNormalizedArticleRepository,
@@ -21,6 +22,9 @@ from src.infrastructure.database.repositories import (
 )
 
 
+# ---------------------------------------------------------------------------
+# Source Repository
+# ---------------------------------------------------------------------------
 def get_source_repository(session: SessionDep) -> SourceRepository:
     return SqlAlchemySourceRepository(session)
 
@@ -31,6 +35,9 @@ SourceRepositoryDep = Annotated[
 ]
 
 
+# ---------------------------------------------------------------------------
+# Normalized Article Repository
+# ---------------------------------------------------------------------------
 def get_normalized_article_repository(
     session: SessionDep,
 ) -> NormalizedArticleRepository:
@@ -43,13 +50,19 @@ NormalizedArticleRepositoryDep = Annotated[
 ]
 
 
-def get_ingestion_lock(session: SessionDep) -> IngestionLock:
-    return PostgresIngestionLock(session)
+# ---------------------------------------------------------------------------
+# Ingestion Lock
+# ---------------------------------------------------------------------------
+def get_ingestion_lock() -> IngestionLock:
+    return PostgresIngestionLock(engine)
 
 
 IngestionLockDep = Annotated[IngestionLock, Depends(get_ingestion_lock)]
 
 
+# ---------------------------------------------------------------------------
+# Article Discoverer
+# ---------------------------------------------------------------------------
 def get_article_discoverer() -> ArticleDiscoverer:
     newsapi_settings = NewsApiSettings()
     client = NewsApiClient(
@@ -64,6 +77,9 @@ ArticleDiscovererDep = Annotated[
 ]
 
 
+# ---------------------------------------------------------------------------
+# Article Extractor
+# ---------------------------------------------------------------------------
 def get_article_extractor() -> ArticleExtractor:
     return NewspaperArticleExtractor()
 
@@ -74,6 +90,9 @@ ArticleExtractorDep = Annotated[
 ]
 
 
+# ---------------------------------------------------------------------------
+# Synchronize Sources
+# ---------------------------------------------------------------------------
 def get_synchronize_sources(
     uow: UnitOfWorkDep,
     ingestion_lock: IngestionLockDep,

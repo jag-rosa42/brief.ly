@@ -23,7 +23,7 @@ from fastapi.testclient import TestClient
 from httpx2 import Response
 from shared_errors import ErrorResponse
 
-from src.api.dependencies import get_db
+from src.api.dependencies.database import get_db
 from src.infrastructure.config.app import app_settings
 from src.main import app
 from tests import routes

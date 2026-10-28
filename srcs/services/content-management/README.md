@@ -10,12 +10,13 @@ Article ingestion reads its NewsAPI credential from the repository-level secret
 `/run/secrets/news_api_key` in containers. Do not put the key in this service's
 `.env` file.
 
-From the repository root, create the file with restrictive permissions, then
-open it in an editor and add the credential:
+Host workflows create an empty file with restrictive permissions so the service
+can start without a configured provider. To create it manually, run:
 
 ```bash
 install -m 600 /dev/null shared/secrets/news_api_key
 ```
 
-The file is ignored by Git. It is required when Content Management is started,
-but not for database-only or unrelated-service workflows.
+The file is ignored by Git. Add the credential before running `make ingest`,
+which rejects a missing, unreadable, or empty file. Other Content Management
+endpoints and services can run without a NewsAPI credential.

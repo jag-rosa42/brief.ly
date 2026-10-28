@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal
+from enum import StrEnum
 
 from src.application.port import (
     ArticleDiscoverer,
@@ -12,18 +12,24 @@ from src.application.port import (
     UnitOfWork,
 )
 from src.domain.entities import DiscoveredArticle, Source
-from src.domain.exception import IngestionAlreadyRunningError
+from src.domain.exception import ArticleIngestionAlreadyRunningError
 from src.domain.repositories import NormalizedArticleRepository, SourceRepository
 
 logger = logging.getLogger(__name__)
 
-ArticleSynchronizationOutcome = Literal["created", "unchanged", "failed"]
+
+class ArticleSynchronizationOutcome(StrEnum):
+    CREATED = "created"
+    UNCHANGED = "unchanged"
+    FAILED = "failed"
 
 
 @dataclass(frozen=True)
 class SynchronizationResult:
     articles_created: int = 0
     failures: int = 0
+    sources_succeeded: int = 0
+    sources_failed: int = 0
 
     @property
     def has_failures(self) -> bool:
@@ -31,7 +37,7 @@ class SynchronizationResult:
 
     @property
     def succeeded(self) -> bool:
-        return not self.has_failures or self.articles_created > 0
+        return not self.has_failures or self.sources_succeeded > 0
 
 
 class SynchronizeSources:
@@ -54,25 +60,41 @@ class SynchronizeSources:
         self._article_extractor = article_extractor
 
     def execute(self, synchronized_at: datetime) -> SynchronizationResult:
-        with self._uow:
-            if not self._ingestion_lock.try_acquire():
-                raise IngestionAlreadyRunningError()
+        total_articles_created = 0
+        total_failures = 0
+        total_sources_succeeded = 0
+        total_sources_failed = 0
 
-            sources = self._source_repository.list_due(synchronized_at)
-            result = SynchronizationResult()
+        if not self._ingestion_lock.try_acquire():
+            raise ArticleIngestionAlreadyRunningError()
 
-            for source in sources:
-                source_result = self._sync_source(source, synchronized_at)
-                result = SynchronizationResult(
-                    articles_created=(
-                        result.articles_created + source_result.articles_created
-                    ),
-                    failures=result.failures + source_result.failures,
-                )
+        try:
+            with self._uow:
+                sources: list[Source] = self._source_repository.list_due(synchronized_at)
+                # End the source-list read transaction before source discovery.
+                self._uow.commit()
 
-            self._uow.commit()
+                for source in sources:
+                    source_result: SynchronizationResult = self._sync_source(
+                        source,
+                        synchronized_at,
+                    )
+                    # Persist each source independently so a later failure does not
+                    # roll back sources that were already synchronized.
+                    self._uow.commit()
+                    total_articles_created += source_result.articles_created
+                    total_failures += source_result.failures
+                    total_sources_succeeded += source_result.sources_succeeded
+                    total_sources_failed += source_result.sources_failed
+        finally:
+            self._ingestion_lock.release()
 
-        return result
+        return SynchronizationResult(
+            articles_created=total_articles_created,
+            failures=total_failures,
+            sources_succeeded=total_sources_succeeded,
+            sources_failed=total_sources_failed,
+        )
 
     def _sync_source(
         self, source: Source, synchronized_at: datetime
@@ -84,18 +106,43 @@ class SynchronizeSources:
                 "source synchronization failed",
                 extra={"source_id": source.id},
             )
-            return SynchronizationResult(failures=1)
+            return SynchronizationResult(failures=1, sources_failed=1)
 
+        known_external_ids = (
+            self._normalized_article_repository.find_existing_external_ids(
+                source.id,
+                [discovered.external_id for discovered in discovered_articles],
+            )
+        )
         articles_created = 0
         article_failures = 0
 
         for discovered in discovered_articles:
-            outcome = self._process_article(source, discovered)
-            articles_created += outcome == "created"
-            article_failures += outcome == "failed"
+            outcome = self._process_article(
+                source,
+                discovered,
+                known_external_ids,
+            )
+            articles_created += outcome is ArticleSynchronizationOutcome.CREATED
+            article_failures += outcome is ArticleSynchronizationOutcome.FAILED
+
+        source_log_context = {
+            "source_id": source.id,
+            "articles_succeeded": len(discovered_articles) - article_failures,
+            "articles_total": len(discovered_articles),
+            "articles_created": articles_created,
+            "article_failures": article_failures,
+        }
 
         if article_failures > 0 and articles_created == 0:
-            return SynchronizationResult(failures=article_failures)
+            logger.warning(
+                "source synchronization failed",
+                extra=source_log_context,
+            )
+            return SynchronizationResult(
+                failures=article_failures,
+                sources_failed=1,
+            )
 
         self._source_repository.update_last_successful_sync(
             source.id,
@@ -104,34 +151,32 @@ class SynchronizeSources:
 
         logger.info(
             "source synchronization completed",
-            extra={
-                "source_id": source.id,
-                "articles_created": articles_created,
-                "article_failures": article_failures,
-            },
+            extra=source_log_context,
         )
         return SynchronizationResult(
             articles_created=articles_created,
             failures=article_failures,
+            sources_succeeded=1,
         )
 
     def _process_article(
-        self, source: Source, discovered: DiscoveredArticle
+        self,
+        source: Source,
+        discovered: DiscoveredArticle,
+        known_external_ids: set[str],
     ) -> ArticleSynchronizationOutcome:
-        if self._normalized_article_repository.exists(
-            source.id,
-            discovered.external_id,
-        ):
-            return "unchanged"
+        if discovered.external_id in known_external_ids:
+            return ArticleSynchronizationOutcome.UNCHANGED
 
         try:
             normalized_article = self._article_extractor.extract(discovered)
         except ArticleExtractionError:
             logger.exception(
                 "article synchronization failed",
-                extra={"discovered": discovered.external_id},
+                extra={"discovered_external_id": discovered.external_id},
             )
-            return "failed"
+            return ArticleSynchronizationOutcome.FAILED
 
         self._normalized_article_repository.save(source.id, normalized_article)
-        return "created"
+        known_external_ids.add(discovered.external_id)
+        return ArticleSynchronizationOutcome.CREATED

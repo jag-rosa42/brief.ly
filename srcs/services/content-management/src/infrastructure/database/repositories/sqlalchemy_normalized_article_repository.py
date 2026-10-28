@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import exists, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.domain.entities import NormalizedArticle
@@ -11,18 +11,19 @@ class SqlAlchemyNormalizedArticleRepository:
     def __init__(self, session: Session) -> None:
         self._session: Session = session
 
-    def exists(
+    def find_existing_external_ids(
         self,
         source_id: UUID,
-        external_id: str,
-    ) -> bool:
-        statement = select(
-            exists().where(
-                NormalizedArticleModel.source_id == source_id,
-                NormalizedArticleModel.discovered_article_external_id == external_id,
-            )
+        external_ids: list[str],
+    ) -> set[str]:
+        if not external_ids:
+            return set()
+
+        statement = select(NormalizedArticleModel.discovered_article_external_id).where(
+            NormalizedArticleModel.source_id == source_id,
+            NormalizedArticleModel.discovered_article_external_id.in_(external_ids),
         )
-        return bool(self._session.scalar(statement))
+        return set(self._session.scalars(statement))
 
     def save(
         self,
