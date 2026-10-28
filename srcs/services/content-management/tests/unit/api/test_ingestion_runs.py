@@ -56,7 +56,7 @@ def test_returns_201_when_ingestion_partially_succeeds(
     assert response.json() == {"status": "partial"}
 
 
-def test_returns_structured_500_when_ingestion_fails(
+def test_returns_structured_502_when_ingestion_fails(
     client: TestClient,
     synchronize_sources: Mock,
 ) -> None:
@@ -64,7 +64,7 @@ def test_returns_structured_500_when_ingestion_fails(
 
     response: Response = client.post(routes.INGESTION_RUNS)
 
-    assert response.status_code == 500
+    assert response.status_code == 502
     body = ErrorResponse.model_validate(response.json())
     assert body.error.code == "INGESTION_FAILED"
     assert body.error.message == "Article ingestion completed with errors."
@@ -93,4 +93,4 @@ def test_exposes_only_the_collection_post_operation() -> None:
     assert set(ingestion_run_paths) == {routes.INGESTION_RUNS}
     assert set(ingestion_run_paths[routes.INGESTION_RUNS]) == {"post"}
     responses = ingestion_run_paths[routes.INGESTION_RUNS]["post"]["responses"]
-    assert {"201", "409", "500"} <= set(responses)
+    assert {"201", "409", "500", "502"} <= set(responses)

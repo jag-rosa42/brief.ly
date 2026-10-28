@@ -6,10 +6,10 @@ from src.api.errors.handlers import api_error_handler, domain_error_handler
 from src.domain.exception import IngestionAlreadyRunningError
 
 
-def test_maps_ingestion_failure_to_structured_500() -> None:
+def test_maps_ingestion_failure_to_structured_502() -> None:
     response = api_error_handler(Mock(), IngestionFailedError())
 
-    assert response.status_code == 500
+    assert response.status_code == 502
     assert loads(bytes(response.body)) == {
         "error": {
             "code": "INGESTION_FAILED",

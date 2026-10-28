@@ -17,13 +17,13 @@ NEWS_API_KEY := $(SECRET_DIR)/news_api_key
 SECRETS_MODE ?= generate
 
 .PHONY: secrets secrets-check secrets-banner secrets-dir secrets-random secrets-jwt-keys \
-		news-api-secret-check
+		secrets-provider-placeholders
 
 ifeq ($(SECRETS_MODE),validate)
 secrets: secrets-check
 else ifeq ($(SECRETS_MODE),generate)
-secrets: secrets-banner secrets-random secrets-jwt-keys
-	@$(call print,$(GREEN_COLOR),✓ All secrets are ready.)
+secrets: secrets-banner secrets-random secrets-jwt-keys secrets-provider-placeholders
+	@$(call print,$(GREEN_COLOR),✓ Generated secrets and provider placeholders are ready.)
 else
 $(error SECRETS_MODE must be generate or validate)
 endif
@@ -57,10 +57,10 @@ secrets-random: | secrets-dir
 	done
 
 # --- Externally supplied provider credentials ---
-news-api-secret-check: | secrets-dir
-	@if [ ! -r "$(NEWS_API_KEY)" ] || [ ! -s "$(NEWS_API_KEY)" ]; then \
-		printf '$(RED_COLOR)[SECRETS] Add your NewsAPI key to $(NEWS_API_KEY).$(DEFAULT_COLOR)\n' >&2; \
-		exit 1; \
+secrets-provider-placeholders: | secrets-dir
+	@if [ ! -e "$(NEWS_API_KEY)" ]; then \
+		install -m 600 /dev/null "$(NEWS_API_KEY)"; \
+		printf "$(YELLOW_COLOR)[SECRETS] Created empty provider credential placeholder: $(NEWS_API_KEY).$(DEFAULT_COLOR)\n"; \
 	fi
 
 # --- JWT keys ---

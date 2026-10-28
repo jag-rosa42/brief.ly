@@ -20,6 +20,6 @@ DOMAIN_ERROR_STATUS_MAP: dict[ErrorCode, HttpErrorConfig] = {
 
 API_ERROR_STATUS_MAP: dict[ApiErrorCode, HttpErrorConfig] = {
     ApiErrorCode.INGESTION_FAILED: HttpErrorConfig(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        status_code=status.HTTP_502_BAD_GATEWAY
     ),
 }

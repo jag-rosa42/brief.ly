@@ -64,7 +64,7 @@ Header: Authorization: Bearer <service token>
 Body: none
 
 201 Created           {"status": "succeeded" | "partial"}
-500 Internal Server Error
+502 Bad Gateway
 {
   "error": {
     "code": "INGESTION_FAILED",
@@ -72,6 +72,7 @@ Body: none
   }
 }
 409 Conflict             INGESTION_ALREADY_RUNNING
+500 Internal Server Error INTERNAL_SERVER_ERROR
 401 Unauthorized
 403 Forbidden         INSUFFICIENT_SCOPE
 ```

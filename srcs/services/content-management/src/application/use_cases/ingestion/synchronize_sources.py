@@ -129,7 +129,7 @@ class SynchronizeSources:
         except ArticleExtractionError:
             logger.exception(
                 "article synchronization failed",
-                extra={"discovered": discovered.external_id},
+                extra={"discovered_external_id": discovered.external_id},
             )
             return "failed"
 

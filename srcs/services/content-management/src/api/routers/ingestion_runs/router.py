@@ -20,6 +20,7 @@ router = APIRouter(
     responses={
         status.HTTP_409_CONFLICT: {"model": ErrorResponse},
         status.HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
+        status.HTTP_502_BAD_GATEWAY: {"model": ErrorResponse},
     },
 )
 def create_ingestion_run(
