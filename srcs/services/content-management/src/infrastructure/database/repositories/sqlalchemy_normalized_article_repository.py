@@ -6,12 +6,9 @@ from sqlalchemy.orm import Session
 from src.domain.entities import NormalizedArticle
 from src.infrastructure.database.models import NormalizedArticleModel
 
-# NOTE: The commit is handled in source_repository, when the update
-# is done.
-
 
 class SqlAlchemyNormalizedArticleRepository:
-    def __init__(self, session: Session):
+    def __init__(self, session: Session) -> None:
         self._session: Session = session
 
     def exists(
@@ -36,7 +33,6 @@ class SqlAlchemyNormalizedArticleRepository:
             normalized_article, source_id
         )
         self._session.add(normalized_article_model)
-        self._session.flush()
 
     @staticmethod
     def _to_model(

@@ -9,6 +9,7 @@ class NormalizedArticleRepository(Protocol):
         self,
         source_id: UUID,
         discovered_article_external_id: str,
+        /,
     ) -> bool: ...
 
     def save(

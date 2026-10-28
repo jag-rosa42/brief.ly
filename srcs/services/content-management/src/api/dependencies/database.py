@@ -4,7 +4,9 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from src.application.port import UnitOfWork
 from src.infrastructure.database.config import SessionFactory
+from src.infrastructure.database.unit_of_work import SqlAlchemyUnitOfWork
 
 
 def get_db() -> Generator[Session]:
@@ -41,3 +43,10 @@ def get_db() -> Generator[Session]:
 #
 #     db: SessionDep
 SessionDep = Annotated[Session, Depends(get_db)]
+
+
+def get_unit_of_work(session: SessionDep) -> UnitOfWork:
+    return SqlAlchemyUnitOfWork(session)
+
+
+UnitOfWorkDep = Annotated[UnitOfWork, Depends(get_unit_of_work)]
