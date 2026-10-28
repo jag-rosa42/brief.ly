@@ -1,15 +1,15 @@
 import { createContext } from "react";
-import type { Account } from "@/features/auth/identity";
+import type { Account } from "@/features/auth/types";
 
 export interface AuthContextValue {
-	user: Account | null;
+	account: Account | null;
 	isLoggedIn: boolean;
 	isLoading: boolean;
 	profileComplete: boolean;
-	login: (email: string, password: string) => Promise<void>;
 	signup: (email: string, password: string) => Promise<void>;
 	completeProfile: () => void;
-	logout: () =>  Promise<void>;
+	login: () => void;
+	logout: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(

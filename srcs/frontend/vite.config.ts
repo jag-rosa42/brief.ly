@@ -10,6 +10,10 @@ import tailwindcss from "@tailwindcss/vite";
 const usePolling = process.env.VITE_USE_POLLING === "true";
 // Optional host the browser uses to connect to Vite's live-reload (HMR) server.
 const hmrHost = process.env.VITE_HMR_HOST;
+// Target of the /api/identity proxy.
+// Defaults to the locally exposed identity service (make run SERVICE=identity).
+// Inside Docker, compose.override.yaml sets it to http://identity:8000.
+const identityTarget = process.env.IDENTITY_URL ?? "http://localhost:8081";
 
 export default defineConfig({
 	base: "/",
@@ -25,7 +29,7 @@ export default defineConfig({
 		strictPort: true,
 		proxy: {
 			"/api/identity": {
-				target: "http://identity:8000",
+				target: identityTarget,
 				secure: false,
 				changeOrigin: true,
 				rewrite: (p) => p.replace(/^\/api\/identity/,""),

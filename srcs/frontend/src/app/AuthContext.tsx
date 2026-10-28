@@ -2,28 +2,40 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 import { AuthContext } from "@/app/AuthContextDefinition";
-import { login as apiLogin, register as apiRegister, logout as apiLogout, restoreSession, getMe, type Account } from "@/features/auth/identity";
-import { onSessionExpired } from "@/shared/components/api/client";
+import { register as apiRegister, logout as apiLogout, restoreSession, getMe } from "@/features/auth/identity";
+import { type Account } from "@/features/auth/types"
+import { session } from "@/shared/components/api/client";
 
 interface AuthProviderProps {
 	children: ReactNode;
 }
 
-export function AuthProvider({ children }:AuthProviderProps ) {
-	const [user, setUser] = useState<Account | null>(null);
-	const [isLoggedIn, setIsLoggedIn] = useState(false);
+export function AuthProvider({ children }: AuthProviderProps) {
+	const [account, setAccount] = useState<Account | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
-	// Temporaire : à remplacer quand le profil sera relié au backend.
+	//TODO: Temporaire : à remplacer quand le profil sera relié au backend.
 	const [profileComplete, setProfileComplete] = useState(() => localStorage.getItem("profileComplete") === "true");
+
+	const isLoggedIn = (account !== null);
+	// TODO: Mock: a remplacer avec les donnees du back end
+	function login() {
+		localStorage.setItem("token", "fake-token");
+		localStorage.setItem("profileComplete", "true");
+		setAccount({
+			id: "mock-user",
+			email: "demo@example.com",
+			created_at: new Date().toISOString(),
+		});
+		setProfileComplete(true);
+	}
 
 	useEffect(() => {
 		let active = true;
 
-		onSessionExpired(() => {
+		const unsubscribe = session.onExpired(() => {
 			if (active) {
-				setUser(null);
-				setIsLoggedIn(false);
+				setAccount(null);
 			}
 		});
 
@@ -36,18 +48,18 @@ export function AuthProvider({ children }:AuthProviderProps ) {
 				if (restored) {
 					const account = await getMe();
 
-					if (!active) return;
+					if (!active)
+						return;
 
-					setUser(account);
-					setIsLoggedIn(true);
+					setAccount(account);
+
+					// TODO: Restore profile completion status from the backend.
 				} else {
-					setUser(null);
-					setIsLoggedIn(false);
+					setAccount(null);
 				}
 			} catch {
 				if (active) {
-					setUser(null);
-					setIsLoggedIn(false);
+					setAccount(null);
 				}
 			} finally {
 				if (active) {
@@ -60,56 +72,47 @@ export function AuthProvider({ children }:AuthProviderProps ) {
 
 		return () => {
 			active = false;
-			onSessionExpired(null);
+			unsubscribe();
 		};
 	}, []);
-
-	async function login(email: string, password: string) {
-		await apiLogin(email, password);
-		try {
-			const account = await getMe();
-			setUser(account);
-			setIsLoggedIn(true);
-		} catch (e) {
-			await apiLogout().catch(() => {});
-			setUser(null);
-			setIsLoggedIn(false);
-			throw e;
-		}
-	}
 
 	async function signup(email: string, password: string) {
 		await apiRegister(email, password);
 		const account = await getMe();
 
-		setUser(account);
-		setIsLoggedIn(true);
+		setAccount(account);
 		setProfileComplete(false);
+		// TODO: Remove localStorage when profile completion is managed by the backend.
+		localStorage.setItem("profileComplete", "false");
 	}
 
 	async function logout() {
 		try {
 			await apiLogout();
 		} finally {
-			setUser(null);
-			setIsLoggedIn(false);
+			setAccount(null);
 			setProfileComplete(false);
+			// TODO: Remove localStorage when profile completion is managed by the backend.
+			localStorage.removeItem("profileComplete");
+			sessionStorage.removeItem("lastPath");
 		}
 	}
 
 	function completeProfile() {
 		setProfileComplete(true);
+		// TODO: Remove localStorage when profile completion is managed by the backend.
+		localStorage.setItem("profileComplete", "true");
 	}
 
 	return (
 		<AuthContext
 			value={{
-				user,
+				account,
 				isLoggedIn,
 				isLoading,
 				profileComplete,
-				login,
 				signup,
+				login,
 				completeProfile,
 				logout,
 			}}

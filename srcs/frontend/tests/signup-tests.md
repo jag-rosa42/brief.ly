@@ -139,8 +139,12 @@ Set the menu back to **No Throttling** afterwards.
 - [ ] `identity` is running again (`podman ps`).
 - [ ] Test accounts created during the session are no longer needed (or can be removed from the database, e.g. with Adminer).
 
+## Moving to other pages
+
+- A user who is already logged in and opens `/signup` or `/login`.
+
 ## Not covered by these tests
 
 - The `VALIDATION_ERROR` message (`Some fields are invalid, please check your input`): the front end blocks invalid input before the API call, so this case is hard to trigger by hand.
-- A user who is already logged in and opens `/signup`.
+
 - Accessibility beyond keyboard navigation (Tab order, Enter to submit) and the `role="alert"` on the error message. A Lighthouse accessibility audit is a good complement.

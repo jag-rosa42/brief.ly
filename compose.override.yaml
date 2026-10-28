@@ -64,6 +64,7 @@ services:
       VITE_USE_POLLING: ${VITE_USE_POLLING:-false}
       VITE_HMR_HOST: localhost
       VITE_HMR_CLIENT_PORT: ${FRONTEND_PORT:?Variable not set}
+      IDENTITY_URL: http://identity:8000
 
   front-test:
     build:

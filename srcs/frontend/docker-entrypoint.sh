@@ -13,4 +13,4 @@ if [ ! -f "$HASH_FILE" ] || [ "$(cat "$HASH_FILE")" != "$LOCK_HASH" ]; then
     printf '%s' "$LOCK_HASH" > "$HASH_FILE"
 fi
 
-exec npm run dev -- --host 0.0.0.0 --force
+exec "$@"
