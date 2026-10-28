@@ -12,6 +12,7 @@ dependencies = [
     "jwcrypto>=1.6.1",
     "pydantic-settings>=2.16.0",
     "pyjwt[crypto]>=2.15.1",
+    "shared-errors",
 ]
 
 
@@ -95,6 +96,3 @@ log_cli = true
 log_cli_level = "CRITICAL"
 testpaths = ["tests"]
 pythonpath = ["."]
-markers = [
-    "integration: needs a real Postgres reachable at the configured DSN",
-]
