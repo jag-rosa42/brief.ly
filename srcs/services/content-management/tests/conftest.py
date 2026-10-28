@@ -15,6 +15,7 @@ pytest_plugins: list[str] = [
     "tests.fixtures.source",
     "tests.fixtures.source_model",
     "tests.fixtures.synchronization_time",
+    "tests.fixtures.ingestion_lock",
     "tests.fixtures.unit_of_work",
     # Infrastructure fixtures
     "tests.fixtures.database",
