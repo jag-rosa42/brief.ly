@@ -8,9 +8,11 @@ from src.application.port import (
     ArticleDiscoveryError,
     ArticleExtractionError,
     ArticleExtractor,
+    IngestionLock,
     UnitOfWork,
 )
 from src.domain.entities import DiscoveredArticle, Source
+from src.domain.exception import IngestionAlreadyRunningError
 from src.domain.repositories import NormalizedArticleRepository, SourceRepository
 
 logger = logging.getLogger(__name__)
@@ -38,12 +40,14 @@ class SynchronizeSources:
     def __init__(
         self,
         uow: UnitOfWork,
+        ingestion_lock: IngestionLock,
         source_repository: SourceRepository,
         normalized_article_repository: NormalizedArticleRepository,
         article_discoverer: ArticleDiscoverer,
         article_extractor: ArticleExtractor,
     ) -> None:
         self._uow = uow
+        self._ingestion_lock = ingestion_lock
         self._source_repository = source_repository
         self._normalized_article_repository = normalized_article_repository
         self._article_discoverer = article_discoverer
@@ -51,6 +55,9 @@ class SynchronizeSources:
 
     def execute(self, synchronized_at: datetime) -> SynchronizationResult:
         with self._uow:
+            if not self._ingestion_lock.try_acquire():
+                raise IngestionAlreadyRunningError()
+
             sources = self._source_repository.list_due(synchronized_at)
             result = SynchronizationResult()
 
