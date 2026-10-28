@@ -6,8 +6,6 @@ from src.domain.entities import Source
 
 
 class SourceRepository(Protocol):
-    def list_enabled(self) -> list[Source]: ...
-
     def update_last_successful_sync(
         self,
         source_id: UUID,
@@ -20,7 +18,3 @@ class SourceRepository(Protocol):
     ) -> list[Source]: ...
 
     def save(self, source: Source) -> None: ...
-
-    def commit(self) -> None: ...
-
-    def rollback(self) -> None: ...

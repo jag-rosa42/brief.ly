@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from src.infrastructure.database.models import SourceModel
 from src.infrastructure.database.repositories import SqlAlchemySourceRepository
+from src.infrastructure.database.unit_of_work import SqlAlchemyUnitOfWork
 
 
 @pytest.mark.integration
@@ -16,9 +17,10 @@ def test_source_becomes_due_after_thirty_minutes(db_session: Session) -> None:
     assert source is not None
     synchronized_at = datetime(2026, 10, 26, 10, tzinfo=UTC)
     repository = SqlAlchemySourceRepository(db_session)
+    uow = SqlAlchemyUnitOfWork(db_session)
 
     repository.update_last_successful_sync(source.id, synchronized_at)
-    repository.commit()
+    uow.commit()
     db_session.expire_all()
 
     persisted_source = db_session.get(SourceModel, source.id)

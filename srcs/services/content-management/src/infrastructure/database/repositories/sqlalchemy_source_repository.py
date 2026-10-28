@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import Select, select
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from src.domain.entities import Source
@@ -10,7 +9,7 @@ from src.infrastructure.database.models.source import SourceModel
 
 
 class SqlAlchemySourceRepository:
-    def __init__(self, session: Session):
+    def __init__(self, session: Session) -> None:
         self._session: Session = session
 
     def update_last_successful_sync(
@@ -68,13 +67,3 @@ class SqlAlchemySourceRepository:
     def save(self, source: Source) -> None:
         source_model: SourceModel = self._to_model(source)
         self._session.add(source_model)
-
-    def commit(self) -> None:
-        try:
-            self._session.commit()
-        except SQLAlchemyError:
-            self._session.rollback()
-            raise
-
-    def rollback(self) -> None:
-        self._session.rollback()
