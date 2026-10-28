@@ -1,7 +1,10 @@
 from datetime import datetime
 
 from newsapi import NewsApiClient
+from newsapi.newsapi_exception import NewsAPIException
+from requests import RequestException
 
+from src.application.port import ArticleDiscoveryError
 from src.domain.entities import DiscoveredArticle, Source
 
 
@@ -11,14 +14,17 @@ class NewsApiArticleDiscoverer:
     category and language
     """
 
-    def __init__(self, client: NewsApiClient):
-        self.client = client
+    def __init__(self, client: NewsApiClient) -> None:
+        self._client = client
 
     def discover(self, source: Source) -> list[DiscoveredArticle]:
-        response = self.client.get_top_headlines(
-            category=source.category,
-            language=source.language,
-        )
+        try:
+            response = self._client.get_top_headlines(
+                category=source.category,
+                language=source.language,
+            )
+        except (NewsAPIException, RequestException) as exc:
+            raise ArticleDiscoveryError("NewsAPI request failed") from exc
 
         return [
             self._to_discovered_article(item, source)

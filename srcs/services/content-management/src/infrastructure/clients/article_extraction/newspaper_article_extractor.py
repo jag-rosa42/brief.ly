@@ -2,7 +2,9 @@ from collections.abc import Callable
 from uuid import UUID, uuid4
 
 from newspaper import Article as NewspaperArticle
+from newspaper import ArticleException
 
+from src.application.port import ArticleExtractionError
 from src.domain.entities import DiscoveredArticle, NormalizedArticle
 
 
@@ -12,8 +14,13 @@ class NewspaperArticleExtractor:
 
     def extract(self, discovered: DiscoveredArticle) -> NormalizedArticle:
         newspaper_article = NewspaperArticle(discovered.url)
-        newspaper_article.download()
-        newspaper_article.parse()
+        try:
+            newspaper_article.download()
+            newspaper_article.parse()
+        except ArticleException as exc:
+            raise ArticleExtractionError(
+                f"Unable to extract article {discovered.external_id}"
+            ) from exc
 
         return self._to_normalized_article(newspaper_article, discovered)
 
