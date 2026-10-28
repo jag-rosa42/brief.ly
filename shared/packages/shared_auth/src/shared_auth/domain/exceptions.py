@@ -1,11 +1,11 @@
 from enum import StrEnum
 
-from fastapi import status
-
 
 class ErrorCode(StrEnum):
     INVALID_TOKEN = "INVALID_TOKEN"
     TOKEN_EXPIRED = "TOKEN_EXPIRED"
+    INSUFFICIENT_SCOPE = "INSUFFICIENT_SCOPE"
+    DOWNSTREAM_ERROR = "DOWNSTREAM_ERROR"
 
 
 class AuthenticationError(Exception):
@@ -27,3 +27,12 @@ class TokenExpiredError(AuthenticationError):
 
     def __init__(self):
         super().__init__("Token has expired")
+
+
+# Follow RFC6750 error code: https://www.rfc-editor.org/info/rfc6750/#section-3.1
+class InsufficientScopeError(AuthenticationError):
+    code = ErrorCode.INSUFFICIENT_SCOPE
+
+    def __init__(self, missing: frozenset[str]) -> None:
+        super().__init__(f"Missing scope: {' '.join(sorted(missing))}")
+        self.missing: frozenset[str] = missing
