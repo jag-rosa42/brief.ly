@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import UUID, ForeignKey
+from sqlalchemy import UUID, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.infrastructure.database.models.base import Base
@@ -20,4 +20,7 @@ class SourceModel(Base):
     language: Mapped[str] = mapped_column()
     interval_seconds: Mapped[int] = mapped_column()
     enabled: Mapped[bool] = mapped_column()
-    last_successful_sync_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    last_successful_sync_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )

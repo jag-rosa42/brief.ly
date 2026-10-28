@@ -43,7 +43,7 @@ class SqlAlchemySourceRepository:
         next_sync = source_model.last_successful_sync_at + timedelta(
             seconds=source_model.interval_seconds
         )
-        return synchronized_at > next_sync
+        return synchronized_at >= next_sync
 
     @staticmethod
     def _to_domain(source_model: SourceModel) -> Source:
