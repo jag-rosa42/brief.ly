@@ -30,11 +30,11 @@ const mockKeys: ApiKey[] = [
 	{ id: "3", name: "Key 3", lastChars: "e5f6", expires: Date.now() - 1000, status: "active" },
 ];
 
-export function getStatus(k: ApiKey): ApiKeyStatus {
-	if (k.status === "revoked")
+export function getStatus(apiKey: ApiKey): ApiKeyStatus {
+	if (apiKey.status === "revoked")
 		return "revoked";
 
-	if (k.expires < Date.now())
+	if (apiKey.expires < Date.now())
 		return "revoked";
 
 	return "active";
@@ -44,26 +44,25 @@ export function useApiKeys() {
 	const [keys, setKeys] = useState<ApiKey[]>(mockKeys);
 
 	function addKey(name: string): { id: string; secret: string } | null {
-	if (keys.length >= MAX_KEYS)
-		return null;
-	const secret = Math.random().toString(36).slice(2, 18);
-	const id = crypto.randomUUID();
-	setKeys((prev) => [
-		...prev,
-		{
-			id,
-			name,
-			lastChars: secret.slice(-4),
-			expires: Date.now() + KEY_LIFETIME_MS,
-			status: "active",
-		},
-	]);
-	return { id, secret };
-}
+		if (keys.length >= MAX_KEYS)
+			return null;
+		const secret = Math.random().toString(36).slice(2, 18);
+		const id = crypto.randomUUID();
+		setKeys((prev) => [
+			...prev,
+			{
+				id,
+				name,
+				lastChars: secret.slice(-4),
+				expires: Date.now() + KEY_LIFETIME_MS,
+				status: "active",
+			},
+		]);
+		return { id, secret };
+	}
 	function deleteKey(id: string) {
 		setKeys((prev) => prev.filter((k) => k.id !== id));
 	}
 
 	return { keys, addKey, deleteKey, limitReached: keys.length >= MAX_KEYS };
 }
-

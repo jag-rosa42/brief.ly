@@ -5,13 +5,13 @@ import { SavedArticles } from "@/pages/SavedArticlesPage";
 import { BriefPage } from "@/pages/BriefPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { Sidebar } from "@/shared/components/Sidebar";
-import { ApiKeyPage } from "@/pages/ApiKeyPage";
+import { PublicApiKeyPage } from "@/pages/PublicApiKeyPage";
 
 const tabs: TabItem[] = [
 	{ value: "brief", label: "Morning Briefing" },
 	{ value: "profile", label: "Profile" },
 	{ value: "saved", label: "Saved Articles" },
-	{ value: "key", label: "Add a key"},
+	{ value: "public api key", label: "Public API key" },
 ];
 
 export function DashboardPage() {
@@ -21,12 +21,12 @@ export function DashboardPage() {
 
 	if (!profileComplete && activeTab !== "profile") {
 		return <Navigate to="/dashboard/profile" replace />;
-  }
+	}
 
-const visibleTabs = tabs.map((tab) => ({
-	...tab,
-	disabled: !profileComplete && tab.value !== "profile",
-}));
+	const visibleTabs = tabs.map((tab) => ({
+		...tab,
+		disabled: !profileComplete && tab.value !== "profile",
+	}));
 
 	return (
 		<div className="bg-background min-h-screen flex">
@@ -36,13 +36,13 @@ const visibleTabs = tabs.map((tab) => ({
 				onSelectTab={
 					(value) => void navigate(`/dashboard/${value}`)
 				}
-				onDisconnect={logout}
+				onDisconnect={() => { void logout(); }}
 			/>
 			<main className="flex-1 min-w-0 p-8">
 				{activeTab === "brief" && <BriefPage />}
 				{activeTab === "profile" && <ProfilePage />}
 				{activeTab === "saved" && <SavedArticles />}
-				{activeTab === "key" && <ApiKeyPage/>}
+				{activeTab === "public api key" && <PublicApiKeyPage />}
 			</main>
 		</div>
 	);

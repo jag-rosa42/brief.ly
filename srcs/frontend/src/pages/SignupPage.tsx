@@ -37,8 +37,7 @@ export function SignupPage() {
 	const initialMessage = typeof navigationState?.message === "string" ? navigationState.message : "";
 	const [errorMessage, setErrorMessage] = useState(initialMessage);
 
-	async function handleSubmit(e: SyntheticEvent)
-	{
+	async function handleSubmit(e: SyntheticEvent) {
 		e.preventDefault();
 		if (waiting)
 			return;
@@ -47,20 +46,17 @@ export function SignupPage() {
 
 		const error = validateForm(email.trim());
 
-		if (error)
-		{
+		if (error) {
 			setErrorMessage(error);
 			setWaiting(false);
 			return;
 		}
-		if (password !== confirmPass)
-		{
+		if (password !== confirmPass) {
 			setErrorMessage("Passwords do not match");
 			setWaiting(false);
 			return;
 		}
-		else if (password.length < 8)
-		{
+		else if (password.length < 8) {
 			setErrorMessage("Password must be at least 8 characters");
 			setWaiting(false);
 			return;
@@ -68,7 +64,7 @@ export function SignupPage() {
 		try {
 			await signup(email.trim(), password);
 			void navigate("/dashboard/profile");
-		}	catch (err) {
+		} catch (err) {
 			if (err instanceof ApiError && err.code === "EMAIL_ALREADY_REGISTERED") {
 				setErrorMessage("This email is already registered");
 			} else if (err instanceof ApiError && err.code === "VALIDATION_ERROR") {
@@ -78,13 +74,13 @@ export function SignupPage() {
 			} else {
 				setErrorMessage("Unable to reach the server");
 			}
-		}	finally {
+		} finally {
 			setWaiting(false);
 		}
 	}
 
-	return(
-		<Division variant = "page">
+	return (
+		<Division variant="page">
 			<Text variant="title" className="mb-10 text-center">
 				Welcome !
 			</Text>
@@ -94,23 +90,23 @@ export function SignupPage() {
 				</Text>
 				<Division variant="featurecard" className="shadow-sm">
 					<Form
-					onSubmit={(e) => { void handleSubmit(e);}}
-					actions={
-						<div className="flex flex-col gap-3 w-full">
-							{errorMessage && (
-								<Text variant="error" role="alert">
-									{errorMessage}
-								</Text>
-							)}
-							<Button
-								type="submit"
-								variant="secondary"
-								className="w-full"
-								disabled={waiting}
-							>
-								{waiting ? "Signing up..." : "Sign up"}
-							</Button>
-						</div>
+						onSubmit={(e) => { void handleSubmit(e); }}
+						actions={
+							<div className="flex flex-col gap-3 w-full">
+								{errorMessage && (
+									<Text variant="error" role="alert">
+										{errorMessage}
+									</Text>
+								)}
+								<Button
+									type="submit"
+									variant="secondary"
+									className="w-full"
+									disabled={waiting}
+								>
+									{waiting ? "Signing up..." : "Sign up"}
+								</Button>
+							</div>
 						}
 					>
 						<Input

@@ -17,7 +17,7 @@ function validateName(value: string): string | null {
 	return null;
 }
 
-type ConfirmDialogProps = {
+interface ConfirmDialogProps {
 	open: boolean;
 	message: ReactNode;
 	confirmLabel: string;
@@ -43,9 +43,9 @@ function ConfirmDialog({ open, message, confirmLabel, onConfirm, onCancel }: Con
 	);
 }
 
-export function ApiKeyPage() {
+export function PublicApiKeyPage() {
 	const { keys, addKey, deleteKey, limitReached } = useApiKeys();
-	const [pendingCreate, setPendingCreate] = useState<string | null>(null);
+	const [pendingCreate, setPendingCreate] = useState<{ name: string; expiresAt: number } | null>(null);
 	const [creating, setCreating] = useState(false);
 	const [name, setName] = useState("");
 	const [error, setError] = useState<string | undefined>();
@@ -54,27 +54,27 @@ export function ApiKeyPage() {
 	const [pendingDelete, setPendingDelete] = useState<{ id: string; keyName: string } | null>(null);
 
 	function handleCreate(e: SubmitEvent) {
-	e.preventDefault();
-	const nameError = validateName(name);
-	if (nameError) {
-		setError(nameError);
-		return;
+		e.preventDefault();
+		const nameError = validateName(name);
+		if (nameError) {
+			setError(nameError);
+			return;
+		}
+		setPendingCreate({ name: name.trim(), expiresAt: Date.now() + KEY_LIFETIME_MS });
 	}
-	setPendingCreate(name.trim());
-}
 
 	function confirmCreate() {
 		if (pendingCreate) {
-			const created = addKey(pendingCreate);
+			const created = addKey(pendingCreate.name);
 			if (created) {
 				setNewKey(created);
 				setCopied(false);
 				setName("");
 				setCreating(false);
 			}
+		}
+		setPendingCreate(null);
 	}
-	setPendingCreate(null);
-}
 
 	async function handleCopy() {
 		if (!newKey)
@@ -166,7 +166,7 @@ export function ApiKeyPage() {
 											<code className="flex-1 break-all rounded border px-3 py-2 text-sm">
 												{newKey.secret}
 											</code>
-											<Button variant="secondary" onClick={handleCopy}>
+											<Button variant="secondary" onClick={() => { void handleCopy(); }}>
 												{copied ? "Copied ✓" : "Copy"}
 											</Button>
 										</div>
@@ -188,11 +188,11 @@ export function ApiKeyPage() {
 			<ConfirmDialog
 				open={pendingCreate !== null}
 				message={
-				<>
-				Your new API key <strong>{pendingCreate}</strong> will be ready for use
-				immediately. It will expire on{" "}
-				<strong>{formatDate(Date.now() + KEY_LIFETIME_MS)}</strong>.
-				</>
+					<>
+						Your new API key <strong>{pendingCreate?.name}</strong> will be ready for use
+						immediately. It will expire on{" "}
+						<strong>{pendingCreate ? formatDate(pendingCreate.expiresAt) : ""}</strong>.
+					</>
 				}
 				confirmLabel="Generate key"
 				onConfirm={confirmCreate}

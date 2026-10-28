@@ -36,6 +36,8 @@ install -m 600 /dev/null shared/secrets/news_api_key
 
 For direct npm, test, and lint commands, see [srcs/frontend/DEV_DOC.md](srcs/frontend/DEV_DOC.md).
 
+IDENTITY_URL (optional): proxy target for /api/identity in the Vite dev server. Defaults to http://localhost:8081 (for make run SERVICE=identity + make frontend). Set to http://identity:8000 in Docker (already done in compose.override.yaml).
+
 ### Backend
 
 | Command | Description |

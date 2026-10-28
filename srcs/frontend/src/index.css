@@ -1,4 +1,7 @@
-@import "tailwindcss";
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "./preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities);
 
 /* Identité visuelle du site — un seul endroit à modifier.
    Tailwind v4 génère automatiquement les classes utilitaires
@@ -26,5 +29,5 @@
 	--color-background-light: color-mix(in srgb, var(--color-background) 5%, white);
 	--color-background-dark: color-mix(in srgb, var(--color-background) 96%, black);
 	--shadow-soft: 0 8px 30px color-mix(in srgb, var(--color-accent) 10%, transparent);
-  	--shadow-soft-hover: 0 12px 36px color-mix(in srgb, var(--color-accent) 16%, transparent);
+	--shadow-soft-hover: 0 12px 36px color-mix(in srgb, var(--color-accent) 16%, transparent);
 }

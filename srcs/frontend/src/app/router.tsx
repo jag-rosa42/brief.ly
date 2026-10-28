@@ -1,4 +1,5 @@
-import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Layout } from "@/app/Layout";
 import { LandingPage } from "@/pages/LandingPage";
 import { TermsOfServicePage } from "@/pages/TermsOfServicePage";
@@ -7,42 +8,82 @@ import { NotFoundPage } from "@/pages/NotFoundPage";
 import { SignupPage } from "@/pages/SignupPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { DashboardPage } from "@/pages/DashboardPage";
-//import { NotificationTestPage } from "@/pages/NotificationTestPage";
 import { useAuth } from "@/app/useAuth";
-import { ApiKeyPage } from "@/pages/ApiKeyPage";
+import { PublicApiKeyPage } from "@/pages/PublicApiKeyPage";
 import { Spinner } from "@/shared/components/Spinner";
+
+const LAST_PATH = "lastPath";
+const GUEST_PATHS = ["/signup", "/login"];
+
+function LastPathTracker() {
+	const { isLoggedIn, isLoading } = useAuth();
+	const location = useLocation();
+
+	useEffect(() => {
+		if (isLoading || !isLoggedIn)
+			return;
+		if (GUEST_PATHS.includes(location.pathname))
+			return;
+		sessionStorage.setItem(LAST_PATH, location.pathname);
+	}, [isLoading, isLoggedIn, location.pathname]);
+
+	return null;
+}
 
 function ProtectedRoute() {
 	const { isLoggedIn, isLoading } = useAuth();
+
 	if (isLoading)
 		return <Spinner />;
-	return (isLoggedIn ? <Outlet /> : <Navigate to="/" replace />);
+	if (!isLoggedIn)
+		return (<Navigate to="/" replace />)
+	return (<Outlet />);
 }
+
+function GuestRoute() {
+	const { isLoggedIn, isLoading } = useAuth();
+	const [lastPath] = useState(() => sessionStorage.getItem(LAST_PATH));
+
+	if (isLoading)
+		return <Spinner />;
+	if (isLoggedIn) {
+		let target = "/dashboard/profile";
+
+		if (lastPath && !GUEST_PATHS.includes(lastPath))
+			target = lastPath;
+		return (<Navigate to={target} replace />)
+	}
+	return (<Outlet />);
+}
+
 
 export function AppRouter() {
 	return (
-		<Routes>
-  			<Route element={<Layout />}>
-				<Route index 
-					element={<LandingPage />}/>
-				<Route path="/termsofservice"
-					element={<TermsOfServicePage />}/>
-				<Route path="/privacypolicy"
-					element={<PrivacyPolicyPage />}/>
-				<Route path="/signup"
-					element={<SignupPage />}/>
-				<Route path="/login"
-					element={<LoginPage/>}/>
-				{/*<Route path="/notificationtest"
-					element={<NotificationTestPage />}/>*/}
-				<Route path="*"
-					element={<NotFoundPage />}/>
-			</Route>
+		<>
+			<LastPathTracker />
+			<Routes>
+				<Route element={<Layout />}>
+					<Route index
+						element={<LandingPage />} />
+					<Route path="/termsofservice"
+						element={<TermsOfServicePage />} />
+					<Route path="/privacypolicy"
+						element={<PrivacyPolicyPage />} />
+					<Route element={<GuestRoute />}>
+						<Route path="/signup"
+							element={<SignupPage />} />
+						<Route path="/login"
+							element={<LoginPage />} />
+					</Route>
+					<Route path="*"
+						element={<NotFoundPage />} />
+				</Route>
 				<Route element={<ProtectedRoute />}>
-  					<Route path="/api-keys" element={<ApiKeyPage />} />
+					<Route path="/api-keys" element={<PublicApiKeyPage />} />
 					<Route path="/dashboard/:tab" element={<DashboardPage />} />
 					<Route path="/dashboard" element={<Navigate to="/dashboard/brief" replace />} />
-			</Route>
-		</Routes>
+				</Route>
+			</Routes>
+		</>
 	);
 }

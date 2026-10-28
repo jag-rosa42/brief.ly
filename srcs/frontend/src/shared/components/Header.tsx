@@ -24,7 +24,7 @@ export function NavbarLogged(){
 				type="submit"
 				variant="primary"
 				onClick={() => {
-					logout();
+					 void logout();
 					void navigate("/");
 				}}
 			>
