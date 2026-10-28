@@ -1,4 +1,3 @@
-from types import TracebackType
 from uuid import UUID, uuid4
 
 import pytest
@@ -11,7 +10,7 @@ from src.domain.exception import (
     ProfileFieldsRequiredError,
     UnknownTopicsError,
 )
-from tests.fakes import FakeTopicCatalog
+from tests.fakes import FakeTopicCatalog, FakeUnitOfWork
 
 CATALOG = ["business", "health", "science", "sports"]
 
@@ -30,31 +29,6 @@ class FakeProfileRepository:
 
     def find_by_id_for_update(self, account_id: UUID) -> Profile | None:
         return self.find_by_id(account_id)
-
-
-class FakeUnitOfWork:
-    def __init__(self) -> None:
-        self.committed = False
-
-    def __enter__(self) -> FakeUnitOfWork:
-        return self
-
-    def __exit__(
-        self,
-        exception_type: type[BaseException] | None,
-        exception: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> None:
-        pass
-
-    def flush(self) -> None:
-        pass
-
-    def commit(self) -> None:
-        self.committed = True
-
-    def rollback(self) -> None:
-        pass
 
 
 def test_execute_creates_the_profile_when_none_exists() -> None:
