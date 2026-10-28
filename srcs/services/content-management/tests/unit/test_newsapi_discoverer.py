@@ -1,6 +1,10 @@
 from datetime import UTC, datetime
 from unittest.mock import Mock
 
+import pytest
+from newsapi.newsapi_exception import NewsAPIException
+
+from src.application.port import ArticleDiscoveryError
 from src.infrastructure.clients.article_discovery.newsapi_article_discoverer import (
     NewsApiArticleDiscoverer,
 )
@@ -81,3 +85,13 @@ def test_discover_keeps_optional_metadata_optional(source):
     assert article.description is None
     assert article.authors is None
     assert article.published_at is None
+
+
+def test_translates_newsapi_failures(source):
+    client = Mock()
+    client.get_top_headlines.side_effect = NewsAPIException(
+        {"status": "error", "code": "apiKeyInvalid", "message": "invalid key"}
+    )
+
+    with pytest.raises(ArticleDiscoveryError, match="NewsAPI request failed"):
+        NewsApiArticleDiscoverer(client).discover(source)

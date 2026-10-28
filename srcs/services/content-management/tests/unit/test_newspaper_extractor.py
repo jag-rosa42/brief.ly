@@ -2,6 +2,10 @@ from datetime import UTC, datetime
 from unittest.mock import Mock, patch
 from uuid import uuid4
 
+import pytest
+from newspaper import ArticleException
+
+from src.application.port import ArticleExtractionError
 from src.domain.entities import DiscoveredArticle, NormalizedArticle
 from src.infrastructure.clients.article_extraction.newspaper_article_extractor import (
     NewspaperArticleExtractor,
@@ -103,3 +107,15 @@ def test_extract_retains_the_discovered_article_external_identity(
     result = NewspaperArticleExtractor().extract(discovered_article)
 
     assert result.discovered_article_external_id == "newsapi-identity"
+
+
+@patch(
+    "src.infrastructure.clients.article_extraction.newspaper_article_extractor.NewspaperArticle"
+)
+def test_translates_newspaper_failures(discovered_article_factory):
+    downloaded = Mock()
+    downloaded.download.side_effect = ArticleException("download failed")
+    discovered_article_factory.return_value = downloaded
+
+    with pytest.raises(ArticleExtractionError, match="Unable to extract article"):
+        NewspaperArticleExtractor().extract(_discovered_article())

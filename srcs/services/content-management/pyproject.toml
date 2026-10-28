@@ -21,6 +21,7 @@ dependencies = [
     "psycopg[binary]>=3.3.4",
     "pwdlib[argon2]>=0.3.1",
     "pydantic-settings>=2.14.2",
+    "requests>=2.32.5",
     "sqlalchemy>=2.0.51",
 ]
 

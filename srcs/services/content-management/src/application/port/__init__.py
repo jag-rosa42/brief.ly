@@ -1,7 +1,9 @@
-from .article_discoverer import ArticleDiscoverer
-from .article_extractor import ArticleExtractor
+from .article_discoverer import ArticleDiscoverer, ArticleDiscoveryError
+from .article_extractor import ArticleExtractionError, ArticleExtractor
 
 __all__ = [
     "ArticleDiscoverer",
+    "ArticleDiscoveryError",
+    "ArticleExtractionError",
     "ArticleExtractor",
 ]
