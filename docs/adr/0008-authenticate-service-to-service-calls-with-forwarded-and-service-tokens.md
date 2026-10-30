@@ -136,10 +136,15 @@ Implementation details:
     - the token type
     Refresh tokens are always rejected.
   - **FastAPI dependencies**:
-    - current user
+    - current user (a browser access token)
+    - forwarded user (a user token forwarded by another service: access
+      token or public API token)
     - current service
-    - required scopes
-    - "a user, or a service with these scopes"
+    - required scopes, for a service token or a public API token
+    No route accepts both a user and a service: see "Which token for which
+    call" below.
+  - **A test helper** that signs tokens with a test key, so services test
+    their routes through the real checks.
   - **An HTTP client** for internal calls:
     - forwards the token
     - applies a timeout
