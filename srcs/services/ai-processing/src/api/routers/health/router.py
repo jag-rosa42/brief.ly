@@ -3,7 +3,9 @@
 Provides the root endpoint and a database connectivity health check
 for container/orchestrator probes.
 """
-from fastapi import APIRouter, HTTPException
+
+from fastapi import APIRouter
+from shared_errors.exceptions import InfrastructureError
 from sqlalchemy import text
 
 from src.api.dependencies import SessionDep
@@ -23,6 +25,6 @@ def health_check(db: SessionDep):
     try:
         db.execute(text("SELECT 1"))
     except Exception as exc:
-        raise HTTPException(status_code=503, detail="database unavailable") from exc
+        raise InfrastructureError("database unavailable") from exc
 
     return {"status": "ok", "database": "ok"}
