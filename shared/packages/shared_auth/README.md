@@ -25,12 +25,12 @@ shared-errors = { path = "../../../shared/packages/shared_errors" }
 
 ```python
 from shared_auth import AuthSettings, install_authentication
-from shared_errors import register_shared_handlers
+from shared_errors import register_shared_exception_handlers
 
 auth_settings = AuthSettings(_env_file=BASE_DIR / ".env", _secrets_dir=SECRETS_DIR)
 
 app = FastAPI()
-register_shared_handlers(app)
+register_shared_exception_handlers(app)
 install_authentication(app, auth_settings)  # fails here if the key is invalid
 # A service that accepts public API tokens (ADR-0009):
 # install_authentication(app, auth_settings, public_api=True)
