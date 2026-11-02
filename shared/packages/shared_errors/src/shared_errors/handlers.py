@@ -4,7 +4,7 @@ This module provides a consistent error-response format for:
 - Request validation errors (HTTP 422).
 - Unexpected/unhandled exceptions (HTTP 500).
 
-The handlers are registered through `register_shared_handlers()`, allowing
+The handlers are registered through `register_shared_exception_handlers()`, allowing
 applications that use this package to share the same error-handling behavior.
 """
 
@@ -167,6 +167,6 @@ ERROR_HANDLERS: Sequence[tuple[type[Exception], ExceptionHandler]] = (
 )
 
 
-def register_shared_handlers(app: FastAPI) -> None:
+def register_shared_exception_handlers(app: FastAPI) -> None:
     for exception_type, handler in ERROR_HANDLERS:
         app.add_exception_handler(exception_type, handler)
