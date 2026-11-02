@@ -5,6 +5,7 @@ objects (the JWT verifier, the authenticator) are built from the settings and
 connected. It runs once, when the service starts:
 
     install_authentication(app, auth_settings)   # in the service's main.py
+    install_authentication(app, auth_settings, public_api=True)  # public API
 
 Everything that runs on each request is in dependencies.py.
 """
@@ -32,17 +33,28 @@ def build_authenticator(settings: AuthSettings) -> Authenticator:
     )
 
 
-def install_authentication(app: FastAPI, settings: AuthSettings) -> Authenticator:
+def install_authentication(
+    app: FastAPI,
+    settings: AuthSettings,
+    *,
+    public_api: bool = False,
+) -> Authenticator:
     """Build the authenticator once, attach it, and register the error handlers.
 
     Called when the app is created, so a missing or invalid public key makes
     the service crash at startup with a clear error, instead of answering 500
     to the first request.
 
+    public_api=True: the service accepts public API tokens, on its public
+    routes or forwarded by another service (ADR-0009). Then
+    JWT_PUBLIC_API_AUDIENCE is required, and checked here for the same reason.
+
     The handlers are registered here so a service cannot forget them: without
     them, every InvalidTokenError would reach shared_errors' catch-all handler
     and become a 500 instead of a 401.
     """
+    if public_api and settings.JWT_PUBLIC_API_AUDIENCE is None:
+        raise ValueError("public_api=True requires JWT_PUBLIC_API_AUDIENCE")
     authenticator: Authenticator = build_authenticator(settings)
     app.state.authenticator = authenticator
     configure_exception_handlers(app)

@@ -32,6 +32,8 @@ auth_settings = AuthSettings(_env_file=BASE_DIR / ".env", _secrets_dir=SECRETS_D
 app = FastAPI()
 register_shared_handlers(app)
 install_authentication(app, auth_settings)  # fails here if the key is invalid
+# A service that accepts public API tokens (ADR-0009):
+# install_authentication(app, auth_settings, public_api=True)
 ```
 
 | Setting | Required | Default |
@@ -40,7 +42,7 @@ install_authentication(app, auth_settings)  # fails here if the key is invalid
 | `JWT_SERVICE_AUDIENCE` | yes, e.g. `transcendence:personalization` | |
 | `JWT_ISSUER` | no | `transcendence:identity` |
 | `JWT_ACCESS_AUDIENCE` | no | `transcendence:api` |
-| `JWT_PUBLIC_API_AUDIENCE` | only for public API routes | `None` |
+| `JWT_PUBLIC_API_AUDIENCE` | with `public_api=True` (checked at startup) | `None` |
 
 ## Protect routes
 
@@ -56,10 +58,14 @@ install_authentication(app, auth_settings)  # fails here if the key is invalid
 @router.get("/me/profile")
 def get_profile(user: CurrentUserDep): ...  # user.account_id, user.token
 
-Writer = Annotated[ServicePrincipal, Depends(require_service_scopes("summaries:write"))]
 
-@router.put("/internal/v1/summaries/{id}")
-def put_summary(service: Writer): ...  # service.name, service.scopes
+SummaryWriter = Annotated[
+    ServicePrincipal, Depends(require_service_scopes("summaries:write"))
+]
+
+
+@router.put("/internal/v1/articles/{article_id}/summary")
+def put_summary(service: SummaryWriter): ...  # service.name, service.scopes
 ```
 
 Always filter data by `user.account_id`, never by an ID from the URL or body.
@@ -70,7 +76,7 @@ Always filter data by `user.account_id`, never by an ID from the URL or body.
 personalization = DownstreamClient("personalization", "http://personalization:8000")
 
 # On behalf of a user: forward their token unchanged.
-topics = personalization.get_json("/internal/v1/me/topics", token=user.token)
+profile = personalization.get_json("/internal/v1/me/profile", token=user.token)
 
 # Without a user: a service token (OAuth 2.0 client credentials), cached and renewed.
 content = DownstreamClient("content-management", "http://content-management:8000")
@@ -101,7 +107,26 @@ All answers use the `shared_errors` format.
 
 An adapter can catch `DownstreamError` (e.g. to turn a downstream 404 into its own error).
 
-## Tests
+## Test your routes
+
+`FakeTokenIssuer` plays Identity: it signs real tokens with a test key, and
+the app verifies them through the real checks.
+
+```python
+from shared_auth.testing import FakeTokenIssuer
+
+issuer = FakeTokenIssuer()  # one per test session: key generation is slow
+issuer.override_authenticator(app, service_audience="transcendence:personalization")
+
+client.get("/me/profile", headers=issuer.bearer(issuer.user_token(account_id)))
+issuer.user_token(account_id, expires_in=timedelta(seconds=-1))  # expired
+issuer.service_token("ai-processing", audience="transcendence:content-management", scopes=["articles:read"])
+issuer.public_api_token(account_id, scopes=["read"])  # needs public_api=True
+```
+
+Clear `app.dependency_overrides` after each test.
+
+## Package tests
 
 ```bash
 uv run pytest

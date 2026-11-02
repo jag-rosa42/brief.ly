@@ -23,6 +23,7 @@ jobs:
       morning-briefing: ${{ steps.filter.outputs.morning-briefing }}
       personalization: ${{ steps.filter.outputs.personalization }}
       shared_errors: ${{ steps.filter.outputs.shared_errors }}
+      shared_auth: ${{ steps.filter.outputs.shared_auth }}
       frontend_ci: ${{ steps.filter.outputs.frontend_ci }}
       python_ci: ${{ steps.filter.outputs.python_ci }}
       all_ci: ${{ steps.filter.outputs.all_ci }}
@@ -54,6 +55,9 @@ jobs:
               - 'srcs/services/personalization/**'
               - 'shared/packages/shared_errors/**'
             shared_errors:
+              - 'shared/packages/shared_errors/**'
+            shared_auth: # also depends on shared_errors
+              - 'shared/packages/shared_auth/**'
               - 'shared/packages/shared_errors/**'
             frontend_ci:
               - '.github/workflows/reusable-react.yml'
@@ -150,3 +154,15 @@ jobs:
     uses: ./.github/workflows/reusable-python.yml
     with:
       working-directory: shared/packages/shared_errors
+
+  shared-auth:
+    needs: check-changes
+    if: >-
+      needs.check-changes.outputs.shared_auth == 'true' ||
+      needs.check-changes.outputs.python_ci == 'true' ||
+      needs.check-changes.outputs.all_ci == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-python.yml
+    with:
+      working-directory: shared/packages/shared_auth # tests make their own RSA keys

@@ -188,6 +188,19 @@ class TestErrors:
                 200,
                 json={"access_token": "t", "token_type": "Bearer", "expires_in": "soon"},
             ),
+            # Valid JSON, but values we must not use:
+            httpx2.Response(
+                200, json={"access_token": "", "token_type": "Bearer", "expires_in": 300}
+            ),
+            httpx2.Response(
+                200, json={"access_token": "t", "token_type": "MAC", "expires_in": 300}
+            ),
+            httpx2.Response(
+                200, json={"access_token": "t", "token_type": "Bearer", "expires_in": 0}
+            ),
+            httpx2.Response(
+                200, json={"access_token": "t", "token_type": "Bearer", "expires_in": -5}
+            ),
         ],
     )
     def test_malformed_response_becomes_infrastructure_error(
@@ -195,6 +208,16 @@ class TestErrors:
     ) -> None:
         with pytest.raises(InfrastructureError):
             make_token_provider(lambda _request: response).get_token()
+
+    def test_token_type_is_case_insensitive(
+        self, make_token_provider: MakeProvider
+    ) -> None:
+        # RFC 6749 §5.1: the token_type value is case insensitive.
+        response = httpx2.Response(
+            200, json={"access_token": "t", "token_type": "bearer", "expires_in": 300}
+        )
+
+        assert make_token_provider(lambda _request: response).get_token() == "t"
 
     def test_a_failed_renewal_is_retried_on_the_next_call(
         self,

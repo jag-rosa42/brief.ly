@@ -57,7 +57,14 @@ from collections.abc import Callable, Iterable
 from typing import ClassVar
 
 import httpx2
-from pydantic import BaseModel, SecretStr, ValidationError
+from pydantic import (
+    BaseModel,
+    Field,
+    PositiveInt,
+    SecretStr,
+    ValidationError,
+    field_validator,
+)
 from shared_errors.exceptions import InfrastructureError
 
 from shared_auth.infrastructure.clients.downstream_client import (
@@ -71,16 +78,40 @@ logger: logging.Logger = logging.getLogger(__name__)
 class _TokenResponse(BaseModel):
     """The fields we read from a successful token response (RFC 6749 §5.1).
 
+    A response that breaks one of these rules is refused here, as a malformed
+    response (503), instead of failing later in a less obvious way:
+
+    - access_token not empty: otherwise "Bearer " would be sent downstream,
+      and the callee would answer an INVALID_TOKEN hard to trace back here.
+    - token_type is "Bearer": the only type we know how to send (RFC 6750).
+      RFC 6749 §7.1: a client must not use a token whose type it doesn't
+      understand. Compared case-insensitively, as §5.1 requires.
+    - expires_in > 0: with 0 or less, the token would be renewed on every
+      call, sending one request to Identity per downstream call.
+
     RFC 6749 makes `expires_in` only RECOMMENDED. We require it: without it we
     could not know when to renew, and Identity always sends it.
     """
-    access_token: str
+
+    access_token: str = Field(min_length=1)
     token_type: str
-    expires_in: int
+    expires_in: PositiveInt
+
+    @field_validator("token_type")
+    @classmethod
+    def _must_be_bearer(cls, token_type: str) -> str:
+        if token_type.lower() != "bearer":
+            raise ValueError(f"unsupported token_type {token_type!r}")
+        return token_type
 
 
 class ClientCredentialsTokenProvider:
-    """Fetch, cache and renew one service token (one audience + scopes)."""
+    """Fetch, cache and renew one service token (one audience + scopes).
+
+    The OAuth 2.0 client side of the client credentials grant (RFC 6749 §4.4):
+    the service authenticates to Identity with its own client ID and secret,
+    and gets a token for itself, with no user involved.
+    """
 
     # Renew this long before expiry, so a token is never sent just as it
     # expires (the receiving service checks it a moment later).
@@ -160,7 +191,7 @@ class ClientCredentialsTokenProvider:
                 (the client sees 502).
         """
         with self._lock:
-            if self._token is None or self._clock() >= self._renew_at:
+            if self._needs_new_token():
                 self._fetch_token()
             assert self._token is not None
             return self._token
