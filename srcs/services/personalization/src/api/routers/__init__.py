@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from src.api.routers.health.router import router as health_router
 from src.api.routers.profile.router import router as profile_router
 from src.api.routers.saved_articles.router import router as saved_articles_router
+from src.api.routers.topics.router import router as topics_router
 
 # ---------------------------------------------------------------------------
 # Root-level endpoints
@@ -32,3 +33,4 @@ root_routers.include_router(health_router)
 api_routers = APIRouter()
 api_routers.include_router(profile_router)
 api_routers.include_router(saved_articles_router)
+api_routers.include_router(topics_router)

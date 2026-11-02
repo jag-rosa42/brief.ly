@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import Depends
 
 from src.application.port.topic_catalog import TopicCatalog
+from src.application.use_cases.list_topics import ListTopics
 from src.infrastructure.clients.topic_catalog.http_topic_catalog import HttpTopicCatalog
 from src.infrastructure.config.app import app_settings
 
@@ -14,3 +15,10 @@ def get_topic_catalog() -> TopicCatalog:
 
 
 TopicCatalogDep = Annotated[TopicCatalog, Depends(get_topic_catalog)]
+
+
+def get_list_topics(topic_catalog: TopicCatalogDep) -> ListTopics:
+    return ListTopics(topic_catalog)
+
+
+ListTopicsDep = Annotated[ListTopics, Depends(get_list_topics)]
