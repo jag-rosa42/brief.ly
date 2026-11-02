@@ -1515,7 +1515,7 @@ wheels = [
 
 [[package]]
 name = "shared-errors"
-version = "0.1.1"
+version = "0.1.2"
 source = { editable = "../../../shared/packages/shared_errors" }
 dependencies = [
     { name = "fastapi", extra = ["standard"] },

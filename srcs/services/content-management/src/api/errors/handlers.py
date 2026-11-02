@@ -41,9 +41,9 @@ def api_error_handler(_request: Request, exception: Exception) -> JSONResponse:
     return _error_response(exception, API_ERROR_STATUS_MAP.get(exception.code))
 
 
-def register_domain_handlers(app: FastAPI) -> None:
+def register_domain_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(DomainError, domain_error_handler)
 
 
-def register_api_handlers(app: FastAPI) -> None:
+def register_api_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(ApiError, api_error_handler)
