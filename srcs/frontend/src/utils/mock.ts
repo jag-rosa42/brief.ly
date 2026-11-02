@@ -158,20 +158,5 @@ export const MOCK_DASHBOARD: DashboardData = {
 				},
 			],
 		},
-		{
-			id: "technologies",
-			name: "Technologies",
-			summary:"Open-source AI models are becoming increasingly capable, while advances in computing infrastructure are changing how developers build and deploy applications.",
-			stories: [
-				{
-					id: "tech-1",
-					title: "Open-source AI models expand opportunities for developers",
-					category: "Technologies",
-					source: "TechDaily",
-					url: "https://example.com/open-source-ai-models",
-					summary:"Developers are gaining access to increasingly capable open-source AI models, allowing teams to experiment with new applications and customise tools for their specific needs.",
-				},
-			],
-		},
 	],
 };

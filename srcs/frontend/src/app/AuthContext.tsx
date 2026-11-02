@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 import { AuthContext } from "@/app/AuthContextDefinition";
-import { register as apiRegister, logout as apiLogout, restoreSession, getMe } from "@/features/auth/identity";
+import { register as apiRegister, login as apiLogin, logout as apiLogout, restoreSession, getMe } from "@/features/auth/identity";
 import { type Account } from "@/features/auth/types"
 import { session } from "@/shared/components/api/client";
 
@@ -18,16 +18,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 	const [profileComplete, setProfileComplete] = useState(() => localStorage.getItem("profileComplete") === "true");
 
 	const isLoggedIn = (account !== null);
-	// TODO: Mock: a remplacer avec les donnees du back end
-	function login() {
-		localStorage.setItem("token", "fake-token");
-		localStorage.setItem("profileComplete", "true");
-		setAccount({
-			id: "mock-user",
-			email: "demo@example.com",
-			created_at: new Date().toISOString(),
-		});
+
+	async function login(email: string, password: string) {
+		await apiLogin(email, password);
+		const account = await getMe();
+		setAccount(account);
+		// TODO: Replace with GET /api/personalization/me/profile once Personalization
+		// is implemented (200 = profile complete, 404 PROFILE_NOT_FOUND = not complete).
+		// Until then, any existing account is assumed to have a complete profile.
 		setProfileComplete(true);
+		localStorage.setItem("profileComplete", "true");
 	}
 
 	useEffect(() => {

@@ -12,9 +12,10 @@ import { Text } from "@/shared/components/Text";
 import { Division } from "@/shared/components/Division";
 
 import isEmail from "validator/lib/isEmail";
+import { ApiError } from "@/shared/components/api/client";
 
 interface LoginLocationState {
-        message?: unknown;
+	message?: unknown;
 }
 
 function validateForm(email: string) {
@@ -31,42 +32,56 @@ export function LoginPage() {
 	const navigate = useNavigate();
 	const { login } = useAuth();
 	const location = useLocation();
-	
+
 	const navigationState = location.state as LoginLocationState | null;
 	const initialMessage = typeof navigationState?.message === "string" ? navigationState.message : "";
 	const [errorMessage, setErrorMessage] = useState(initialMessage);
-	
-	function handleSubmit(e: SyntheticEvent) {
-		e.preventDefault();
-		setErrorMessage("");
-		//setWaiting(true);
+	const GUEST_PATHS = ["/signup", "/login"];
 
-		const error = validateForm(email);
+	async function handleSubmit(e: SyntheticEvent) {
+		e.preventDefault();
+		if (waiting)
+			return;
+		setErrorMessage("");
+		setWaiting(true);
+
+		const error = validateForm(email.trim());
 
 		if (error) {
-    		setErrorMessage(error);
-			//setWaiting(false);
-    		return;
+			setErrorMessage(error);
+			setWaiting(false);
+			return;
 		}
 		if (password === "") {
 			setErrorMessage("Password is required");
-			//setWaiting(false);
+			setWaiting(false);
 			return;
 		}
-		//TODO add call API (mock behaviour here)
 		try {
-			login();
-			void navigate("/dashboard/brief");
-		} catch {
-			setErrorMessage("Login failed. Please try again");
+			await login(email.trim(), password);
+			const lastPath = sessionStorage.getItem("lastPath");
+			let target = "/dashboard/brief";
+			if (lastPath && !GUEST_PATHS.includes(lastPath)) {
+				target = lastPath;
+			};
+			void navigate(target, { replace: true });
+		} catch (err) {
+			if (err instanceof ApiError && err.code === "INVALID_CREDENTIALS") {
+				setErrorMessage("Invalid email or password");
+			} else if (err instanceof ApiError && err.code === "VALIDATION_ERROR") {
+				setErrorMessage("Some fields are invalid, please check your input");
+			} else if (err instanceof ApiError) {
+				setErrorMessage("Something went wrong, please try again");
+			} else {
+				setErrorMessage("Unable to reach the server");
+			}
 		} finally {
 			setWaiting(false);
 		}
 	}
 
-
-	return(
-		<Division variant = "page">
+	return (
+		<Division variant="page">
 			<Text variant="title" className="mb-10 text-center">
 				Welcome back!
 			</Text>
@@ -76,8 +91,8 @@ export function LoginPage() {
 				</Text>
 				<Division variant="featurecard" className="shadow-sm">
 					<Form
-					onSubmit={handleSubmit}
-					actions={
+						onSubmit={(e) => { void handleSubmit(e); }}
+						actions={
 							<div className="flex flex-col gap-3 w-full">
 								{errorMessage && (
 									<Text variant="error" role="alert">
@@ -115,4 +130,3 @@ export function LoginPage() {
 		</Division>
 	);
 }
-

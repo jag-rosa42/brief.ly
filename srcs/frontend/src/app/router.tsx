@@ -41,7 +41,7 @@ function ProtectedRoute() {
 }
 
 function GuestRoute() {
-	const { isLoggedIn, isLoading } = useAuth();
+	const { isLoggedIn, isLoading, profileComplete } = useAuth();
 	const [lastPath] = useState(() => sessionStorage.getItem(LAST_PATH));
 
 	if (isLoading)
@@ -49,6 +49,8 @@ function GuestRoute() {
 	if (isLoggedIn) {
 		let target = "/dashboard/profile";
 
+		if (profileComplete)
+			target = "/dashboard/brief";
 		if (lastPath && !GUEST_PATHS.includes(lastPath))
 			target = lastPath;
 		return (<Navigate to={target} replace />)
