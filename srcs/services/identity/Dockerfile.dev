@@ -18,4 +18,8 @@ ENV PATH="/opt/venv/bin:$PATH" \
 
 EXPOSE 8000
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# --reload-dir replaces uvicorn's default (the current folder), so both folders
+# are listed: the service and the shared packages mounted by compose.override.yaml.
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", \
+    "--reload-dir", "/app/srcs/services/identity", \
+    "--reload-dir", "/app/shared/packages"]
