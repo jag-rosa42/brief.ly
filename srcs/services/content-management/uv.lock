@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14"
 
 [[package]]
@@ -353,7 +353,7 @@ requires-dist = [
     { name = "pwdlib", extras = ["argon2"], specifier = ">=0.3.1" },
     { name = "pydantic-settings", specifier = ">=2.14.2" },
     { name = "requests", specifier = ">=2.32.5" },
-    { name = "shared-errors", directory = "../../../shared/packages/shared_errors" },
+    { name = "shared-errors", editable = "../../../shared/packages/shared_errors" },
     { name = "sqlalchemy", specifier = ">=2.0.51" },
 ]
 
@@ -1516,7 +1516,7 @@ wheels = [
 [[package]]
 name = "shared-errors"
 version = "0.1.1"
-source = { directory = "../../../shared/packages/shared_errors" }
+source = { editable = "../../../shared/packages/shared_errors" }
 dependencies = [
     { name = "fastapi", extra = ["standard"] },
 ]

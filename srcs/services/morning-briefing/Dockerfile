@@ -11,7 +11,9 @@ COPY ./uv.lock ./
 
 COPY --from=shared_errors / /app/shared/packages/shared_errors/
 
-RUN uv sync --frozen --no-install-project
+# --no-editable: production gets a plain copy of the shared packages in the
+# virtual environment, not a link to their source folder.
+RUN uv sync --frozen --no-install-project --no-editable
 
 COPY . ./
 

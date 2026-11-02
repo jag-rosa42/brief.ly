@@ -48,7 +48,11 @@ entrypoint = "src.main:app"
 # UV
 # ============================================================================
 [tool.uv.sources]
-shared-errors = { path = "../../../shared/packages/shared_errors" }
+# editable = true: every pyproject that names shared-errors (here, shared_auth,
+# other services) must use the same value, or `uv lock` fails with
+# "conflicting URLs for package shared-errors". It also makes the dev container
+# run the mounted source of the package, so edits apply without a rebuild.
+shared-errors = { path = "../../../shared/packages/shared_errors", editable = true }
 
 #[build-system]
 #requires = ["hatchling"]
