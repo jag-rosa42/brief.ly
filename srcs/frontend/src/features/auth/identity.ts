@@ -11,6 +11,15 @@ export async function register(email: string, password: string): Promise<void> {
 	session.setAccessToken(body.access_token);
 }
 
+export async function login(email: string, password: string): Promise<void> {
+	const body = await apiFetch<TokenResponse>(`/api/identity/auth/login`, {
+		method: "POST",
+		body: { email, password },
+		auth: false,
+	});
+	session.setAccessToken(body.access_token);
+}
+
 // Always 204 once the CSRF header is sent; the cookie is cleared server-side.
 export async function logout(): Promise<void> {
 	try {
