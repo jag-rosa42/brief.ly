@@ -6,12 +6,16 @@ from fastapi.testclient import TestClient
 from httpx2 import Response
 from pydantic import BaseModel, EmailStr
 
-from shared_errors import ErrorResponse, InfrastructureError, register_shared_handlers
+from shared_errors import (
+    ErrorResponse,
+    InfrastructureError,
+    register_shared_exception_handlers,
+)
 
 
 def _build_test_app() -> FastAPI:
     app = FastAPI()
-    register_shared_handlers(app)
+    register_shared_exception_handlers(app)
 
     class Payload(BaseModel):
         email: EmailStr
