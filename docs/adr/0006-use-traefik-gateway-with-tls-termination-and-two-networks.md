@@ -2,10 +2,11 @@
 
 ## 📋 Status
 
-Proposed
+Accepted
 - 📅 Date      : 06-10-2026
 - 👷 Authors   : JG
 - 👀 Reviewers : Transcendence Team
+- 🔁 Revised   : 02-11-2026, Podman replaced by Docker (the decision is unchanged)
 
 ---
 
@@ -28,8 +29,12 @@ Key issues:
 4. **Unknown API paths fall through to the SPA**: the frontend's nginx answers
    `index.html` with a `200` for any unknown path, so a mistyped
    `/api/...` URL would look like a success.
-5. **Rootless Podman** cannot bind ports below 1024, so `80`/`443` are not
-   available.
+5. **No privileged ports**: the stack must run on machines where developers
+   have no root access. The development VM's QEMU runs as an unprivileged user
+   and forwards each published port from the host's `127.0.0.1` to the same
+   port in the VM. Binding a host port below 1024 (`80`, `443`) needs root, so
+   QEMU cannot forward them, even though Docker inside the VM could publish
+   them.
 
 ---
 
@@ -40,7 +45,9 @@ Key issues:
 * Configuration must be readable and reviewable in git (every team member must
   be able to explain it)
 * Must run with one command, with no manual certificate step
-* Must work with Podman and podman-compose 1.6 (no Docker socket assumptions)
+* Must work with Docker Engine and Docker Compose, as installed in the team's
+  Ubuntu VM (`shared/script/create-vm.sh`), without giving any container
+  access to the Docker socket
 * Rate limiting and API-key delegation must be possible at the edge
   (see ADR-0009)
 
@@ -86,9 +93,9 @@ Key issues:
 - ✅ **Advantages**:
   - Routes live next to each service
 - 🚫 **Disadvantages**:
-  - Needs access to the container engine socket; with rootless Podman this
-    means mounting the Podman socket into the gateway, which is a large
-    privilege for an internet-facing container
+  - Needs access to the container engine socket: mounting
+    `/var/run/docker.sock` into the gateway lets it control every container,
+    which amounts to root on the host, for an internet-facing container
   - Routing rules are scattered across Compose files and hard to review as
     a whole, which makes the allowlist (decision below) hard to audit
 
@@ -152,7 +159,7 @@ Implementation details:
   (see ADR-0007). Each service verifies tokens itself. The gateway only
   terminates TLS, routes, rate-limits, and for the public API only, delegates
   API-key checking to Identity.
-- **Networks.** Two Podman networks:
+- **Networks.** Two Docker networks, declared in `compose.yaml`:
 
   | Network | Members | Purpose |
   |---------|---------|---------|
@@ -218,4 +225,5 @@ Implementation details:
 * `docs/architecture/02_overview.md`
 * Traefik file provider: https://doc.traefik.io/traefik/providers/file/
 * Traefik middlewares: https://doc.traefik.io/traefik/middlewares/overview/
-* Podman rootless ports: https://github.com/containers/podman/blob/main/rootless.md
+* Docker daemon attack surface (the socket): https://docs.docker.com/engine/security/#docker-daemon-attack-surface
+* QEMU user networking (`hostfwd`): https://www.qemu.org/docs/master/system/devices/net.html#using-the-user-mode-network-stack

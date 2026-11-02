@@ -2,7 +2,7 @@
 
 ## 📋 Status
 
-Proposed
+Accepted
 - 📅 Date      : 19-10-2026
 - 👷 Authors   : JG
 - 👀 Reviewers : Transcendence Team
