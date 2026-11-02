@@ -55,5 +55,5 @@ def domain_error_handler(_request: Request, exception: Exception) -> JSONRespons
     )
 
 
-def register_domain_handlers(app: FastAPI) -> None:
+def register_domain_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(DomainError, domain_error_handler)
