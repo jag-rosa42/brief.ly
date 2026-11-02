@@ -13,7 +13,7 @@ from src.api.dependencies.saved_article import (
     ListSavedArticlesDep,
     SavedArticleRepositoryDep,
 )
-from src.api.dependencies.topic_catalog import TopicCatalogDep
+from src.api.dependencies.topic_catalog import ListTopicsDep, TopicCatalogDep
 
 __all__: list[str] = [
     "ACCOUNT_ID_HEADER_NAME",
@@ -21,6 +21,7 @@ __all__: list[str] = [
     "DeleteSavedArticleDep",
     "GetCurrentProfileDep",
     "ListSavedArticlesDep",
+    "ListTopicsDep",
     "ProfileRepositoryDep",
     "SavedArticleRepositoryDep",
     "SessionDep",

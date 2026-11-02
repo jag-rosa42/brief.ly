@@ -4,13 +4,12 @@ Personalization owns the profile (a name plus 1 to 4 interests) and the saved ar
 
 It serves the same use cases through two doors: Frontend routes (browser token) and Public routes (API key). Both share the bodies below. It also serves the public API documentation page for both services that have Public routes. Conventions, tokens and errors are in [00_conventions.md](00_conventions.md).
 
-Nothing is implemented yet: on `main`, Personalization only has `/health`, and its API router still uses the old `/api` prefix (`srcs/services/personalization/src/api/routers/__init__.py`), which the Frontend routes below don't use.
 
 | Kind | Method | Caller path | Service path | Auth | Success | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| Frontend | GET | `/api/personalization/me/profile` | `/me/profile` | Bearer | 200 | To do |
-| Frontend | PUT | `/api/personalization/me/profile` | `/me/profile` | Bearer | 201 / 200 | To do |
-| Frontend | GET | `/api/personalization/topics` | `/topics` | Bearer | 200 | To do |
+| Frontend | GET | `/api/personalization/me/profile` | `/me/profile` | Bearer | 200 | Done |
+| Frontend | PUT | `/api/personalization/me/profile` | `/me/profile` | Bearer | 201 / 200 | Done |
+| Frontend | GET | `/api/personalization/topics` | `/topics` | Bearer | 200 | Done |
 | Frontend | GET | `/api/personalization/me/saved-articles` | `/me/saved-articles` | Bearer | 200 | To do |
 | Frontend | POST | `/api/personalization/me/saved-articles/{article_id}` | `/me/saved-articles/{article_id}` | Bearer | 201 | To do |
 | Frontend | DELETE | `/api/personalization/me/saved-articles/{article_id}` | `/me/saved-articles/{article_id}` | Bearer | 204 | To do |
