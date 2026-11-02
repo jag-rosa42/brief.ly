@@ -21,6 +21,7 @@ from collections.abc import Generator
 import pytest
 from fastapi.testclient import TestClient
 from httpx2 import Response
+from shared_errors import ErrorResponse
 
 from src.api.dependencies import get_db
 from src.infrastructure.config.app import app_settings
@@ -69,7 +70,8 @@ def test_health_check_reports_503_when_database_is_down() -> None:
         app.dependency_overrides.pop(get_db, None)
 
     assert response.status_code == 503
-    assert response.json() == {"detail": "database unavailable"}
+    body = ErrorResponse.model_validate(response.json())
+    assert body.error.code == "SERVICE_UNAVAILABLE"
 
 
 @pytest.fixture(autouse=True)
