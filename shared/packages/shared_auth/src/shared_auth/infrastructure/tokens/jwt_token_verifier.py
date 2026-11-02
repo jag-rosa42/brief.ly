@@ -40,6 +40,7 @@ Library documentation:
     - jwcrypto, JWK.thumbprint()
       https://jwcrypto.readthedocs.io/en/latest/jwk.html
 """
+
 import logging
 from collections.abc import Iterable
 from datetime import UTC, datetime

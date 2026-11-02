@@ -8,10 +8,12 @@ class UserPrincipal:
     scopes: frozenset[str]
     token: str = field(repr=False)
 
+
 @dataclass(frozen=True)
 class ServicePrincipal:
     name: str
     scopes: frozenset[str]
     token: str = field(repr=False)
+
 
 Principal = UserPrincipal | ServicePrincipal

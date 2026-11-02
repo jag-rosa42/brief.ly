@@ -19,6 +19,7 @@ Usage example on routes:
 
 The authenticator itself is built once at startup (installation.py).
 """
+
 from collections.abc import Callable
 from typing import Annotated
 
