@@ -4,7 +4,7 @@ HTTP fixtures for FastAPI integration tests.
 The package has no application of its own, so the tests build a small one,
 wired exactly like a service's main.py:
 
-    register_shared_handlers(app)          # shared_errors
+    register_shared_exception_handlers(app)          # shared_errors
     install_authentication(app, settings)  # shared_auth
 
 It has one route per dependency, with neutral paths (Routes), so the
@@ -19,7 +19,7 @@ import httpx2
 import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
-from shared_errors import ErrorResponse, register_shared_handlers
+from shared_errors import ErrorResponse, register_shared_exception_handlers
 
 from shared_auth.api.dependencies import (
     CurrentForwardedUserDep,
@@ -66,7 +66,7 @@ def build_test_app(
 ) -> FastAPI:
     """One route per kind of caller, plus one that calls another service."""
     app = FastAPI()
-    register_shared_handlers(app)
+    register_shared_exception_handlers(app)
     install_authentication(app, settings)
 
     @app.get(Routes.USER)

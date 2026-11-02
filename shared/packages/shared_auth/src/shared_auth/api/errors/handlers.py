@@ -5,7 +5,7 @@ TOKEN_EXPIRED looks the same whether it comes from Identity, from this
 service, or from a service further down the chain.
 
 InfrastructureError (a dead or slow service -> 503) is already handled by
-shared_errors.register_shared_handlers, which every service registers.
+shared_errors.register_shared_exception_handlers, which every service registers.
 """
 
 import logging
