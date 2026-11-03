@@ -1,29 +1,11 @@
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 
 from src.application.use_cases.get_current_profile import GetCurrentProfile
 from src.domain.entities.profile import Profile
 from src.domain.exception import ProfileNotFoundError
-
-
-class FakeProfileRepository:
-    def __init__(self) -> None:
-        self._profiles_by_id: dict[UUID, Profile] = {}
-
-    def add(self, profile: Profile) -> None:
-        self._profiles_by_id[profile.account_id] = profile
-
-    def upsert(self, profile: Profile) -> bool:
-        created = profile.account_id not in self._profiles_by_id
-        self._profiles_by_id[profile.account_id] = profile
-        return created
-
-    def find_by_id(self, account_id: UUID) -> Profile | None:
-        return self._profiles_by_id.get(account_id)
-
-    def find_by_id_for_update(self, account_id: UUID) -> Profile | None:
-        return self.find_by_id(account_id)
+from tests.fakes import FakeProfileRepository
 
 
 def test_execute_raises_when_profile_does_not_exist() -> None:

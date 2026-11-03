@@ -21,7 +21,7 @@ It serves the same use cases through two doors: Frontend routes (browser token) 
 | Public | DELETE | `/public/v1/me/saved-articles/{article_id}` | same | API key (`write`) | 204 | To do |
 | Public | GET | `/public/v1/docs` | same | None | 200 | To do |
 | Public | GET | `/public/v1/openapi/personalization.json` | same | None | 200 | To do |
-| Internal | GET | — | `/internal/v1/me/profile` | User (forwarded) | 200 | To do |
+| Internal | GET | — | `/internal/v1/me/profile` | User (forwarded) | 200 | Done |
 | Internal | GET | — | `/health` | None | 200 | Done |
 
 Public routes answer like their Frontend twin, plus:

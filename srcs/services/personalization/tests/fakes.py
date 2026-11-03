@@ -2,6 +2,7 @@ from types import TracebackType
 from uuid import UUID
 
 from src.application.exceptions import TopicCatalogUnavailableError
+from src.domain.entities.profile import Profile
 from src.domain.entities.saved_article import SavedArticle
 from src.domain.entities.topic import Topic
 
@@ -64,3 +65,22 @@ class FakeSavedArticleRepository:
         key = (account_id, article_id)
         if key in self.saved_articles:
             del self.saved_articles[key]
+
+
+class FakeProfileRepository:
+    def __init__(self) -> None:
+        self._profiles_by_id: dict[UUID, Profile] = {}
+
+    def add(self, profile: Profile) -> None:
+        self._profiles_by_id[profile.account_id] = profile
+
+    def upsert(self, profile: Profile) -> bool:
+        created = profile.account_id not in self._profiles_by_id
+        self._profiles_by_id[profile.account_id] = profile
+        return created
+
+    def find_by_id(self, account_id: UUID) -> Profile | None:
+        return self._profiles_by_id.get(account_id)
+
+    def find_by_id_for_update(self, account_id: UUID) -> Profile | None:
+        return self.find_by_id(account_id)

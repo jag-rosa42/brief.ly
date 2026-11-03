@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Annotated, Self
+from uuid import UUID
 
 from pydantic import (
     BaseModel,
@@ -10,6 +11,7 @@ from pydantic import (
     model_validator,
 )
 
+from src.application.use_cases.get_internal_profile import InternalProfile
 from src.domain.entities.profile import (
     MAX_TOPICS,
     MIN_TOPICS,
@@ -39,6 +41,23 @@ class ProfileResponse(BaseModel):
             topic_ids=sorted(profile.topic_ids),
             created_at=profile.created_at,
             updated_at=profile.updated_at,
+        )
+
+
+class InternalProfileResponse(BaseModel):
+    account_id: UUID
+    name: str
+    topic_ids: list[str]
+    saved_article_ids: list[UUID]
+
+    @classmethod
+    def from_domain(cls, internal_profile: InternalProfile) -> Self:
+
+        return cls(
+            account_id=internal_profile.profile.account_id,
+            name=internal_profile.profile.name,
+            topic_ids=sorted(internal_profile.profile.topic_ids),
+            saved_article_ids=internal_profile.saved_article_ids,
         )
 
 

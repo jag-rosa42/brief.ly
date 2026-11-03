@@ -1,6 +1,7 @@
 from src.api.dependencies.database import SessionDep, UnitOfWorkDep, get_db
 from src.api.dependencies.profile import (
     GetCurrentProfileDep,
+    GetInternalProfileDep,
     ProfileRepositoryDep,
     UpsertCurrentProfileDep,
 )
@@ -14,6 +15,7 @@ from src.api.dependencies.topic_catalog import ListTopicsDep, TopicCatalogDep
 __all__: list[str] = [
     "DeleteSavedArticleDep",
     "GetCurrentProfileDep",
+    "GetInternalProfileDep",
     "ListSavedArticlesDep",
     "ListTopicsDep",
     "ProfileRepositoryDep",

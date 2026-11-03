@@ -1,34 +1,17 @@
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 
 from src.application.exceptions import TopicCatalogUnavailableError
 from src.application.use_cases.upsert_current_profile import UpsertCurrentProfile
-from src.domain.entities.profile import Profile
 from src.domain.exception import (
     InvalidNameError,
     ProfileFieldsRequiredError,
     UnknownTopicsError,
 )
-from tests.fakes import FakeTopicCatalog, FakeUnitOfWork
+from tests.fakes import FakeProfileRepository, FakeTopicCatalog, FakeUnitOfWork
 
 CATALOG = ["business", "health", "science", "sports"]
-
-
-class FakeProfileRepository:
-    def __init__(self) -> None:
-        self.profiles: dict[UUID, Profile] = {}
-
-    def upsert(self, profile: Profile) -> bool:
-        created = profile.account_id not in self.profiles
-        self.profiles[profile.account_id] = profile
-        return created
-
-    def find_by_id(self, account_id: UUID) -> Profile | None:
-        return self.profiles.get(account_id)
-
-    def find_by_id_for_update(self, account_id: UUID) -> Profile | None:
-        return self.find_by_id(account_id)
 
 
 def test_execute_creates_the_profile_when_none_exists() -> None:
