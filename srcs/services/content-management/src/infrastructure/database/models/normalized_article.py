@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import ARRAY, UUID, DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import ARRAY, UUID, DateTime, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.infrastructure.database.models.base import Base
@@ -29,7 +29,7 @@ class NormalizedArticleModel(Base):
     title: Mapped[str] = mapped_column()
     publisher_name: Mapped[str] = mapped_column()
     description: Mapped[str | None] = mapped_column()
-    content: Mapped[str] = mapped_column()
+    content: Mapped[str] = mapped_column(Text)
     authors: Mapped[list[str] | None] = mapped_column(ARRAY(String))
     image_url: Mapped[str | None] = mapped_column()
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

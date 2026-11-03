@@ -1,4 +1,4 @@
-from sqlalchemy import DateTime, String, Table, UniqueConstraint, inspect
+from sqlalchemy import DateTime, String, Table, Text, UniqueConstraint, inspect
 
 from src.infrastructure.database.models import NormalizedArticleModel
 
@@ -23,6 +23,7 @@ def test_normalized_article_model_declares_the_required_persistence_contract():
         "summary_llm_model",
     } <= set(table.columns.keys())
 
+    assert isinstance(table.columns["content"].type, Text)
     assert isinstance(table.columns["summary"].type, String)
     assert table.columns["summary"].type.length == 2000
     assert table.columns["summary"].nullable
