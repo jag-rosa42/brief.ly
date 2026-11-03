@@ -53,6 +53,7 @@ jobs:
               - 'shared/packages/shared_errors/**'
             personalization:
               - 'srcs/services/personalization/**'
+              - 'shared/packages/shared_auth/**'
               - 'shared/packages/shared_errors/**'
             shared_errors:
               - 'shared/packages/shared_errors/**'
@@ -142,6 +143,7 @@ jobs:
     uses: ./.github/workflows/reusable-python.yml
     with:
       working-directory: srcs/services/personalization
+      generate-jwt-keys: true
 
   shared-errors:
     needs: check-changes
