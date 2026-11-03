@@ -3,6 +3,13 @@
 @import "./preflight.css" layer(base);
 @import "tailwindcss/utilities.css" layer(utilities);
 
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+}
+
 /* Identité visuelle du site — un seul endroit à modifier.
    Tailwind v4 génère automatiquement les classes utilitaires
    correspondantes : bg-primary, text-primary, border-primary,

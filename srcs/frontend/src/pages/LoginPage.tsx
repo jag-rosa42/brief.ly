@@ -1,6 +1,5 @@
 import { useState } from "react";
 import type { SyntheticEvent } from "react";
-import { useNavigate } from "react-router-dom";
 
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/app/useAuth";
@@ -29,14 +28,12 @@ export function LoginPage() {
 	const [password, setPassword] = useState("");
 	const [email, setEmail] = useState("");
 	const [waiting, setWaiting] = useState(false);
-	const navigate = useNavigate();
 	const { login } = useAuth();
 	const location = useLocation();
 
 	const navigationState = location.state as LoginLocationState | null;
 	const initialMessage = typeof navigationState?.message === "string" ? navigationState.message : "";
 	const [errorMessage, setErrorMessage] = useState(initialMessage);
-	const GUEST_PATHS = ["/signup", "/login"];
 
 	async function handleSubmit(e: SyntheticEvent) {
 		e.preventDefault();
@@ -59,12 +56,6 @@ export function LoginPage() {
 		}
 		try {
 			await login(email.trim(), password);
-			const lastPath = sessionStorage.getItem("lastPath");
-			let target = "/dashboard/brief";
-			if (lastPath && !GUEST_PATHS.includes(lastPath)) {
-				target = lastPath;
-			};
-			void navigate(target, { replace: true });
 		} catch (err) {
 			if (err instanceof ApiError && err.code === "INVALID_CREDENTIALS") {
 				setErrorMessage("Invalid email or password");
