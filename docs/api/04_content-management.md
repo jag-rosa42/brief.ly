@@ -143,7 +143,7 @@ Header: Authorization: Bearer <service token with summaries:write>
 Body:
 {
   "summary": str,              1-2000 chars, written in the article's language
-  "llm_model": str             stored (column summary_llm_model) for traceability, not returned
+  "summary_llm_model": str             stored (column summary_llm_model) for traceability, not returned
 }
 
 200 OK                <article>, with summary and summarized_at set
@@ -162,7 +162,7 @@ Header: Authorization: Bearer <service token with summaries:write>
 Body:
 {
   "summary": str,              1-2000 chars
-  "llm_model": str             stored (column summary_llm_model) for traceability, not returned
+  "summary_llm_model": str             stored (column summary_llm_model) for traceability, not returned
 }
 
 200 OK                <topic>, with summary and summarized_at set
