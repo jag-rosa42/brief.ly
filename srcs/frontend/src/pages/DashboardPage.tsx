@@ -1,22 +1,22 @@
 import { useAuth } from "@/app/useAuth";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { type TabItem } from "@/shared/components/Tab";
 import { SavedArticles } from "@/pages/SavedArticlesPage";
 import { BriefPage } from "@/pages/BriefPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { Sidebar } from "@/shared/components/Sidebar";
 import { PublicApiKeyPage } from "@/pages/PublicApiKeyPage";
+import type { DashboardTab } from "@/app/navigation";
 
-const tabs: TabItem[] = [
+const tabs: (TabItem & { value: DashboardTab })[] = [
 	{ value: "brief", label: "Morning Briefing" },
 	{ value: "profile", label: "Profile" },
 	{ value: "saved", label: "Saved Articles" },
-	{ value: "public api key", label: "Public API key" },
+	{ value: "publicapikey", label: "Public API key" },
 ];
 
-export function DashboardPage() {
+export function DashboardPage({ tab: activeTab }: { tab: DashboardTab }) {
 	const navigate = useNavigate();
-	const { tab: activeTab = "brief" } = useParams();
 	const { profileComplete, logout } = useAuth();
 
 	if (!profileComplete && activeTab !== "profile") {
@@ -42,7 +42,7 @@ export function DashboardPage() {
 				{activeTab === "brief" && <BriefPage />}
 				{activeTab === "profile" && <ProfilePage />}
 				{activeTab === "saved" && <SavedArticles />}
-				{activeTab === "public api key" && <PublicApiKeyPage />}
+				{activeTab === "publicapikey" && <PublicApiKeyPage />}
 			</main>
 		</div>
 	);

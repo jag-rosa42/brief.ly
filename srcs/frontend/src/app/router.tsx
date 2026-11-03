@@ -9,11 +9,9 @@ import { SignupPage } from "@/pages/SignupPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { useAuth } from "@/app/useAuth";
-import { PublicApiKeyPage } from "@/pages/PublicApiKeyPage";
 import { Spinner } from "@/shared/components/Spinner";
 
-const LAST_PATH = "lastPath";
-const GUEST_PATHS = ["/signup", "/login"];
+import { DASHBOARD_TABS, LAST_PATH, GUEST_PATHS } from "@/app/navigation";
 
 function LastPathTracker() {
 	const { isLoggedIn, isLoading } = useAuth();
@@ -53,11 +51,10 @@ function GuestRoute() {
 			target = "/dashboard/brief";
 		if (lastPath && !GUEST_PATHS.includes(lastPath))
 			target = lastPath;
-		return (<Navigate to={target} replace />)
+		return (<Navigate to={target} replace />);
 	}
 	return (<Outlet />);
 }
-
 
 export function AppRouter() {
 	return (
@@ -81,8 +78,9 @@ export function AppRouter() {
 						element={<NotFoundPage />} />
 				</Route>
 				<Route element={<ProtectedRoute />}>
-					<Route path="/api-keys" element={<PublicApiKeyPage />} />
-					<Route path="/dashboard/:tab" element={<DashboardPage />} />
+					{DASHBOARD_TABS.map((tab) => (
+						<Route key={tab} path={`/dashboard/${tab}`} element={<DashboardPage tab={tab} />} />
+					))}
 					<Route path="/dashboard" element={<Navigate to="/dashboard/brief" replace />} />
 				</Route>
 			</Routes>

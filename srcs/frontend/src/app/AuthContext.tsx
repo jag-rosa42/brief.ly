@@ -5,6 +5,7 @@ import { AuthContext } from "@/app/AuthContextDefinition";
 import { register as apiRegister, login as apiLogin, logout as apiLogout, restoreSession, getMe } from "@/features/auth/identity";
 import { type Account } from "@/features/auth/types"
 import { session } from "@/shared/components/api/client";
+import { LAST_PATH } from "@/app/navigation";
 
 interface AuthProviderProps {
 	children: ReactNode;
@@ -94,7 +95,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 			setProfileComplete(false);
 			// TODO: Remove localStorage when profile completion is managed by the backend.
 			localStorage.removeItem("profileComplete");
-			sessionStorage.removeItem("lastPath");
+			sessionStorage.removeItem(LAST_PATH);
 		}
 	}
 
