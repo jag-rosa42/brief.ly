@@ -35,6 +35,9 @@ class NormalizedArticleModel(Base):
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     category: Mapped[str] = mapped_column()
     language: Mapped[str] = mapped_column()
+    summary: Mapped[str | None] = mapped_column(String(2000))
+    summarized_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    summary_llm_model: Mapped[str | None] = mapped_column()
     fetched_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),

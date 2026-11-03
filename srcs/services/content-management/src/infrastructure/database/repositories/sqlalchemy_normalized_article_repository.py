@@ -55,4 +55,7 @@ class SqlAlchemyNormalizedArticleRepository:
             published_at=normalized_article.published_at,
             category=normalized_article.category,
             language=normalized_article.language,
+            summary=normalized_article.summary,
+            summarized_at=normalized_article.summarized_at,
+            summary_llm_model=normalized_article.summary_llm_model,
         )

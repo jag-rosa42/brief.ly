@@ -20,4 +20,7 @@ class SqlAlchemyTopicRepository:
     def _to_domain(topic_model: TopicModel) -> Topic:
         return Topic(
             id=topic_model.id,
+            summary=topic_model.summary,
+            summarized_at=topic_model.summarized_at,
+            summary_llm_model=topic_model.summary_llm_model,
         )
