@@ -13,6 +13,8 @@ class NormalizedArticleRepository(Protocol):
 
     def list_missing_summary(self, limit: int) -> list[NormalizedArticle]: ...
 
+    def get_by_id(self, article_id: UUID) -> NormalizedArticle | None: ...
+
     def find_existing_external_ids(
         self,
         source_id: UUID,

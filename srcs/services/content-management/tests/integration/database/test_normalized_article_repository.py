@@ -80,3 +80,25 @@ def test_lists_only_articles_with_missing_summaries(
     articles = repository.list_missing_summary(limit=25)
 
     assert articles == [missing_article]
+
+
+@pytest.mark.integration
+def test_get_by_id_returns_the_persisted_article(
+    db_session: Session,
+    source_model,
+    normalized_article: NormalizedArticle,
+):
+    db_session.add(source_model)
+    db_session.flush()
+    repository = SqlAlchemyNormalizedArticleRepository(db_session)
+    repository.save(source_model.id, normalized_article)
+    db_session.flush()
+
+    result = repository.get_by_id(normalized_article.id)
+
+    assert result == normalized_article
+
+
+@pytest.mark.integration
+def test_get_by_id_returns_none_for_an_unknown_article(db_session: Session):
+    assert SqlAlchemyNormalizedArticleRepository(db_session).get_by_id(uuid4()) is None

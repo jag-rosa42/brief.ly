@@ -31,6 +31,12 @@ class SqlAlchemyNormalizedArticleRepository:
         )
         return [self._to_domain(model) for model in self._session.scalars(statement)]
 
+    def get_by_id(self, article_id: UUID) -> NormalizedArticle | None:
+        article = self._session.get(NormalizedArticleModel, article_id)
+        if article is None:
+            return None
+        return self._to_domain(article)
+
     def find_existing_external_ids(
         self,
         source_id: UUID,

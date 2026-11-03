@@ -2,6 +2,7 @@ from enum import StrEnum
 
 
 class ErrorCode(StrEnum):
+    ARTICLE_NOT_FOUND = "ARTICLE_NOT_FOUND"
     ARTICLE_INGESTION_ALREADY_RUNNING = "ARTICLE_INGESTION_ALREADY_RUNNING"
     TOPIC_NOT_FOUND = "TOPIC_NOT_FOUND"
 
@@ -11,6 +12,13 @@ class DomainError(Exception):
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
+
+
+class ArticleNotFoundError(DomainError):
+    code = ErrorCode.ARTICLE_NOT_FOUND
+
+    def __init__(self) -> None:
+        super().__init__("Article not found.")
 
 
 class ArticleIngestionAlreadyRunningError(DomainError):
