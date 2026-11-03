@@ -45,7 +45,9 @@ def client(db_session: Session, token_issuer: FakeTokenIssuer) -> Generator[Test
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
-    token_issuer.override_authenticator(app, service_audience=SERVICE_AUDIENCE)
+    token_issuer.override_authenticator(
+        app, service_audience=SERVICE_AUDIENCE, public_api=True
+    )
 
     try:
         with TestClient(app) as test_client:
@@ -87,7 +89,9 @@ def concurrent_clients(
             session.close()
 
     app.dependency_overrides[get_db] = override_get_db
-    token_issuer.override_authenticator(app, service_audience=SERVICE_AUDIENCE)
+    token_issuer.override_authenticator(
+        app, service_audience=SERVICE_AUDIENCE, public_api=True
+    )
 
     try:
         with TestClient(app) as client_a, TestClient(app) as client_b:

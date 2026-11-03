@@ -4,7 +4,7 @@ from shared_auth import install_authentication
 from shared_errors import register_shared_exception_handlers
 
 from src.api.errors.handlers import register_domain_exception_handlers
-from src.api.routers import api_routers, root_routers
+from src.api.routers import api_routers, internal_routers, root_routers
 from src.infrastructure.config.app import app_settings
 from src.infrastructure.config.auth import auth_settings
 
@@ -23,9 +23,10 @@ def create_app() -> FastAPI:
 
     app.include_router(root_routers)
     app.include_router(api_routers)
+    app.include_router(internal_routers)
     register_shared_exception_handlers(app)
     register_domain_exception_handlers(app)
-    install_authentication(app, auth_settings)
+    install_authentication(app, auth_settings, public_api=True)
 
     return app
 
