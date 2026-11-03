@@ -25,6 +25,8 @@ jobs:
             npm_script: typecheck
           - name: tests
             npm_script: test
+          - name: format
+            npm_script: format:check
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }} # run in the frontend

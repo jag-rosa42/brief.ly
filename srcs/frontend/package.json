@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "format": "prettier --check --write .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "lint": "eslint .",
     "test": "vitest run",
     "typecheck": "tsc -b"
@@ -36,6 +37,7 @@
     "eslint-plugin-react-x": "^5.18.0",
     "globals": "^17.7.0",
     "jsdom": "^30.0.1",
+    "prettier": "3.9.10",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.62.0",

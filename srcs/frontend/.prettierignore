@@ -1,0 +1,12 @@
+# Written by npm, with its own indentation
+package.json
+package-lock.json
+
+# Generated
+coverage
+
+# Documentation, kept as written for now
+*.md
+
+# Copied from Tailwind, kept as the original
+src/preflight.css
