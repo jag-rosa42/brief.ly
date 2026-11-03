@@ -1,4 +1,4 @@
-from .article import ListArticlesDep
+from .article import GetArticleDep, ListArticlesDep
 from .database import SessionDep, UnitOfWorkDep
 from .ingestion import (
     ArticleDiscovererDep,
@@ -16,6 +16,7 @@ from .topic import ListTopicsDep
 __all__: list[str] = [
     "ArticleDiscovererDep",
     "ArticleExtractorDep",
+    "GetArticleDep",
     "IngestionLockDep",
     "ListArticlesDep",
     "ListTopicsDep",

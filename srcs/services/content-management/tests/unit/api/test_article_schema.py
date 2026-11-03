@@ -2,6 +2,8 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from uuid import uuid4
 
+import pytest
+
 from src.api.schemas import ArticleResponse
 from src.domain.entities import NormalizedArticle
 
@@ -48,3 +50,4 @@ def test_maps_an_article_to_the_public_contract(
         "summary": "A summary",
         "summarized_at": summarized_at,
     }
+    assert "summary_llm_model" not in type(response).model_fields

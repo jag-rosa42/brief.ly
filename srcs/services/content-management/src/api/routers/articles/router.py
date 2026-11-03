@@ -1,9 +1,11 @@
 from typing import Annotated, Literal
+from uuid import UUID
 
 from fastapi import APIRouter, Query, status
 from fastapi.exceptions import RequestValidationError
+from shared_errors import ErrorResponse
 
-from src.api.dependencies import ListArticlesDep
+from src.api.dependencies import GetArticleDep, ListArticlesDep
 from src.api.schemas import ArticleListResponse, ArticleResponse
 
 router = APIRouter(
@@ -43,3 +45,17 @@ def list_articles(
     return ArticleListResponse(
         items=[ArticleResponse.from_domain(article) for article in articles]
     )
+
+
+@router.get(
+    path="/{article_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=ArticleResponse,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {"model": ErrorResponse},
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {"model": ErrorResponse},
+    },
+)
+def get_article(article_id: UUID, get_article_use_case: GetArticleDep) -> ArticleResponse:
+    return ArticleResponse.from_domain(get_article_use_case.execute(article_id))
