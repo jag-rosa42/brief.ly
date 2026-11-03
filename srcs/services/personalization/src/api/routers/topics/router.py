@@ -1,7 +1,8 @@
 from fastapi import APIRouter, status
+from shared_auth import CurrentUserDep
 from shared_errors import ErrorResponse
 
-from src.api.dependencies import CurrentAccountIdDep, ListTopicsDep
+from src.api.dependencies import ListTopicsDep
 from src.api.schemas.topic import TopicsResponse
 
 router = APIRouter(
@@ -21,7 +22,7 @@ router = APIRouter(
 )
 def get_topics(
     list_topics: ListTopicsDep,
-    account_id: CurrentAccountIdDep,
+    user: CurrentUserDep,
 ) -> TopicsResponse:
     topics = list_topics.execute()
     return TopicsResponse.from_domain(topics)

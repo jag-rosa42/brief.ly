@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Response, status
+from shared_auth import CurrentUserDep
 from shared_errors import ErrorResponse
 
 from src.api.dependencies import (
-    CurrentAccountIdDep,
     GetCurrentProfileDep,
     UpsertCurrentProfileDep,
 )
@@ -24,10 +24,10 @@ router = APIRouter(
     },
 )
 def get_my_profile(
-    account_id: CurrentAccountIdDep,
+    user: CurrentUserDep,
     get_current_profile: GetCurrentProfileDep,
 ) -> ProfileResponse:
-    return ProfileResponse.from_domain(get_current_profile.execute(account_id))
+    return ProfileResponse.from_domain(get_current_profile.execute(user.account_id))
 
 
 @router.put(
@@ -47,11 +47,11 @@ def get_my_profile(
 def upsert_my_profile(
     body: UpsertProfileRequest,
     response: Response,
-    account_id: CurrentAccountIdDep,
+    user: CurrentUserDep,
     upsert_current_profile: UpsertCurrentProfileDep,
 ) -> ProfileResponse:
     profile, created = upsert_current_profile.execute(
-        account_id, name=body.name, topic_ids=body.topic_ids
+        user.account_id, name=body.name, topic_ids=body.topic_ids
     )
     if created:
         response.status_code = status.HTTP_201_CREATED

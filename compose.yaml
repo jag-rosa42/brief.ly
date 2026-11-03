@@ -137,6 +137,7 @@ x-personalization-image-build: &personalization-image-build
     dockerfile: Dockerfile
     additional_contexts:
       shared_errors: ./shared/packages/shared_errors
+      shared_auth: ./shared/packages/shared_auth
   image: personalization
   env_file:
     - ./srcs/services/personalization/.env
@@ -292,6 +293,9 @@ services:
         condition: service_healthy
       prestart-personalization:
         condition: service_completed_successfully
+    secrets:
+      - jwt_public_key
+      - postgres_password
 
 
   # ADMINISTRATION

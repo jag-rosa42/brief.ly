@@ -18,11 +18,14 @@ from collections.abc import Generator
 
 import pytest
 from fastapi.testclient import TestClient
+from shared_auth.api.installation import get_authenticator
+from shared_auth.testing import FakeTokenIssuer
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.api.dependencies import get_db
 from src.main import app
+from tests.fixtures.auth import SERVICE_AUDIENCE
 
 # ---------------------------------------------------------------------------
 # FastAPI Test Client
@@ -30,7 +33,7 @@ from src.main import app
 
 
 @pytest.fixture
-def client(db_session: Session) -> Generator[TestClient]:
+def client(db_session: Session, token_issuer: FakeTokenIssuer) -> Generator[TestClient]:
     """
     Provide a FastAPI TestClient configured to use the test's database session.
 
@@ -42,16 +45,20 @@ def client(db_session: Session) -> Generator[TestClient]:
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
+    token_issuer.override_authenticator(app, service_audience=SERVICE_AUDIENCE)
 
     try:
         with TestClient(app) as test_client:
             yield test_client
     finally:
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_db, None)
+        app.dependency_overrides.pop(get_authenticator, None)
 
 
 @pytest.fixture
-def concurrent_clients(engine: Engine) -> Generator[tuple[TestClient, TestClient]]:
+def concurrent_clients(
+    engine: Engine, token_issuer: FakeTokenIssuer
+) -> Generator[tuple[TestClient, TestClient]]:
     """
     Provide Two FastAPI TestClients using independent database sessions.
 
@@ -80,9 +87,11 @@ def concurrent_clients(engine: Engine) -> Generator[tuple[TestClient, TestClient
             session.close()
 
     app.dependency_overrides[get_db] = override_get_db
+    token_issuer.override_authenticator(app, service_audience=SERVICE_AUDIENCE)
 
     try:
         with TestClient(app) as client_a, TestClient(app) as client_b:
             yield client_a, client_b
     finally:
         app.dependency_overrides.pop(get_db, None)
+        app.dependency_overrides.pop(get_authenticator, None)

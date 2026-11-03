@@ -1,10 +1,10 @@
 from uuid import UUID
 
 from fastapi import APIRouter, status
+from shared_auth import CurrentUserDep
 from shared_errors import ErrorResponse
 
 from src.api.dependencies import (
-    CurrentAccountIdDep,
     DeleteSavedArticleDep,
     ListSavedArticlesDep,
 )
@@ -25,10 +25,10 @@ router = APIRouter(
     },
 )
 def list_my_saved_articles(
-    account_id: CurrentAccountIdDep,
+    user: CurrentUserDep,
     list_saved_articles: ListSavedArticlesDep,
 ) -> SavedArticlesResponse:
-    return SavedArticlesResponse.from_domain(list_saved_articles.execute(account_id))
+    return SavedArticlesResponse.from_domain(list_saved_articles.execute(user.account_id))
 
 
 @router.delete(
@@ -42,7 +42,7 @@ def list_my_saved_articles(
 )
 def delete_my_saved_article(
     article_id: UUID,
-    account_id: CurrentAccountIdDep,
+    user: CurrentUserDep,
     delete_saved_article: DeleteSavedArticleDep,
 ) -> None:
-    delete_saved_article.execute(account_id, article_id)
+    delete_saved_article.execute(user.account_id, article_id)

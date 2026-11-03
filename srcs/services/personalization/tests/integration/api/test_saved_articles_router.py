@@ -1,11 +1,11 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
+from shared_auth.testing import FakeTokenIssuer
 from shared_errors import ErrorResponse
 from sqlalchemy.orm import Session
 
-from src.api.dependencies import ACCOUNT_ID_HEADER_NAME
 from src.domain.entities.profile import Profile
 from src.domain.entities.saved_article import SavedArticle
 from src.infrastructure.database.models.saved_article import (
@@ -14,6 +14,7 @@ from src.infrastructure.database.models.saved_article import (
 from src.infrastructure.database.repositories.sqlalchemy_profile_repository import (
     SqlAlchemyProfileRepository,
 )
+from tests.fixtures.auth import AuthHeaders
 from tests.routes import ME_SAVED_ARTICLES, me_saved_article
 
 
@@ -39,14 +40,14 @@ def _save_article(
     return saved_article
 
 
-def test_list_returns_the_saved_articles(client: TestClient, db_session: Session) -> None:
+def test_list_returns_the_saved_articles(
+    client: TestClient, db_session: Session, auth_headers: AuthHeaders
+) -> None:
     account_id = uuid4()
     older = _save_article(db_session, account_id, datetime(2026, 1, 1, tzinfo=UTC))
     newer = _save_article(db_session, account_id, datetime(2026, 1, 2, tzinfo=UTC))
 
-    response = client.get(
-        ME_SAVED_ARTICLES, headers={ACCOUNT_ID_HEADER_NAME: str(account_id)}
-    )
+    response = client.get(ME_SAVED_ARTICLES, headers=auth_headers(account_id))
 
     assert response.status_code == 200
     items = response.json()["items"]
@@ -60,31 +61,27 @@ def test_list_returns_the_saved_articles(client: TestClient, db_session: Session
 
 
 def test_list_returns_an_empty_list_without_saved_articles(
-    client: TestClient, db_session: Session
+    client: TestClient, db_session: Session, auth_headers: AuthHeaders
 ) -> None:
     account_id = uuid4()
 
-    response = client.get(
-        ME_SAVED_ARTICLES, headers={ACCOUNT_ID_HEADER_NAME: str(account_id)}
-    )
+    response = client.get(ME_SAVED_ARTICLES, headers=auth_headers(account_id))
 
     assert response.status_code == 200
     assert response.json() == {"items": []}
 
 
-def test_list_returns_401_without_the_account_header(
+def test_list_returns_401_without_a_token(
     client: TestClient, db_session: Session
 ) -> None:
     response = client.get(ME_SAVED_ARTICLES, headers={})
 
     assert response.status_code == 401
-    assert (
-        ErrorResponse.model_validate(response.json()).error.code == "INVALID_ACCOUNT_ID"
-    )
+    assert ErrorResponse.model_validate(response.json()).error.code == "INVALID_TOKEN"
 
 
 def test_delete_removes_the_saved_article(
-    client: TestClient, db_session: Session
+    client: TestClient, db_session: Session, auth_headers: AuthHeaders
 ) -> None:
     account_id = uuid4()
     article: SavedArticle = _save_article(
@@ -92,37 +89,49 @@ def test_delete_removes_the_saved_article(
     )
     response = client.delete(
         me_saved_article(article.article_id),
-        headers={ACCOUNT_ID_HEADER_NAME: str(account_id)},
+        headers=auth_headers(account_id),
     )
 
     assert response.status_code == 204
-    response = client.get(
-        ME_SAVED_ARTICLES, headers={ACCOUNT_ID_HEADER_NAME: str(account_id)}
-    )
+    response = client.get(ME_SAVED_ARTICLES, headers=auth_headers(account_id))
 
     assert response.json() == {"items": []}
 
 
 def test_delete_returns_204_when_the_article_is_not_saved(
-    client: TestClient, db_session: Session
+    client: TestClient, db_session: Session, auth_headers: AuthHeaders
 ) -> None:
     account_id = uuid4()
     response = client.delete(
         me_saved_article(uuid4()),
-        headers={ACCOUNT_ID_HEADER_NAME: str(account_id)},
+        headers=auth_headers(account_id),
     )
 
     assert response.status_code == 204
 
 
 def test_delete_returns_422_when_the_article_id_is_not_a_uuid(
-    client: TestClient, db_session: Session
+    client: TestClient, db_session: Session, auth_headers: AuthHeaders
 ) -> None:
     account_id = uuid4()
     response = client.delete(
         f"{ME_SAVED_ARTICLES}/Bonjour",
-        headers={ACCOUNT_ID_HEADER_NAME: str(account_id)},
+        headers=auth_headers(account_id),
     )
 
     assert response.status_code == 422
     assert ErrorResponse.model_validate(response.json()).error.code == "VALIDATION_ERROR"
+
+
+def test_list_returns_401_when_the_token_is_expired(
+    client: TestClient, token_issuer: FakeTokenIssuer, db_session: Session
+) -> None:
+    response = client.get(
+        ME_SAVED_ARTICLES,
+        headers=token_issuer.bearer(
+            token_issuer.user_token(uuid4(), expires_in=timedelta(seconds=-1))
+        ),
+    )
+
+    assert response.status_code == 401
+    assert ErrorResponse.model_validate(response.json()).error.code == "TOKEN_EXPIRED"

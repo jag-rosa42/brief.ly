@@ -41,6 +41,7 @@ x-personalization-dev-image-build: &personalization-dev-image-build
   volumes:
     - ./srcs/services/personalization:/app/srcs/services/personalization
     - ./shared/packages/shared_errors:/app/shared/packages/shared_errors
+    - ./shared/packages/shared_auth:/app/shared/packages/shared_auth
 
 
 # ==============================================================================

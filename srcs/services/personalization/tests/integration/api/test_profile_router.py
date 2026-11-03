@@ -1,28 +1,30 @@
+from datetime import timedelta
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
+from shared_auth.testing import FakeTokenIssuer
 from shared_errors import ErrorResponse
 from sqlalchemy.orm import Session
 
-from src.api.dependencies import ACCOUNT_ID_HEADER_NAME
 from src.domain.entities.profile import Profile
 from src.infrastructure.database.repositories.sqlalchemy_profile_repository import (
     SqlAlchemyProfileRepository,
 )
+from tests.fixtures.auth import AuthHeaders
 from tests.routes import ME_PROFILE
 
 
 def test_get_my_profile_returns_the_profile(
-    client: TestClient, db_session: Session
+    client: TestClient,
+    db_session: Session,
+    auth_headers: AuthHeaders,
 ) -> None:
     profile = Profile.create(
         account_id=uuid4(), name="John", topic_ids=["technology", "business"]
     )
     SqlAlchemyProfileRepository(db_session).upsert(profile)
 
-    response = client.get(
-        ME_PROFILE, headers={ACCOUNT_ID_HEADER_NAME: str(profile.account_id)}
-    )
+    response = client.get(ME_PROFILE, headers=auth_headers(profile.account_id))
 
     assert response.status_code == 200
     body = response.json()
@@ -33,31 +35,43 @@ def test_get_my_profile_returns_the_profile(
 
 
 def test_get_my_profile_returns_404_when_profile_does_not_exist(
-    client: TestClient, db_session: Session
+    client: TestClient,
+    db_session: Session,
+    auth_headers: AuthHeaders,
 ) -> None:
-    response = client.get(ME_PROFILE, headers={ACCOUNT_ID_HEADER_NAME: str(uuid4())})
+    response = client.get(ME_PROFILE, headers=auth_headers(uuid4()))
 
     assert response.status_code == 404
     assert ErrorResponse.model_validate(response.json()).error.code == "PROFILE_NOT_FOUND"
 
 
-def test_get_my_profile_returns_401_without_the_account_header(
+def test_get_my_profile_returns_401_without_a_token(
     client: TestClient, db_session: Session
 ) -> None:
     response = client.get(ME_PROFILE)
 
     assert response.status_code == 401
-    assert (
-        ErrorResponse.model_validate(response.json()).error.code == "INVALID_ACCOUNT_ID"
-    )
+    assert ErrorResponse.model_validate(response.json()).error.code == "INVALID_TOKEN"
 
 
-def test_get_my_profile_returns_401_when_the_account_header_is_not_a_uuid(
+def test_get_my_profile_returns_401_with_an_invalid_token(
     client: TestClient, db_session: Session
 ) -> None:
-    response = client.get(ME_PROFILE, headers={ACCOUNT_ID_HEADER_NAME: "not-a-uuid"})
+    response = client.get(ME_PROFILE, headers={"Authorization": "Bearer not-a-token"})
 
     assert response.status_code == 401
-    assert (
-        ErrorResponse.model_validate(response.json()).error.code == "INVALID_ACCOUNT_ID"
+    assert ErrorResponse.model_validate(response.json()).error.code == "INVALID_TOKEN"
+
+
+def test_get_my_profile_returns_401_when_the_token_is_expired(
+    client: TestClient, token_issuer: FakeTokenIssuer, db_session: Session
+) -> None:
+    response = client.get(
+        ME_PROFILE,
+        headers=token_issuer.bearer(
+            token_issuer.user_token(uuid4(), expires_in=timedelta(seconds=-1))
+        ),
     )
+
+    assert response.status_code == 401
+    assert ErrorResponse.model_validate(response.json()).error.code == "TOKEN_EXPIRED"

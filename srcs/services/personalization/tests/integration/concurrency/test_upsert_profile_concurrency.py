@@ -15,11 +15,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, delete
 from sqlalchemy.orm import Session
 
-from src.api.dependencies import ACCOUNT_ID_HEADER_NAME
 from src.api.dependencies.topic_catalog import get_topic_catalog
 from src.infrastructure.database.models.profile import Profile as ProfileModel
 from src.main import app
 from tests.fakes import FakeTopicCatalog
+from tests.fixtures.auth import AuthHeaders
 from tests.routes import ME_PROFILE
 
 
@@ -44,7 +44,6 @@ def topic_catalog() -> Generator[FakeTopicCatalog]:
     try:
         yield catalog
     finally:
-        # concurrent_clients only removes its own override.
         app.dependency_overrides.pop(get_topic_catalog, None)
 
 
@@ -52,6 +51,7 @@ def test_two_first_puts_at_the_same_time_create_the_profile_once(
     concurrent_clients: tuple[TestClient, TestClient],
     account_id: UUID,
     topic_catalog: FakeTopicCatalog,
+    auth_headers: AuthHeaders,
 ) -> None:
     # timeout: never hang the test suite if one thread fails early.
     start_together = threading.Barrier(2, timeout=5)
@@ -60,7 +60,7 @@ def test_two_first_puts_at_the_same_time_create_the_profile_once(
         start_together.wait()
         response = client.put(
             ME_PROFILE,
-            headers={ACCOUNT_ID_HEADER_NAME: str(account_id)},
+            headers=auth_headers(account_id),
             json={"name": "John", "topic_ids": ["science"]},
         )
         return response.status_code

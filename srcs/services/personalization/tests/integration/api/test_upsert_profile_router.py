@@ -5,32 +5,28 @@ from fastapi.testclient import TestClient
 from httpx2._models import Response
 from shared_errors import ErrorResponse
 
-from src.api.dependencies import ACCOUNT_ID_HEADER_NAME
 from src.api.dependencies.topic_catalog import get_topic_catalog
 from src.main import app
 from tests.fakes import FakeTopicCatalog
+from tests.fixtures.auth import AuthHeaders
 from tests.routes import ME_PROFILE
 
 CATALOG = ["business", "health", "science", "sports"]
 
 
 @pytest.fixture
-def topic_catalog(client: TestClient) -> FakeTopicCatalog:
+def topic_catalog(client: TestClient, auth_headers: AuthHeaders) -> FakeTopicCatalog:
     catalog = FakeTopicCatalog(CATALOG)
     app.dependency_overrides[get_topic_catalog] = lambda: catalog
     return catalog
 
 
-def _headers() -> dict[str, str]:
-    return {ACCOUNT_ID_HEADER_NAME: str(uuid4())}
-
-
 def test_put_creates_the_profile(
-    client: TestClient, topic_catalog: FakeTopicCatalog
+    client: TestClient, topic_catalog: FakeTopicCatalog, auth_headers: AuthHeaders
 ) -> None:
     response = client.put(
         ME_PROFILE,
-        headers=_headers(),
+        headers=auth_headers(uuid4()),
         json={"name": "John", "topic_ids": ["science", "business"]},
     )
 
@@ -41,9 +37,9 @@ def test_put_creates_the_profile(
 
 
 def test_put_updates_the_existing_profile(
-    client: TestClient, topic_catalog: FakeTopicCatalog
+    client: TestClient, topic_catalog: FakeTopicCatalog, auth_headers: AuthHeaders
 ) -> None:
-    headers = _headers()
+    headers = auth_headers(uuid4())
     client.put(
         ME_PROFILE, headers=headers, json={"name": "John", "topic_ids": ["science"]}
     )
@@ -56,9 +52,9 @@ def test_put_updates_the_existing_profile(
 
 
 def test_put_rejects_empty_body(
-    client: TestClient, topic_catalog: FakeTopicCatalog
+    client: TestClient, topic_catalog: FakeTopicCatalog, auth_headers: AuthHeaders
 ) -> None:
-    headers = _headers()
+    headers = auth_headers(uuid4())
     response: Response = client.put(ME_PROFILE, headers=headers, json={})
 
     assert ErrorResponse.model_validate(response.json()).error.code == "VALIDATION_ERROR"
@@ -66,9 +62,9 @@ def test_put_rejects_empty_body(
 
 
 def test_put_rejects_duplicated_topics(
-    client: TestClient, topic_catalog: FakeTopicCatalog
+    client: TestClient, topic_catalog: FakeTopicCatalog, auth_headers: AuthHeaders
 ) -> None:
-    headers = _headers()
+    headers = auth_headers(uuid4())
     response: Response = client.put(
         ME_PROFILE,
         headers=headers,
@@ -80,9 +76,9 @@ def test_put_rejects_duplicated_topics(
 
 
 def test_put_requires_topic_ids_to_create(
-    client: TestClient, topic_catalog: FakeTopicCatalog
+    client: TestClient, topic_catalog: FakeTopicCatalog, auth_headers: AuthHeaders
 ) -> None:
-    headers = _headers()
+    headers = auth_headers(uuid4())
     response: Response = client.put(
         ME_PROFILE,
         headers=headers,
@@ -96,9 +92,9 @@ def test_put_requires_topic_ids_to_create(
 
 
 def test_put_rejects_unknown_topics(
-    client: TestClient, topic_catalog: FakeTopicCatalog
+    client: TestClient, topic_catalog: FakeTopicCatalog, auth_headers: AuthHeaders
 ) -> None:
-    headers = _headers()
+    headers = auth_headers(uuid4())
     response: Response = client.put(
         ME_PROFILE,
         headers=headers,
@@ -113,9 +109,9 @@ def test_put_rejects_unknown_topics(
 
 
 def test_put_returns_503_when_catalog_unavailable(
-    client: TestClient, topic_catalog: FakeTopicCatalog
+    client: TestClient, topic_catalog: FakeTopicCatalog, auth_headers: AuthHeaders
 ) -> None:
-    headers = _headers()
+    headers = auth_headers(uuid4())
     app.dependency_overrides[get_topic_catalog] = lambda: FakeTopicCatalog(
         CATALOG, available=False
     )
@@ -132,7 +128,7 @@ def test_put_returns_503_when_catalog_unavailable(
     )
 
 
-def test_put_returns_401_when_no_account_header(
+def test_put_returns_401_without_a_token(
     client: TestClient, topic_catalog: FakeTopicCatalog
 ) -> None:
     response: Response = client.put(
@@ -141,15 +137,13 @@ def test_put_returns_401_when_no_account_header(
     )
 
     assert response.status_code == 401
-    assert (
-        ErrorResponse.model_validate(response.json()).error.code == "INVALID_ACCOUNT_ID"
-    )
+    assert ErrorResponse.model_validate(response.json()).error.code == "INVALID_TOKEN"
 
 
 def test_put_rejects_unknown_fields(
-    client: TestClient, topic_catalog: FakeTopicCatalog
+    client: TestClient, topic_catalog: FakeTopicCatalog, auth_headers: AuthHeaders
 ) -> None:
-    headers = _headers()
+    headers = auth_headers(uuid4())
     response: Response = client.put(
         ME_PROFILE,
         headers=headers,
