@@ -17,9 +17,15 @@ depends on `shared_errors`, so the service needs both.
 dependencies = ["shared-auth", "shared-errors"]
 
 [tool.uv.sources]
-shared-auth = { path = "../../../shared/packages/shared_auth" }
-shared-errors = { path = "../../../shared/packages/shared_errors" }
+shared-auth = { path = "../../../shared/packages/shared_auth", editable = true }
+shared-errors = { path = "../../../shared/packages/shared_errors", editable = true }
 ```
+
+`editable = true` is required on both: `shared_auth` declares `shared-errors`
+as editable, and uv refuses two different sources for one package.
+
+The service also needs the `jwt_public_key` secret in `compose.yaml`, and
+`generate-jwt-keys: true` for its CI job (the app loads the key at startup).
 
 ## Set up at startup
 
@@ -84,7 +90,7 @@ tokens = ClientCredentialsTokenProvider(
     issuer_service="identity",
     token_endpoint_url="http://identity:8000/internal/v1/oauth/token",
     client_id="ai-processing",
-    client_secret=settings.CLIENT_SECRET,  # SecretStr, from a Podman secret
+    client_secret=settings.CLIENT_SECRET,  # SecretStr, from a Compose secret
     audience="transcendence:content-management",
     scopes=["articles:read"],
 )
