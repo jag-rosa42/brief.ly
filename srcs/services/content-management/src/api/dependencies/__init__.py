@@ -1,3 +1,4 @@
+from .article import GetArticleDep, ListArticlesDep, UpdateArticleSummaryDep
 from .database import SessionDep, UnitOfWorkDep
 from .ingestion import (
     ArticleDiscovererDep,
@@ -15,7 +16,9 @@ from .topic import ListTopicsDep
 __all__: list[str] = [
     "ArticleDiscovererDep",
     "ArticleExtractorDep",
+    "GetArticleDep",
     "IngestionLockDep",
+    "ListArticlesDep",
     "ListTopicsDep",
     "NormalizedArticleRepositoryDep",
     "SessionDep",
@@ -23,4 +26,5 @@ __all__: list[str] = [
     "SynchronizeSourcesDep",
     "TopicRepositoryDep",
     "UnitOfWorkDep",
+    "UpdateArticleSummaryDep",
 ]
