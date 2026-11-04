@@ -56,17 +56,26 @@ services:
     image: front-react-ts
     container_name: frontend-dev
     pull_policy: build
-    ports:
-      - "${FRONTEND_PORT:?Variable not set}:5173"
+    # No published port: Vite (5173) is reached through the gateway, like
+    # nginx in production (srcs/gateway/dev/frontend.yaml).
     volumes:
       - ./srcs/frontend/:/app
       - frontend_node_modules:/app/node_modules
     environment:
       VITE_USE_POLLING: ${VITE_USE_POLLING:-false}
+      # The browser opens the hot reload WebSocket on the gateway, over TLS.
       VITE_HMR_HOST: localhost
-      VITE_HMR_CLIENT_PORT: ${FRONTEND_PORT:?Variable not set}
-      IDENTITY_URL: http://identity:8000
-      PERSONALIZATION_URL: http://personalization:8000
+      VITE_HMR_PROTOCOL: wss
+      VITE_HMR_CLIENT_PORT: ${GATEWAY_HTTPS_PORT:?Variable not set}
+
+  # Same gateway as production; only the frontend service file changes:
+  # Vite on 5173 instead of nginx on 8080. srcs/gateway/dev/ is our folder,
+  # not a Traefik convention: Traefik only reads /etc/traefik/dynamic/, so we
+  # mount dev/frontend.yaml over the production file at that path.
+  gateway:
+    restart: "no"
+    volumes:
+      - ./srcs/gateway/dev/frontend.yaml:/etc/traefik/dynamic/frontend.yaml:ro
 
   front-test:
     build:
@@ -90,20 +99,27 @@ services:
         condition: service_healthy
     environment:
       ADMINER_DESIGN: pepa-linha-dark
+    networks: [backend]
     ports:
-      - "${ADMINER_PORT:?Variable not set}:8080"
+      - "${DEV_BIND_ADDRESS:-127.0.0.1}:${ADMINER_PORT:?Variable not set}:8080"
     profiles:
       - databases
 
+  # The development exception of ADR-0006: the databases and Adminer are
+  # published, because `make test`, `make run` and the migration commands run
+  # on the host. DEV_BIND_ADDRESS keeps them on this machine (127.0.0.1).
+  # The VM targets set it to 0.0.0.0: QEMU forwards to the guest's network
+  # address, not its loopback, and QEMU itself listens on the host's
+  # 127.0.0.1 only.
   pgsql:
     restart: "no"
     ports:
-      - "${POSTGRES_PORT:?Variable not set}:5432"
+      - "${DEV_BIND_ADDRESS:-127.0.0.1}:${POSTGRES_PORT:?Variable not set}:5432"
 
   pgvector:
     restart: "no"
     ports:
-      - "${AI_POSTGRES_PORT:?Variable not set}:5432"
+      - "${DEV_BIND_ADDRESS:-127.0.0.1}:${AI_POSTGRES_PORT:?Variable not set}:5432"
 
 
   # Ai-processing
@@ -113,8 +129,6 @@ services:
   ai-processing:
     <<: *ai-processing-dev-image-build
     restart: "no"
-    ports:
-      - "${AI_PROCESSING_PORT:?Variable not set}:${SERVICE_CONTAINER_PORT:?Variable not set}"
     environment:
       POSTGRES_HOST: pgvector
       # Used by Uvicorn/watchfiles for backend --reload, independently of Vite.
@@ -127,8 +141,6 @@ services:
   content-management:
     <<: *content-management-dev-image-build
     restart: "no"
-    ports:
-      - "${CONTENT_MANAGEMENT_PORT:?Variable not set}:${SERVICE_CONTAINER_PORT:?Variable not set}"
     environment:
       # Used by Uvicorn/watchfiles for backend --reload, independently of Vite.
       WATCHFILES_FORCE_POLLING: ${WATCHFILES_FORCE_POLLING:-false}
@@ -140,8 +152,6 @@ services:
   identity:
     <<: *identity-dev-image-build
     restart: "no"
-    ports:
-      - "${IDENTITY_PORT:?Variable not set}:${SERVICE_CONTAINER_PORT:?Variable not set}"
     environment:
       # Used by Uvicorn/watchfiles for backend --reload, independently of Vite.
       WATCHFILES_FORCE_POLLING: ${WATCHFILES_FORCE_POLLING:-false}
@@ -153,8 +163,6 @@ services:
   morning-briefing:
     <<: *morning-briefing-dev-image-build
     restart: "no"
-    ports:
-      - "${MORNING_BRIEFING_PORT:?Variable not set}:${SERVICE_CONTAINER_PORT:?Variable not set}"
     environment:
       # Used by Uvicorn/watchfiles for backend --reload, independently of Vite.
       WATCHFILES_FORCE_POLLING: ${WATCHFILES_FORCE_POLLING:-false}
@@ -166,8 +174,6 @@ services:
   personalization:
     <<: *personalization-dev-image-build
     restart: "no"
-    ports:
-      - "${PERSONALIZATION_PORT:?Variable not set}:${SERVICE_CONTAINER_PORT:?Variable not set}"
     environment:
       # Used by Uvicorn/watchfiles for backend --reload, independently of Vite.
       WATCHFILES_FORCE_POLLING: ${WATCHFILES_FORCE_POLLING:-false}
