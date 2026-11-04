@@ -34,7 +34,7 @@ Ingestion is started manually with `make ingest`.
 
 | Service | What changes |
 | --- | --- |
-| **Content Management** | Stores the summaries. Articles and topics get `summary` (can be `null`) and `summarized_at`: a migration. New routes: `GET /internal/v1/articles?summary=missing`, `PUT /internal/v1/articles/{id}/summary`, `PUT /internal/v1/topics/{id}/summary`. Only AI Processing may call the `PUT`s. Still calls no other service. |
+| **Content Management** | Stores article and topic summaries in dedicated one-to-zero-or-one tables. New routes: `GET /internal/v1/articles?summary=missing`, `PUT /internal/v1/articles/{id}/summary`, `PUT /internal/v1/topics/{id}/summary`. Only AI Processing may call the `PUT`s. Still calls no other service. |
 | **AI Processing** | Becomes a **worker**: no business routes (only `/health`). A `make summarize` command runs the loop, then stops. No queue, no Celery, no background loop: plain sync Python and two HTTP calls with `httpx`. The summarizer sits behind a port, so the placeholder can later become a real LLM or RAG without changing the contract. Its pgvector database keeps only its own data (embeddings, later). |
 | **Personalization** | Never calls AI Processing. When a user saves an article, it gets the article from Content Management (summary included) and stores a copy. **Also:** topic IDs are strings (`"business"`), so `profile_interest.topic_id` must change from `UUID` to `String`. |
 | Morning Briefing | Never calls AI Processing; gets topics and articles, with summaries, from Content Management. |

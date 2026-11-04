@@ -1,10 +1,9 @@
 from dataclasses import replace
-from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy.orm import Session
 
-from src.domain.entities import NormalizedArticle
+from src.domain.entities import ArticleSummary, NormalizedArticle
 from src.infrastructure.database.models import NormalizedArticleModel
 from src.infrastructure.database.repositories import (
     SqlAlchemyNormalizedArticleRepository,
@@ -16,14 +15,9 @@ def test_save_maps_summary_metadata(
     db_session: Session,
     source_model,
     normalized_article: NormalizedArticle,
+    article_summary: ArticleSummary,
 ):
-    summarized_at = datetime(2026, 11, 3, 9, 30, tzinfo=UTC)
-    enriched_article = replace(
-        normalized_article,
-        summary="Article summary",
-        summarized_at=summarized_at,
-        summary_llm_model="test-model",
-    )
+    enriched_article = replace(normalized_article, summary=article_summary)
     db_session.add(source_model)
     db_session.flush()
 
@@ -35,6 +29,12 @@ def test_save_maps_summary_metadata(
 
     persisted = db_session.get(NormalizedArticleModel, enriched_article.id)
     assert persisted is not None
-    assert persisted.summary == "Article summary"
-    assert persisted.summarized_at == summarized_at
-    assert persisted.summary_llm_model == "test-model"
+    assert persisted.summary is not None
+    assert persisted.summary.text == article_summary.text
+    assert persisted.summary.summarized_at == article_summary.summarized_at
+    assert persisted.summary.llm_model == article_summary.llm_model
+    assert persisted.summary.rejected is article_summary.rejected
+    assert persisted.summary.quality_comment == article_summary.quality_comment
+    assert (
+        persisted.summary.generation_duration_ms == article_summary.generation_duration_ms
+    )
