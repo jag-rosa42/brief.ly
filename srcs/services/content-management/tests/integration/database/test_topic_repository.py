@@ -4,8 +4,8 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.domain.entities import Topic
-from src.infrastructure.database.models import TopicModel
+from src.domain.entities import Topic, TopicSummary
+from src.infrastructure.database.models import TopicModel, TopicSummaryModel
 from src.infrastructure.database.repositories import SqlAlchemyTopicRepository
 
 
@@ -29,9 +29,12 @@ def test_list_all_maps_persisted_summary_metadata(db_session: Session):
     summarized_at = datetime(2026, 11, 3, 9, 30, tzinfo=UTC)
     topic_model = db_session.scalar(select(TopicModel).where(TopicModel.id == "science"))
     assert topic_model is not None
-    topic_model.summary = "Science summary"
-    topic_model.summarized_at = summarized_at
-    topic_model.summary_llm_model = "test-model"
+    topic_model.summary = TopicSummaryModel(
+        topic_id="science",
+        text="Science summary",
+        summarized_at=summarized_at,
+        llm_model="test-model",
+    )
     db_session.flush()
 
     topics = SqlAlchemyTopicRepository(db_session).list_all()
@@ -39,9 +42,11 @@ def test_list_all_maps_persisted_summary_metadata(db_session: Session):
     assert (
         Topic(
             id="science",
-            summary="Science summary",
-            summarized_at=summarized_at,
-            summary_llm_model="test-model",
+            summary=TopicSummary(
+                text="Science summary",
+                summarized_at=summarized_at,
+                llm_model="test-model",
+            ),
         )
         in topics
     )

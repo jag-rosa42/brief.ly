@@ -4,7 +4,7 @@ from typing import Protocol, cast
 
 import pytest
 
-from src.domain.entities import Topic
+from src.domain.entities import Topic, TopicSummary
 
 
 class MutableTopic(Protocol):
@@ -30,11 +30,15 @@ def test_topic_can_hold_summary_metadata():
 
     topic = Topic(
         id="science",
-        summary="Science summary",
-        summarized_at=summarized_at,
-        summary_llm_model="test-model",
+        summary=TopicSummary(
+            text="Science summary",
+            summarized_at=summarized_at,
+            llm_model="test-model",
+        ),
     )
 
-    assert topic.summary == "Science summary"
-    assert topic.summarized_at == summarized_at
-    assert topic.summary_llm_model == "test-model"
+    assert topic.summary == TopicSummary(
+        text="Science summary",
+        summarized_at=summarized_at,
+        llm_model="test-model",
+    )

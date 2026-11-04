@@ -3,6 +3,7 @@ from .base import Base
 from .normalized_article import NormalizedArticleModel
 from .source import SourceModel
 from .topic import TopicModel
+from .topic_summary import TopicSummaryModel
 
 __all__ = [
     "ArticleSummaryModel",
@@ -10,4 +11,5 @@ __all__ = [
     "NormalizedArticleModel",
     "SourceModel",
     "TopicModel",
+    "TopicSummaryModel",
 ]
