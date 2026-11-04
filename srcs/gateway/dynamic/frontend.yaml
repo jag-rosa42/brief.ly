@@ -1,0 +1,9 @@
+# Production: the frontend image's nginx, serving the built SPA on 8080.
+# In development, compose.override.yaml mounts ../dev/frontend.yaml over this
+# file, so the same router reaches Vite instead.
+http:
+  services:
+    frontend:
+      loadBalancer:
+        servers:
+          - url: "http://frontend:8080"

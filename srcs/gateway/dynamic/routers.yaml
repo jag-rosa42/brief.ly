@@ -1,0 +1,92 @@
+# ==============================================================================
+# The routing table
+# ------------------------------------------------------------------------------
+# Two kinds of routers live here:
+#
+# 1. Services: an allowlist. A request reaches a service only if its router
+#    lists the resource (docs/api/<service>.md, "Caller path" column), not the
+#    whole /api/<service> prefix: with a whole prefix,
+#    /api/identity/internal/... would reach Identity as /internal/... once the
+#    prefix is stripped. So a service's /internal, /health, /metrics, /docs and
+#    /openapi.json are never reachable from outside. Any other /api or /public
+#    path matches no router and gets Traefik's own 404. /public/v1 routers
+#    come with the Public API (ADR-0009, Phase 7).
+#
+# 2. Frontend: a catch-all, on purpose. The SPA's routes are client-side
+#    (React Router), its assets have hashed names, and Vite serves its own
+#    paths in development, so they can't be listed. Everything outside /api
+#    and /public goes to the frontend container (nginx in production, Vite in
+#    development), which only serves the SPA's static files. A path like
+#    /health or /internal/x therefore gets the SPA (index.html, then its "not
+#    found" page), never a service.
+#
+# Adding a frontend route: add its resource to the service's rule, and to
+# docs/api/<service>.md.
+# ==============================================================================
+
+http:
+  routers:
+    identity:
+      entrypoints: [websecure]
+      rule: >-
+        Path(`/api/identity/auth`) ||
+        PathPrefix(`/api/identity/auth/`) ||
+        Path(`/api/identity/accounts`) ||
+        PathPrefix(`/api/identity/accounts/`) ||
+        Path(`/api/identity/api-keys`) ||
+        PathPrefix(`/api/identity/api-keys/`)
+      middlewares: [strip-identity-prefix]
+      service: identity
+
+    personalization:
+      entrypoints: [websecure]
+      rule: >-
+        Path(`/api/personalization/me`) ||
+        PathPrefix(`/api/personalization/me/`) ||
+        Path(`/api/personalization/topics`) ||
+        PathPrefix(`/api/personalization/topics/`)
+      middlewares: [strip-personalization-prefix]
+      service: personalization
+
+    morning-briefing:
+      entrypoints: [websecure]
+      rule: >-
+        Path(`/api/morning-briefing/briefing`) ||
+        PathPrefix(`/api/morning-briefing/briefing/`)
+      middlewares: [strip-morning-briefing-prefix]
+      service: morning-briefing
+
+    frontend:
+      entrypoints: [websecure]
+      # Catch-all, not an allowlist: see the header.
+      rule: >-
+        !(Path(`/api`) || PathPrefix(`/api/`) ||
+        Path(`/public`) || PathPrefix(`/public/`))
+      service: frontend
+
+  middlewares:
+    strip-identity-prefix:
+      stripPrefix:
+        prefixes: ["/api/identity"]
+    strip-personalization-prefix:
+      stripPrefix:
+        prefixes: ["/api/personalization"]
+    strip-morning-briefing-prefix:
+      stripPrefix:
+        prefixes: ["/api/morning-briefing"]
+
+  services:
+    identity:
+      loadBalancer:
+        servers:
+          - url: "http://identity:8000" #uses the Docker Compose service name as the network destination
+    personalization:
+      loadBalancer:
+        servers:
+          - url: "http://personalization:8000" #uses the Docker Compose service name as the network destination
+    morning-briefing:
+      loadBalancer:
+        servers:
+          - url: "http://morning-briefing:8000" #uses the Docker Compose service name as the network destination
+
+    # the frontend service is in frontend.yaml: it differs between production (nginx) and development (Vite)

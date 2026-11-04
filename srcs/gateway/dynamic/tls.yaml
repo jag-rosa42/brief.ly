@@ -1,0 +1,15 @@
+# =============================================================================
+# TLS CONFIGURATION
+# =============================================================================
+tls:
+  # Default certificate used when no matching certificate is found.
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /run/secrets/tls_certificate
+        keyFile: /run/secrets/tls_private_key
+
+  # Default TLS security requirements.
+  options:
+    default:
+      minVersion: VersionTLS12
