@@ -1,0 +1,17 @@
+# Development: the Vite dev server on 5173.
+#
+# dev/ is our folder, not a Traefik convention. Traefik only reads
+# traefik.yaml and /etc/traefik/dynamic/.
+# compose.override.yaml mounts this file over dynamic/frontend.yaml,
+# so in development the same `frontend` router reaches Vite instead of nginx.
+#
+# Production never mounts dev/.
+#
+# Traefik forwards WebSocket upgrades as is, so Vite's hot reload works
+# through the gateway (wss://localhost:8443).
+http:
+  services:
+    frontend:
+      loadBalancer:
+        servers:
+          - url: "http://frontend:5173"

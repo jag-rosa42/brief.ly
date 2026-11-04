@@ -56,3 +56,6 @@
 ## Pattern
 - [Transaction - Unit Of Work Pattern](https://www.cosmicpython.com/book/chapter_06_uow#before_uow_diagram)
 - [A Python Implementation of the Unit of Work and Repository Design Pattern using SQLModel](https://dev.to/manukanne/a-python-implementation-of-the-unit-of-work-and-repository-design-pattern-using-sqlmodel-3mb5)
+
+## Traefik
+- [Traefik: entrypoints, routers, services and middlewares](https://www.stephane-robert.info/en/docs/services/network/traefik/)

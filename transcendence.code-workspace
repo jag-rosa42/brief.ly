@@ -1,6 +1,7 @@
 {
   "folders": [
     { "name": "transcendence", "path": "." },
+    { "name": "gateway", "path": "srcs/gateway" },
     { "name": "frontend", "path": "srcs/frontend" },
     //############################# Shared_errors ##############################
     {
@@ -68,6 +69,7 @@
   ],
   "settings": {
     "files.exclude": {
+      "srcs/gateway": true,
       "srcs/frontend": true,
       "shared/packages/shared_errors": true,
       "shared/packages/shared_auth": true,
