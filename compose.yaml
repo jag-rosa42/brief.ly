@@ -276,10 +276,14 @@ services:
   # ===========================================================================
 
   # -- Ai-processing ----------------------------------------------------------
+  # AI Processing uses pgvector, not pgsql. POSTGRES_PORT is the port inside
+  # the backend network (5432), not the host port 5433: the service's settings
+  # default to 5433 for `make run` on the host.
   prestart-ai-processing:
     <<: [*ai-processing-image-build, *backend-prestart]
     environment:
       POSTGRES_HOST: pgvector
+      POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
       POSTGRES_DEFAULT_DB_NAME: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
@@ -290,6 +294,13 @@ services:
 
   ai-processing:
     <<: [*ai-processing-image-build, *backend-service]
+    # Replaces the anchor's whole environment (YAML merge is not deep), so the
+    # shared variables are repeated.
+    environment:
+      POSTGRES_HOST: pgvector
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
+      POSTGRES_DEFAULT_DB_NAME: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
     depends_on:
       pgvector:
         condition: service_healthy
