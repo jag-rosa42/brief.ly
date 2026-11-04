@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from src.domain.entities import ArticleSummary, NormalizedArticle
-from src.infrastructure.database.models import NormalizedArticleModel
+from src.infrastructure.database.models import ArticleSummaryModel, NormalizedArticleModel
 from src.infrastructure.database.repositories import (
     SqlAlchemyNormalizedArticleRepository,
 )
@@ -105,3 +105,31 @@ def test_get_by_id_returns_none_for_an_unknown_article(db_session: Session):
     assert SqlAlchemyNormalizedArticleRepository(db_session).get_by_id(uuid4()) is None
 
 
+@pytest.mark.integration
+def test_update_summary_persists_metadata(
+    db_session: Session,
+    source_model,
+    normalized_article: NormalizedArticle,
+    article_summary: ArticleSummary,
+):
+    db_session.add(source_model)
+    db_session.flush()
+    repository = SqlAlchemyNormalizedArticleRepository(db_session)
+    repository.save(source_model.id, normalized_article)
+    db_session.flush()
+
+    article = repository.update_summary(
+        normalized_article.id,
+        article_summary,
+    )
+    db_session.flush()
+
+    persisted = db_session.get(NormalizedArticleModel, normalized_article.id)
+    assert article is not None
+    assert article.summary == article_summary
+    assert persisted is not None
+    persisted_summary = db_session.get(ArticleSummaryModel, normalized_article.id)
+    assert persisted_summary is not None
+    assert persisted_summary.text == article_summary.text
+    assert persisted_summary.llm_model == article_summary.llm_model
+    assert persisted_summary.summarized_at == article_summary.summarized_at

@@ -1,10 +1,20 @@
 from typing import Protocol
 from uuid import UUID
 
-from src.domain.entities import NormalizedArticle
+from src.domain.entities import ArticleSummary, NormalizedArticle
 
 
-class NormalizedArticleRepository(Protocol):
+class ArticleSummaryRepository(Protocol):
+    def get_by_id(self, article_id: UUID) -> NormalizedArticle | None: ...
+
+    def update_summary(
+        self,
+        article_id: UUID,
+        summary: ArticleSummary,
+    ) -> NormalizedArticle | None: ...
+
+
+class NormalizedArticleRepository(ArticleSummaryRepository, Protocol):
     def list_by_topic_id(
         self,
         topic_id: str,

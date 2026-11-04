@@ -61,6 +61,25 @@ class SqlAlchemyNormalizedArticleRepository:
         )
         self._session.add(normalized_article_model)
 
+    def update_summary(
+        self,
+        article_id: UUID,
+        summary: ArticleSummary,
+    ) -> NormalizedArticle | None:
+        article = self._session.get(NormalizedArticleModel, article_id)
+        if article is None:
+            return None
+        if article.summary is None:
+            article.summary = self._summary_to_model(summary, article_id)
+        else:
+            article.summary.text = summary.text
+            article.summary.summarized_at = summary.summarized_at
+            article.summary.llm_model = summary.llm_model
+            article.summary.rejected = summary.rejected
+            article.summary.quality_comment = summary.quality_comment
+            article.summary.generation_duration_ms = summary.generation_duration_ms
+        return self._to_domain(article)
+
     @staticmethod
     def _to_model(
         normalized_article: NormalizedArticle, source_id: UUID
