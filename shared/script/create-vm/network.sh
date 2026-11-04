@@ -15,26 +15,24 @@ configure_network() {
     case "$vm_network_mode" in
         dev|development)
             vm_network_mode=dev
-            for port_name in FRONTEND_PORT ADMINER_PORT IDENTITY_PORT \
-                PERSONALIZATION_PORT CONTENT_MANAGEMENT_PORT AI_PROCESSING_PORT \
-                MORNING_BRIEFING_PORT; do
+            # Everything is reached through the gateway (ADR-0006); Adminer
+            # and the databases (added below) are the development exception.
+            for port_name in GATEWAY_PORT GATEWAY_HTTPS_PORT ADMINER_PORT; do
                 required_port "$port_name"
             done
-            forward_port_names=(
-                SSH_PORT FRONTEND_PORT IDENTITY_PORT PERSONALIZATION_PORT
-                CONTENT_MANAGEMENT_PORT AI_PROCESSING_PORT MORNING_BRIEFING_PORT ADMINER_PORT
-            )
-            forward_port_values=(
-                "$ssh_port" "$FRONTEND_PORT" "$IDENTITY_PORT" "$PERSONALIZATION_PORT"
-                "$CONTENT_MANAGEMENT_PORT" "$AI_PROCESSING_PORT" "$MORNING_BRIEFING_PORT" "$ADMINER_PORT"
-            )
+            gateway_port=$GATEWAY_PORT
+            gateway_https_port=$GATEWAY_HTTPS_PORT
+            forward_port_names=(SSH_PORT GATEWAY_PORT GATEWAY_HTTPS_PORT ADMINER_PORT)
+            forward_port_values=("$ssh_port" "$gateway_port" "$gateway_https_port" "$ADMINER_PORT")
             ;;
         prod|production)
             vm_network_mode=prod
             required_port GATEWAY_PORT
+            required_port GATEWAY_HTTPS_PORT
             gateway_port=$GATEWAY_PORT
-            forward_port_names=(SSH_PORT GATEWAY_PORT)
-            forward_port_values=("$ssh_port" "$gateway_port")
+            gateway_https_port=$GATEWAY_HTTPS_PORT
+            forward_port_names=(SSH_PORT GATEWAY_PORT GATEWAY_HTTPS_PORT)
+            forward_port_values=("$ssh_port" "$gateway_port" "$gateway_https_port")
             ;;
         local|local-backend)
             vm_network_mode=local-backend

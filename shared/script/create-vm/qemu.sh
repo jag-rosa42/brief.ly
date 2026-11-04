@@ -74,13 +74,13 @@ print_vm_summary() {
     printf '  SSH: localhost:%s -> guest:22\n' "$ssh_port"
     case "$vm_network_mode" in
         dev)
-            printf '  Network mode: dev (frontend, FastAPI services, and Adminer are forwarded from the supplied ports)\n'
+            printf '  Network mode: dev (gateway on %s and %s, Adminer on %s)\n' "$gateway_port" "$gateway_https_port" "$ADMINER_PORT"
             ;;
         local-backend)
             printf '  Network mode: local-backend (app ports are free for host processes)\n'
             ;;
         prod)
-            printf '  Network mode: prod (only GATEWAY_PORT=%s is forwarded)\n' "$gateway_port"
+            printf '  Network mode: prod (only the gateway, GATEWAY_PORT=%s and GATEWAY_HTTPS_PORT=%s, is forwarded)\n' "$gateway_port" "$gateway_https_port"
             ;;
     esac
     if [[ "$vm_network_mode" == dev || "$vm_network_mode" == local-backend ]]; then
