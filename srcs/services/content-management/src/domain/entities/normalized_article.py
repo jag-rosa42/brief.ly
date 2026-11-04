@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 from datetime import datetime
+from math import ceil
 from uuid import UUID
+
+SUMMARY_WORDS_PER_MINUTE = 200
 
 
 @dataclass(frozen=True)
@@ -20,3 +23,12 @@ class NormalizedArticle:
     summary: str | None = None
     summarized_at: datetime | None = None
     summary_llm_model: str | None = None
+
+    @property
+    def read_time_minutes(self) -> int:
+        if self.summary is None:
+            return 0
+        summary_words = self.summary.split()
+        if not summary_words:
+            return 0
+        return ceil(len(summary_words) / SUMMARY_WORDS_PER_MINUTE)

@@ -105,6 +105,9 @@ Implementation details:
     `summary_llm_model` (all nullable). The model is stored for
     traceability only. A summary is written in its article's language, which
     the article already stores (`language`), so no summary language is kept.
+  - Content Management derives the non-persisted `read_time_minutes` from the
+    stored article summary, rounded up at 200 words per minute. It returns `0`
+    when no summary exists. AI Processing does not calculate or send this value.
   - New routes: `GET /internal/v1/articles?summary=missing`,
     `PUT /internal/v1/articles/{article_id}/summary`,
     `PUT /internal/v1/topics/{topic_id}/summary`.

@@ -26,6 +26,11 @@ A topic is never hard-deleted, so a profile can never point at a missing topic. 
 
 The article object, used by every article endpoint:
 
+Content Management owns `read_time_minutes` as a derived, non-persisted field.
+It calculates the estimated reading time from the stored `summary`, rounded up
+at 200 words per minute. The value is `0` while `summary` is `null`; AI
+Processing does not calculate or send it.
+
 ```text
 {
   "article_id": UUID,
