@@ -23,7 +23,7 @@ Service path: `GET /briefing`. Public twin: `GET /public/v1/morning-briefing`.
 
 How it is built:
 1. `GET /internal/v1/me/profile` on Personalization, with the token Morning Briefing received (the user's data, so the user's token).
-2. `GET /internal/v1/topics` and `GET /internal/v1/articles?topic_id=...` on Content Management, with Morning Briefing's service token (data that belongs to no user). Articles and topics already carry their summaries (see [06_service-to-service.md](06_service-to-service.md#summaries-an-enrichment-pipeline)).
+2. `GET /internal/v1/topics` and `GET /internal/v1/articles?topic_id=...` on Content Management, with Morning Briefing's service token (data that belongs to no user). Articles and topics carry their summaries; the article list excludes `rejected: true` articles (see [06_service-to-service.md](06_service-to-service.md#summaries-an-enrichment-pipeline)). The topic catalog still includes topics with no eligible articles.
 
 Morning Briefing never calls AI Processing.
 

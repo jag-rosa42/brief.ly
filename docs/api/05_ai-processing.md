@@ -18,6 +18,16 @@ cursor. It stops when Content Management returns an empty list or when AI
 Processing reaches three consecutive failures to add summaries to Content
 Management. A successful summary write resets the global consecutive-failure
 counter to zero.
+Each article response includes the stored `content` and `language`; AI
+Processing uses the language when generating the summary. For a rejected
+article, AI Processing sends `text: null` and `rejected: true` to the article
+summary PUT endpoint. Content Management returns `summary: null` and
+`read_time_minutes: 0`.
+An article marked `rejected: true` has a stored summary row, so it is not
+returned by `summary=missing` on subsequent runs. It remains stored for
+ingestion deduplication. When collecting articles for a topic summary, AI
+Processing uses `GET /internal/v1/articles?topic_id=...`; that list excludes
+rejected articles while `GET /internal/v1/topics` still returns every topic.
 
 For this guard, the current working definition of a failure is an attempt for an
 article that ends without its summary being successfully stored in Content
