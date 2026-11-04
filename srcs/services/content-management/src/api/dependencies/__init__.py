@@ -4,11 +4,14 @@ from .ingestion import (
     ArticleDiscovererDep,
     ArticleExtractorDep,
     IngestionLockDep,
-    NormalizedArticleRepositoryDep,
-    SourceRepositoryDep,
     SynchronizeSourcesDep,
 )
-from .topic import ListTopicsDep, TopicRepositoryDep
+from .repositories import (
+    NormalizedArticleRepositoryDep,
+    SourceRepositoryDep,
+    TopicRepositoryDep,
+)
+from .topic import ListTopicsDep
 
 __all__: list[str] = [
     "ArticleDiscovererDep",

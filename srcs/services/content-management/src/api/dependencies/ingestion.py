@@ -3,10 +3,13 @@ from typing import Annotated
 from fastapi import Depends
 from newsapi import NewsApiClient
 
-from src.api.dependencies.database import SessionDep, UnitOfWorkDep
+from src.api.dependencies.database import UnitOfWorkDep
+from src.api.dependencies.repositories import (
+    NormalizedArticleRepositoryDep,
+    SourceRepositoryDep,
+)
 from src.application.port import ArticleDiscoverer, ArticleExtractor, IngestionLock
 from src.application.use_cases.ingestion import SynchronizeSources
-from src.domain.repositories import NormalizedArticleRepository, SourceRepository
 from src.infrastructure.clients.article_discovery.newsapi_article_discoverer import (
     NewsApiArticleDiscoverer,
 )
@@ -16,38 +19,6 @@ from src.infrastructure.clients.article_extraction.newspaper_article_extractor i
 from src.infrastructure.config.news_api import NewsApiSettings
 from src.infrastructure.database.config import engine
 from src.infrastructure.database.ingestion_lock import PostgresIngestionLock
-from src.infrastructure.database.repositories import (
-    SqlAlchemyNormalizedArticleRepository,
-    SqlAlchemySourceRepository,
-)
-
-
-# ---------------------------------------------------------------------------
-# Source Repository
-# ---------------------------------------------------------------------------
-def get_source_repository(session: SessionDep) -> SourceRepository:
-    return SqlAlchemySourceRepository(session)
-
-
-SourceRepositoryDep = Annotated[
-    SourceRepository,
-    Depends(get_source_repository),
-]
-
-
-# ---------------------------------------------------------------------------
-# Normalized Article Repository
-# ---------------------------------------------------------------------------
-def get_normalized_article_repository(
-    session: SessionDep,
-) -> NormalizedArticleRepository:
-    return SqlAlchemyNormalizedArticleRepository(session)
-
-
-NormalizedArticleRepositoryDep = Annotated[
-    NormalizedArticleRepository,
-    Depends(get_normalized_article_repository),
-]
 
 
 # ---------------------------------------------------------------------------
