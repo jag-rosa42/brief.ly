@@ -13,14 +13,16 @@
   #        <<: [*<service>-image-build, *backend-service]
   #    - Explicitly define its database dependency:
   #      `pgsql` for regular services, or `pgvector` for vector services.
-  #    - Add a host port only when the service must be reachable outside Compose.
+  #    - Never publish a port: only the gateway does (ADR-0006).
+  #    - If the browser calls it, add `networks: [edge, backend]` and its
+  #      routes to srcs/gateway/dynamic/routers.yaml. Otherwise it stays on
+  #      `backend` only (the anchor's default).
   #
   # 2. Development — compose.override.yaml
   #    - Create a top-level development image-build anchor named
   #      `x-<service>-dev-image-build`.
   #    - Use `Dockerfile.dev` and bind-mount the service source into `/app`.
   #    - Merge this anchor into both `prestart-<service>` and `<service>`.
-  #    - Publish the service’s development port.
   #    - Add `WATCHFILES_FORCE_POLLING` when the service uses Uvicorn reload.
   #
   # 3. macOS — compose.mac.yaml
@@ -28,7 +30,7 @@
   #      changes in the bind mount reliably trigger reloads.
   #
   # 4. Configuration
-  #    - Add the host port to `.env.example`.
+  #    - Add the host port used by `make run` to `.env.example`.
   #    - Create `<service>/.env.example` with its project/database settings.
   #    - Ensure its database name and migration setup are correct.
   # ---------------------------------------------------------------------------
@@ -52,6 +54,8 @@ x-backend-prestart: &backend-prestart
     ["sh", "-c", "python -m src.infrastructure.database.bootstrap && alembic upgrade head"]
   secrets:
     - postgres_password
+  networks:
+    - backend
   depends_on:
     pgsql:
       condition: service_healthy
@@ -71,6 +75,10 @@ x-backend-service: &backend-service
 
   secrets:
     - postgres_password
+  # Only on `backend` network: other services can call it but the gateway (on `edge` network only) can't even resolve its name.
+  # Services the browser calls override the network with [edge, backend] (ADR-0006).
+  networks:
+    - backend
   healthcheck:
     test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
     interval: 10s
@@ -148,7 +156,9 @@ x-personalization-image-build: &personalization-image-build
 # ==============================================================================
 
 services:
+  # ===========================================================================
   # FRONTEND
+  # ===========================================================================
   frontend:
     build:
       context: ./srcs/frontend/
@@ -156,18 +166,63 @@ services:
     image: front-react-ts
     container_name: frontend
     pull_policy: build
-    ports:
-      # Production Nginx listens on port 8080 inside its container. The public
-      # edge port is intentionally separate from Vite's development port.
-      - "${GATEWAY_PORT:?Variable not set}:8080"
+    # No published port:
+    #  - Production Nginx listens on port 8080 inside its container and only the gateway reaches it.
+    #  - see compose.override.yaml to get development port
+    networks:
+      - edge
     profiles:
       - frontend
 
-  # REVERSE PROXY
+  # ===========================================================================
+  # API GATEWAY + REVERSE PROXY
+  # ===========================================================================
+  # The only container that publishes ports:
+  # - 8080 redirects to HTTPS,
+  # - 8443 serves the whole application (SPA and /api).
+  # Its routes are an allowlist in srcs/gateway/dynamic/.
+  # It has no Docker socket and is only on `edge`.
+  gateway:
+    image: docker.io/library/traefik:v3.7.11
+    container_name: gateway
+    restart: "always"
+    profiles:
+      - frontend
+      - backend
+    ports:
+      - "${GATEWAY_PORT:?Variable not set}:8080"
+      # Must stay equal to 8443: the HTTP to HTTPS redirect uses that port.
+      - "${GATEWAY_HTTPS_PORT:?Variable not set}:8443"
+    # Never mount /var/run/docker.sock here: the Docker API runs as root, so
+    # access to it is root on the host, from the one container exposed to
+    # the outside. Routes come from files (Traefik's file provider), not from
+    # container labels, which would need the socket (ADR-0006).
+    volumes:
+      - ./srcs/gateway/traefik.yaml:/etc/traefik/traefik.yaml:ro
+      - ./srcs/gateway/dynamic:/etc/traefik/dynamic:ro
+    secrets:
+      - tls_certificate
+      - tls_private_key
+    networks:
+      - edge
+    # `make docker SERVICE=gateway` also starts the frontend, so the app opens
+    # without the backend. Routes to a service that isn't running answer
+    # 502 Bad Gateway.
+    # required: false keeps the gateway usable when the frontend profile is off.
+    depends_on:
+      frontend:
+        condition: service_started
+        required: false
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # API_GATEWAY
-
+  # ===========================================================================
   # DATABASES
+  # ===========================================================================
+
   pgsql:
     image: docker.io/library/postgres:18
     container_name: pgsql
@@ -189,6 +244,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
     secrets:
       - postgres_password
+    networks:
+      - backend
 
   pgvector:
     image: docker.io/pgvector/pgvector:pg18
@@ -211,10 +268,14 @@ services:
       POSTGRES_DB: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
     secrets:
       - postgres_password
+    networks:
+      - backend
 
+  # ===========================================================================
   # BACKEND
+  # ===========================================================================
 
-  # Ai-processing
+  # -- Ai-processing ----------------------------------------------------------
   prestart-ai-processing:
     <<: [*ai-processing-image-build, *backend-prestart]
     environment:
@@ -235,7 +296,7 @@ services:
       prestart-ai-processing:
         condition: service_completed_successfully
 
-  # Content-management
+  # -- Content-management -----------------------------------------------------
   prestart-content-management:
     <<: [*content-management-image-build, *backend-prestart]
     container_name: prestart-content-management
@@ -251,7 +312,7 @@ services:
       - news_api_key
       - postgres_password
 
-  # Identity
+  # -- Identity ---------------------------------------------------------------
   prestart-identity:
     <<: [*identity-image-build, *backend-prestart]
     container_name: prestart-identity
@@ -267,8 +328,11 @@ services:
       - jwt_private_key
       - jwt_public_key
       - postgres_password
+    networks:
+      - edge
+      - backend
 
-  # Morning-briefing
+  # -- Morning-briefing -------------------------------------------------------
   prestart-morning-briefing:
     <<: [*morning-briefing-image-build, *backend-prestart]
     container_name: prestart-morning-briefing
@@ -280,8 +344,11 @@ services:
         condition: service_healthy
       prestart-morning-briefing:
         condition: service_completed_successfully
+    networks:
+      - edge
+      - backend
 
-  # Personalization
+  # -- Personalization --------------------------------------------------------
   prestart-personalization:
     <<: [*personalization-image-build, *backend-prestart]
     container_name: prestart-personalization
@@ -296,7 +363,9 @@ services:
     secrets:
       - jwt_public_key
       - postgres_password
-
+    networks:
+      - edge
+      - backend
 
   # ADMINISTRATION
 
@@ -309,12 +378,19 @@ secrets:
     file: ./shared/secrets/jwt_public_key
   news_api_key:
     file: ./shared/secrets/news_api_key
+  tls_certificate:
+    file: ./shared/secrets/certs/localhost.pem
+  tls_private_key:
+    file: ./shared/secrets/certs/localhost-key.pem
 
 volumes:
   pgsql:
   pgvector:
 
 networks:
-  default:
-    name: ${DOMAIN}
+  edge:
+    name: ${DOMAIN}-edge
+    driver: bridge
+  backend:
+    name: ${DOMAIN}-backend
     driver: bridge
