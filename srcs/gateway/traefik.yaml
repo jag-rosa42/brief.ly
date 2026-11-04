@@ -1,0 +1,93 @@
+# =============================================================================
+# Traefik static configuration (aka Startup configuration file)
+# -----------------------------------------------------------------------------
+# The static configuration is read only once when the gateway starts:
+#  - it defines the listening ports (ENTRYPOINT), the configuration sources
+#    and the certificate resolvers, and any change requires a restart.
+#
+# The dynamic configuration describes the routes and is reloaded on the fly,
+# with no service interruption
+# =============================================================================
+
+# =============================================================================
+# Traefik Global Config
+# =============================================================================
+global:
+  # Disable automatic version checks.
+  # Updates are managed manually.
+  checkNewVersion: false
+  # Disable anonymous usage statistics.
+  sendAnonymousUsage: false
+
+
+# =============================================================================
+# ENTRYPOINTS - Listening ports
+# =============================================================================
+entrypoints:
+  # HTTP: only redirects to HTTPS. Nothing is ever served in plain HTTP.
+  web:
+    address: ":8080"
+    http:
+      redirections:
+        entrypoint:
+          # The redirect uses websecure's port (8443). The host port must be
+          # the same number (GATEWAY_HTTPS_PORT in .env), or the redirect
+          # would point to a port that is not published.
+          to: websecure
+          scheme: https
+          permanent: true
+
+  # HTTPS: the single entry point of the application.
+  websecure:
+    address: ":8443"
+    http:
+      # TLS on every router of this entry point; the certificate comes from
+      # dynamic/tls.yml.
+      tls: {}
+      # Refuse (400) any path hiding a character in percent-encoding, so an
+      # encoded "../" (%2F, %5C, %25...) cannot slip past the allowlist.
+      # Traefik's defaults changed between versions, so every switch is
+      # written explicitly.
+      encodedCharacters:
+        allowEncodedSlash: false        # %2F  /
+        allowEncodedBackSlash: false    # %5C  \
+        allowEncodedNullCharacter: false # %00
+        allowEncodedSemicolon: false    # %3B  ;
+        allowEncodedPercent: false      # %25  %
+        allowEncodedQuestionMark: false # %3F  ?
+        allowEncodedHash: false         # %23  #
+  # Health check only (`traefik healthcheck --ping`). Not published.
+  ping:
+    address: ":8082"
+
+# =============================================================================
+# HEALTH CHECK
+# =============================================================================
+ping:
+  entryPoint: ping
+
+# =============================================================================
+# PROVIDERS - Dynamic configuration sources
+# =============================================================================
+# Routes, middlewares, services and TLS are configured in the files under dynamic/.
+# We use the File provider instead of the Docker provider to reduce the risk
+# of attacks targeting the Docker daemon.
+# The Docker provider needs access to the Docker socket to read container
+# labels and automatically configure routes. Access to this socket gives
+# extensive control over Docker and potentially the host machine.
+# The File provider doesn't need this access: we explicitly define and review
+# which services Traefik can expose (ADR-0006, "Docker daemon attack surface").
+providers:
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+# =============================================================================
+# LOGGING
+# =============================================================================
+log:
+  level: INFO
+
+# =============================================================================
+# METRICS (Prometheus)
+# =============================================================================
