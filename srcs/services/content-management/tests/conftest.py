@@ -9,6 +9,7 @@ discovery mechanism.
 
 pytest_plugins: list[str] = [
     # Domain fixtures
+    "tests.fixtures.article_summary",
     "tests.fixtures.discovered_article",
     "tests.fixtures.normalized_article",
     "tests.fixtures.normalized_article_model",

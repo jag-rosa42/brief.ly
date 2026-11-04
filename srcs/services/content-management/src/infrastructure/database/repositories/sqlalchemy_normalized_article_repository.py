@@ -3,8 +3,8 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.domain.entities import NormalizedArticle
-from src.infrastructure.database.models import NormalizedArticleModel
+from src.domain.entities import ArticleSummary, NormalizedArticle
+from src.infrastructure.database.models import ArticleSummaryModel, NormalizedArticleModel
 
 
 class SqlAlchemyNormalizedArticleRepository:
@@ -55,7 +55,60 @@ class SqlAlchemyNormalizedArticleRepository:
             published_at=normalized_article.published_at,
             category=normalized_article.category,
             language=normalized_article.language,
-            summary=normalized_article.summary,
-            summarized_at=normalized_article.summarized_at,
-            summary_llm_model=normalized_article.summary_llm_model,
+            summary=(
+                SqlAlchemyNormalizedArticleRepository._summary_to_model(
+                    normalized_article.summary,
+                    normalized_article.id,
+                )
+                if normalized_article.summary is not None
+                else None
+            ),
+        )
+
+    @staticmethod
+    def _to_domain(model: NormalizedArticleModel) -> NormalizedArticle:
+        return NormalizedArticle(
+            id=model.id,
+            discovered_article_external_id=model.discovered_article_external_id,
+            url=model.url,
+            publisher_name=model.publisher_name,
+            title=model.title,
+            description=model.description,
+            content=model.content,
+            authors=model.authors,
+            image_url=model.image_url,
+            published_at=model.published_at,
+            category=model.category,
+            language=model.language,
+            summary=(
+                SqlAlchemyNormalizedArticleRepository._summary_to_domain(model.summary)
+                if model.summary is not None
+                else None
+            ),
+        )
+
+    @staticmethod
+    def _summary_to_model(
+        summary: ArticleSummary,
+        article_id: UUID,
+    ) -> ArticleSummaryModel:
+        return ArticleSummaryModel(
+            article_id=article_id,
+            text=summary.text,
+            summarized_at=summary.summarized_at,
+            llm_model=summary.llm_model,
+            rejected=summary.rejected,
+            quality_comment=summary.quality_comment,
+            generation_duration_ms=summary.generation_duration_ms,
+        )
+
+    @staticmethod
+    def _summary_to_domain(model: ArticleSummaryModel) -> ArticleSummary:
+        return ArticleSummary(
+            text=model.text,
+            summarized_at=model.summarized_at,
+            llm_model=model.llm_model,
+            rejected=model.rejected,
+            quality_comment=model.quality_comment,
+            generation_duration_ms=model.generation_duration_ms,
         )

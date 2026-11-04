@@ -101,10 +101,14 @@ Management and never calls AI Processing.**
 Implementation details:
 
 - **Content Management (system of record)**
-  - Articles and topics gain `summary`, `summarized_at` and
-    `summary_llm_model` (all nullable). The model is stored for
-    traceability only. A summary is written in its article's language, which
-    the article already stores (`language`), so no summary language is kept.
+  - Article summaries are stored in a dedicated one-to-zero-or-one
+    `article_summaries` table. The absence of a row represents a missing
+    summary. The row stores the text, generation timestamp, model, quality
+    decision and comment, and generation duration in milliseconds. Topic
+    summaries retain nullable columns on the topic table. The model is stored
+    for traceability only.
+    A summary is written in its article's language, which the article already
+    stores (`language`), so no summary language is kept.
   - New routes: `GET /internal/v1/articles?summary=missing`,
     `PUT /internal/v1/articles/{article_id}/summary`,
     `PUT /internal/v1/topics/{topic_id}/summary`.

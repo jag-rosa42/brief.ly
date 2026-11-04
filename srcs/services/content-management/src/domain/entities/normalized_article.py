@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
+from src.domain.entities.article_summary import ArticleSummary
+
 
 @dataclass(frozen=True)
 class NormalizedArticle:
@@ -17,6 +19,4 @@ class NormalizedArticle:
     category: str
     language: str
     published_at: datetime | None
-    summary: str | None = None
-    summarized_at: datetime | None = None
-    summary_llm_model: str | None = None
+    summary: ArticleSummary | None = None
