@@ -70,13 +70,13 @@ VM_RSYNC_SSH := ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -p $(VM
 VM_QEMU_ENV := VM_DIR="$(VM_DIR)" VM_USERNAME="$(VM_USERNAME)" \
 	SSH_PUBLIC_KEY="$(SSH_PUBLIC_KEY)" \
 	SSH_PORT="$(VM_SSH_PORT)" VM_NETWORK_MODE="$(VM_NETWORK_MODE)" \
-	GATEWAY_PORT="$(GATEWAY_PORT)" FRONTEND_PORT="$(FRONTEND_PORT)" \
-	ADMINER_PORT="$(ADMINER_PORT)" IDENTITY_PORT="$(IDENTITY_PORT)" \
-	PERSONALIZATION_PORT="$(PERSONALIZATION_PORT)" \
-	CONTENT_MANAGEMENT_PORT="$(CONTENT_MANAGEMENT_PORT)" \
-	AI_PROCESSING_PORT="$(AI_PROCESSING_PORT)" \
-	MORNING_BRIEFING_PORT="$(MORNING_BRIEFING_PORT)" \
+	GATEWAY_PORT="$(GATEWAY_PORT)" GATEWAY_HTTPS_PORT="$(GATEWAY_HTTPS_PORT)" \
+	ADMINER_PORT="$(ADMINER_PORT)" \
 	POSTGRES_PORT="$(POSTGRES_PORT)" AI_POSTGRES_PORT="$(AI_POSTGRES_PORT)"
+# Inside the VM, Compose publishes the development ports (databases, Adminer)
+# on every guest address: QEMU forwards to the guest's network address, not
+# its loopback. QEMU itself only listens on the host's 127.0.0.1.
+VM_REMOTE_ENV := DEV_BIND_ADDRESS=0.0.0.0
 VM_DOCKER_TARGETS := logs ps down re clean reset-db frontend-test
 
 
@@ -218,7 +218,7 @@ check-compose-service:
 # The backend stays on the host. QEMU forwards the VM's database ports to
 # localhost, matching the service Makefile's POSTGRES_HOST setting. Reuse the VM
 # only when SSH and both database ports belong to the same QEMU process and
-# that process does not also forward app ports (the dev VM mode).
+# that process does not also forward the gateway (the dev VM mode).
 # QEMU's port forwards are fixed at boot, so any other mode needs a restart.
 vm-databases:
 	@if command -v lsof >/dev/null 2>&1 && $(VM_SSH) true >/dev/null 2>&1; then \
@@ -227,7 +227,7 @@ vm-databases:
 		pgvector_pid=$$(lsof -nP -t -iTCP:$(AI_POSTGRES_PORT) -sTCP:LISTEN); \
 	fi; \
 	if [ -n "$$ssh_pid" ] && [ "$$ssh_pid" = "$$pgsql_pid" ] && [ "$$ssh_pid" = "$$pgvector_pid" ] && \
-		! lsof -nP -a -p "$$ssh_pid" -iTCP:$(FRONTEND_PORT) -sTCP:LISTEN >/dev/null 2>&1; then \
+		! lsof -nP -a -p "$$ssh_pid" -iTCP:$(GATEWAY_HTTPS_PORT) -sTCP:LISTEN >/dev/null 2>&1; then \
 		$(call print,$(GREEN_COLOR),[VM] Reusing VM with database ports forwarded.); \
 		$(MAKE) --no-print-directory vm-sync; \
 	else \
@@ -235,7 +235,7 @@ vm-databases:
 		$(MAKE) --no-print-directory stop-vm && \
 		$(MAKE) --no-print-directory launch-vm VM_NETWORK_MODE=local-backend; \
 	fi
-	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && make dev-databases SECRETS_MODE=validate'
+	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && $(VM_REMOTE_ENV) make dev-databases SECRETS_MODE=validate'
 
 run: check-service vm-databases
 	@$(call print,$(CYAN_COLOR),[SERVICE] Running $(SERVICE) locally with VM databases...)
@@ -278,6 +278,7 @@ docker: check-compose-service secrets
 		$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d --build; \
 	fi
 	@$(call print,$(GREEN_COLOR),✓ [DOCKER] $(NAME) development environment started successfully! 🥳🥳🥳)
+	@$(call print,$(GREEN_COLOR),  Open https://localhost:$(GATEWAY_HTTPS_PORT))
 
 
 # Build and run production Compose in the current environment. The prod target
@@ -443,8 +444,8 @@ stop-vm:
 debug-create-vm:
 	@$(VM_QEMU_ENV) VM_DEBUG=1 $(VM_SCRIPT)
 
-# QEMU's port forwards are fixed at boot. Restart in development mode so all
-# browser-facing service ports are reachable from the host.
+# QEMU's port forwards are fixed at boot. Restart in development mode so the
+# gateway, Adminer and the databases are reachable from the host.
 vm: check-compose-service
 	@if [ -n "$$SERVICE" ]; then \
 		$(call print,$(CYAN_COLOR),[VM] Starting $$SERVICE and its dependencies in the VM...); \
@@ -453,16 +454,16 @@ vm: check-compose-service
 	fi
 	@$(MAKE) --no-print-directory stop-vm
 	@$(MAKE) --no-print-directory launch-vm VM_NETWORK_MODE=dev
-	@remote_cmd='cd "$(VM_REMOTE_DIR)" && make docker SECRETS_MODE=validate'; \
+	@remote_cmd='cd "$(VM_REMOTE_DIR)" && $(VM_REMOTE_ENV) make docker SECRETS_MODE=validate'; \
 		if [ -n "$$SERVICE" ]; then remote_cmd="$$remote_cmd SERVICE=$$SERVICE"; fi; \
 		$(VM_SSH) "$$remote_cmd"
 
 # Forward existing Docker-oriented Make targets into the synchronized VM.
 $(addsuffix -vm,$(VM_DOCKER_TARGETS)): launch-vm
 	@$(call print,$(CYAN_COLOR),[VM] Running make $(patsubst %-vm,%,$@) in the guest...)
-	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && make $(patsubst %-vm,%,$@) SECRETS_MODE=validate $(if $(SERVICE),SERVICE=$(SERVICE),)'
+	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && $(VM_REMOTE_ENV) make $(patsubst %-vm,%,$@) SECRETS_MODE=validate $(if $(SERVICE),SERVICE=$(SERVICE),)'
 
-# Production changes the QEMU boundary to the single public GATEWAY_PORT. It
+# Production changes the QEMU boundary to the gateway's two ports only. It
 # stops a development-mode VM first because QEMU forwarding is fixed at boot.
 prod:
 	@$(MAKE) --no-print-directory stop-vm
