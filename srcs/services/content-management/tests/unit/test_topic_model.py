@@ -1,6 +1,6 @@
-from sqlalchemy import DateTime, String, Table, inspect
+from sqlalchemy import String, Table, inspect
 
-from src.infrastructure.database.models import TopicModel
+from src.infrastructure.database.models import TopicModel, TopicSummaryModel
 
 
 def test_topic_model_declares_the_required_persistence_contract():
@@ -8,19 +8,25 @@ def test_topic_model_declares_the_required_persistence_contract():
 
     assert isinstance(table, Table)
     assert table.name == "topics"
-    assert tuple(table.columns.keys()) == (
-        "id",
-        "summary",
-        "summarized_at",
-        "summary_llm_model",
-    )
+    assert tuple(table.columns.keys()) == ("id",)
     assert isinstance(table.columns["id"].type, String)
     assert tuple(table.primary_key.columns.keys()) == ("id",)
-    assert isinstance(table.columns["summary"].type, String)
-    assert table.columns["summary"].type.length == 2000
-    assert table.columns["summary"].nullable
-    assert isinstance(table.columns["summarized_at"].type, DateTime)
-    assert table.columns["summarized_at"].type.timezone
-    assert table.columns["summarized_at"].nullable
-    assert isinstance(table.columns["summary_llm_model"].type, String)
-    assert table.columns["summary_llm_model"].nullable
+
+
+def test_topic_summary_model_declares_the_common_persistence_contract():
+    table = inspect(TopicSummaryModel).local_table
+
+    assert isinstance(table, Table)
+    assert tuple(table.columns.keys()) == (
+        "topic_id",
+        "text",
+        "summarized_at",
+        "llm_model",
+    )
+    assert tuple(table.primary_key.columns.keys()) == ("topic_id",)
+    assert isinstance(table.columns["text"].type, String)
+    assert table.columns["text"].type.length == 2000
+    assert all(not column.nullable for column in table.columns)
+    foreign_key = next(iter(table.foreign_keys))
+    assert foreign_key.target_fullname == "topics.id"
+    assert foreign_key.ondelete == "CASCADE"

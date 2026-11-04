@@ -1,9 +1,7 @@
-from datetime import datetime
-
-from sqlalchemy import DateTime, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.infrastructure.database.models.base import Base
+from src.infrastructure.database.models.topic_summary import TopicSummaryModel
 
 
 class TopicModel(Base):
@@ -12,6 +10,9 @@ class TopicModel(Base):
     id: Mapped[str] = mapped_column(
         primary_key=True,
     )
-    summary: Mapped[str | None] = mapped_column(String(2000))
-    summarized_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    summary_llm_model: Mapped[str | None] = mapped_column()
+    summary: Mapped[TopicSummaryModel | None] = relationship(
+        cascade="all, delete-orphan",
+        lazy="joined",
+        single_parent=True,
+        uselist=False,
+    )

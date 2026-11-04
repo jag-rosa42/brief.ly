@@ -39,3 +39,20 @@ def test_migration_extracts_article_summaries_to_a_dedicated_table(
     assert foreign_keys[0]["referred_table"] == "normalized_articles"
     assert foreign_keys[0]["referred_columns"] == ["id"]
     assert foreign_keys[0]["options"] == {"ondelete": "CASCADE"}
+
+
+@pytest.mark.integration
+def test_migration_extracts_topic_summaries_to_a_dedicated_table(db_session: Session):
+    inspector = inspect(db_session.connection())
+    topic_columns = {column["name"] for column in inspector.get_columns("topics")}
+    assert {"summary", "summarized_at", "summary_llm_model"}.isdisjoint(topic_columns)
+
+    columns = {
+        column["name"]: column for column in inspector.get_columns("topic_summaries")
+    }
+    assert set(columns) == {"topic_id", "text", "summarized_at", "llm_model"}
+    assert isinstance(columns["text"]["type"], String)
+    assert columns["text"]["type"].length == 2000
+    assert isinstance(columns["summarized_at"]["type"], DateTime)
+    assert columns["summarized_at"]["type"].timezone
+    assert all(not column["nullable"] for column in columns.values())

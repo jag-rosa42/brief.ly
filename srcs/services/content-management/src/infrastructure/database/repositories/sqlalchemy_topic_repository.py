@@ -1,7 +1,7 @@
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
-from src.domain.entities import Topic
+from src.domain.entities import Topic, TopicSummary
 from src.infrastructure.database.models.topic import TopicModel
 
 
@@ -20,7 +20,13 @@ class SqlAlchemyTopicRepository:
     def _to_domain(topic_model: TopicModel) -> Topic:
         return Topic(
             id=topic_model.id,
-            summary=topic_model.summary,
-            summarized_at=topic_model.summarized_at,
-            summary_llm_model=topic_model.summary_llm_model,
+            summary=(
+                TopicSummary(
+                    text=topic_model.summary.text,
+                    summarized_at=topic_model.summary.summarized_at,
+                    llm_model=topic_model.summary.llm_model,
+                )
+                if topic_model.summary is not None
+                else None
+            ),
         )

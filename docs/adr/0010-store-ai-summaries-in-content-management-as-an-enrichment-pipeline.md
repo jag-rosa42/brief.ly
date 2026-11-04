@@ -105,8 +105,9 @@ Implementation details:
     `article_summaries` table. The absence of a row represents a missing
     summary. The row stores the text, generation timestamp, model, quality
     decision and comment, and generation duration in milliseconds. Topic
-    summaries retain nullable columns on the topic table. The model is stored
-    for traceability only.
+    summaries are stored similarly in a dedicated `topic_summaries` table,
+    with the common text, timestamp, and model fields. The model is stored for
+    traceability only.
     A summary is written in its article's language, which the article already
     stores (`language`), so no summary language is kept.
   - New routes: `GET /internal/v1/articles?summary=missing`,
