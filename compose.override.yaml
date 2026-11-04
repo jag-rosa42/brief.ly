@@ -130,7 +130,6 @@ services:
     <<: *ai-processing-dev-image-build
     restart: "no"
     environment:
-      POSTGRES_HOST: pgvector
       # Used by Uvicorn/watchfiles for backend --reload, independently of Vite.
       WATCHFILES_FORCE_POLLING: ${WATCHFILES_FORCE_POLLING:-false}
 
