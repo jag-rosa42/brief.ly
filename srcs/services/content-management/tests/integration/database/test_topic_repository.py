@@ -50,3 +50,11 @@ def test_list_all_maps_persisted_summary_metadata(db_session: Session):
         )
         in topics
     )
+
+
+@pytest.mark.integration
+def test_exists_reports_whether_a_topic_is_persisted(db_session: Session):
+    repository = SqlAlchemyTopicRepository(db_session)
+
+    assert repository.exists("science")
+    assert not repository.exists("unknown")

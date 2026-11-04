@@ -11,6 +11,32 @@ class SqlAlchemyNormalizedArticleRepository:
     def __init__(self, session: Session) -> None:
         self._session: Session = session
 
+    def list_by_topic_id(
+        self,
+        topic_id: str,
+        limit: int,
+    ) -> list[NormalizedArticle]:
+        statement = (
+            select(NormalizedArticleModel)
+            .where(NormalizedArticleModel.category == topic_id)
+            .limit(limit)
+        )
+        return [self._to_domain(model) for model in self._session.scalars(statement)]
+
+    def list_missing_summary(self, limit: int) -> list[NormalizedArticle]:
+        statement = (
+            select(NormalizedArticleModel)
+            .where(~NormalizedArticleModel.summary.has())
+            .limit(limit)
+        )
+        return [self._to_domain(model) for model in self._session.scalars(statement)]
+
+    def get_by_id(self, article_id: UUID) -> NormalizedArticle | None:
+        article = self._session.get(NormalizedArticleModel, article_id)
+        if article is None:
+            return None
+        return self._to_domain(article)
+
     def find_existing_external_ids(
         self,
         source_id: UUID,
