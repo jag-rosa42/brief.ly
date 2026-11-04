@@ -9,6 +9,10 @@ class SqlAlchemyTopicRepository:
     def __init__(self, session: Session):
         self._session: Session = session
 
+    def exists(self, topic_id: str) -> bool:
+        statement = select(TopicModel.id).where(TopicModel.id == topic_id)
+        return self._session.scalar(statement) is not None
+
     def list_all(self):
         statement: Select[tuple[TopicModel]] = select(TopicModel)
         topic_list = []

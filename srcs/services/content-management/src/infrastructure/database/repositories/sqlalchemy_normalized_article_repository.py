@@ -11,6 +11,26 @@ class SqlAlchemyNormalizedArticleRepository:
     def __init__(self, session: Session) -> None:
         self._session: Session = session
 
+    def list_by_topic_id(
+        self,
+        topic_id: str,
+        limit: int,
+    ) -> list[NormalizedArticle]:
+        statement = (
+            select(NormalizedArticleModel)
+            .where(NormalizedArticleModel.category == topic_id)
+            .limit(limit)
+        )
+        return [self._to_domain(model) for model in self._session.scalars(statement)]
+
+    def list_missing_summary(self, limit: int) -> list[NormalizedArticle]:
+        statement = (
+            select(NormalizedArticleModel)
+            .where(NormalizedArticleModel.summary.is_(None))
+            .limit(limit)
+        )
+        return [self._to_domain(model) for model in self._session.scalars(statement)]
+
     def find_existing_external_ids(
         self,
         source_id: UUID,
@@ -58,4 +78,24 @@ class SqlAlchemyNormalizedArticleRepository:
             summary=normalized_article.summary,
             summarized_at=normalized_article.summarized_at,
             summary_llm_model=normalized_article.summary_llm_model,
+        )
+
+    @staticmethod
+    def _to_domain(model: NormalizedArticleModel) -> NormalizedArticle:
+        return NormalizedArticle(
+            id=model.id,
+            discovered_article_external_id=model.discovered_article_external_id,
+            url=model.url,
+            publisher_name=model.publisher_name,
+            title=model.title,
+            description=model.description,
+            content=model.content,
+            authors=model.authors,
+            image_url=model.image_url,
+            published_at=model.published_at,
+            category=model.category,
+            language=model.language,
+            summary=model.summary,
+            summarized_at=model.summarized_at,
+            summary_llm_model=model.summary_llm_model,
         )
