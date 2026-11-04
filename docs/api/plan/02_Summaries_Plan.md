@@ -47,9 +47,19 @@ development.
 
 ## 4. What everyone must handle
 
-- **`summary` can be `null`**: an article fetched since the last `make summarize` has no summary yet. The frontend hides it or shows "summary coming soon".
+- **`summary` can be `null`** before summarization or after rejection.
+  An article fetched since the last `make summarize` has no summary yet; the
+  frontend hides it or shows "summary coming soon". Rejected articles are
+  excluded from topic lists and the article-by-ID GET; the article summary
+  PUT response still returns them with `summary: null` and
+  `read_time_minutes: 0`.
 - **A saved article keeps the summary it had when it was saved.**
 - **Only the latest topic summary** is kept.
+- **A rejected article remains stored for deduplication.** It is absent from
+  topic article lists and unavailable through the article-by-ID read endpoint.
+  AI Processing sends `text: null` with `rejected: true`; the
+  `summary=missing` query does not retry it because its summary row exists.
+  Topics remain in the catalog even when they have no eligible articles.
 
 ## 5. To agree on today
 

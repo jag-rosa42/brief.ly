@@ -6,38 +6,62 @@ A topic is never hard-deleted, so a profile can never point at a missing topic. 
 
 | Kind | Method | Service path | Auth | Success | Status |
 | --- | --- | --- | --- | --- | --- |
-| Internal | POST | `/internal/v1/ingestion-runs` | Service (`ingestion:run`) | 201 | Partial (see below) |
+| Internal | POST | `/internal/v1/ingestion-runs` | Service (`ingestion:run`) | 201 | Partial (token check missing) |
 | Internal | GET | `/internal/v1/topics` | Service (`topics:read`) | 200 | Partial (see below) |
-| Internal | GET | `/internal/v1/articles?topic_id={topic_id}` | Service (`articles:read`) | 200 | To do |
-| Internal | GET | `/internal/v1/articles?summary=missing` | Service (`articles:read`) | 200 | To do |
-| Internal | GET | `/internal/v1/articles/{article_id}` | Service (`articles:read`) | 200 | To do |
-| Internal | PUT | `/internal/v1/articles/{article_id}/summary` | Service (`summaries:write`) | 200 | To do |
+| Internal | GET | `/internal/v1/articles?topic_id={topic_id}` | Service (`articles:read`) | 200 | Partial (rejection filter and token check missing) |
+| Internal | GET | `/internal/v1/articles?summary=missing` | Service (`articles:read`) | 200 | Partial (token check missing) |
+| Internal | GET | `/internal/v1/articles/{article_id}` | Service (`articles:read`) | 200 | Partial (rejection check and token check missing) |
+| Internal | PUT | `/internal/v1/articles/{article_id}/summary` | Service (`summaries:write`) | 200 | Partial (token check missing) |
 | Internal | PUT | `/internal/v1/topics/{topic_id}/summary` | Service (`summaries:write`) | 200 | To do |
 | Internal | GET | `/health` | None | 200 | Done |
 
 **`GET /internal/v1/topics` is Partial.** It exists on `main` (`srcs/services/content-management/src/api/routers/topics/router.py`, schema `srcs/services/content-management/src/api/schemas/topic.py`), with two things missing:
-1. Topics have no `summary` / `summarized_at` yet (ADR-0010).
+1. The response exposes only `id`; `summary` / `summarized_at` are not exposed yet (ADR-0010).
 2. No token is checked yet (the known gap below; service tokens are not built yet).
 
 **`POST /internal/v1/ingestion-runs` is Partial.** It triggers a synchronous ingestion and reports whether it succeeded fully or partially, but does not check a service token yet.
 
 - Only AI Processing's client may get the `summaries:write` scope (Identity's client registry, ADR-0008).
 - Known gap: until service tokens exist (ADR-0008), these routes are unauthenticated and protected only by not being routed and by the `backend` network. Service tokens are built before the Public API.
+- The article GET routes and article summary PUT route exist. The current article-by-topic query still includes rejected articles, and the article-by-ID query still returns them; both need the rejection rules below. `GET /internal/v1/topics` returns only topic IDs today. The topic summary PUT route is not implemented yet.
 
 The article object, used by every article endpoint:
+
+Content Management owns `read_time_minutes` as a derived, non-persisted field.
+It calculates the estimated reading time from the stored `summary`, rounded up
+at 200 words per minute. The value is `0` when `summary` is `null`,
+including after rejection; AI Processing does not calculate or send it.
 
 ```text
 {
   "article_id": UUID,
   "title": str,
-  "source": str,
+  "publisher_name": str,
   "url": str,
   "topic_id": str,
+  "language": str,                stored article language
+  "content": str,                  stored article text used by AI Processing
   "read_time_minutes": int,
-  "summary": str | null,             null until AI Processing has summarized it
-  "summarized_at": datetime | null
+  "summary": str | null,             null before summarization or after rejection
+  "summarized_at": datetime | null,
+  "rejected": bool | null,
+  "quality_comment": str | null,
+  "generation_duration_ms": int | null
 }
 ```
+
+Article summaries are persisted in the dedicated `article_summaries` table,
+with `article_id` as both primary key and foreign key. Therefore an article has
+at most one current summary, and the absence of a row represents a missing
+summary. `generation_duration_ms` is a non-negative duration measured by AI
+Processing; the explicit millisecond suffix is part of the contract.
+`rejected` is `null` before an article summary exists, then `true` or `false`
+as decided by AI Processing. A rejected article stays in Content Management
+for ingestion deduplication, but read endpoints do not expose it to consumers.
+A rejected article keeps its summary row, with `text` set to SQL `NULL`; it
+is not selected again by `summary=missing`. The summary write response is the
+exception to the read restriction: it returns the updated article with
+`rejected: true`, `summary: null`, and `read_time_minutes: 0`.
 
 The topic object:
 
@@ -48,6 +72,12 @@ The topic object:
   "summarized_at": datetime | null
 }
 ```
+
+Topic summaries use a dedicated `topic_summaries` table, with `topic_id` as
+both primary key and foreign key. As with article summaries, the absence of a
+row means no summary has been generated. Topic summaries share the common
+`text`, `summarized_at`, and `llm_model` fields; article quality metadata is
+specific to article summaries.
 
 ## Endpoint details
 
@@ -89,6 +119,10 @@ Header: Authorization: Bearer <service token>
 ```
 
 Exception to the `{"items": [...]}` convention: this route returns a bare array, as implemented on `main`. Accepted for now (decided 2026-10-20) to save time; to align with the other lists later.
+The catalog always includes every configured topic, even when all its articles
+have been rejected. Topics have no `rejected` status of their own. A topic
+summary must be generated only from articles returned by the topic article
+query, which excludes rejected articles.
 
 ### GET /internal/v1/articles
 
@@ -96,8 +130,8 @@ Two filters, exactly one of them required:
 
 | Query | Used by | Returns |
 | --- | --- | --- |
-| `topic_id={topic_id}` | Morning Briefing | The topic's articles, with their summaries |
-| `summary=missing` | AI Processing | Articles that have no summary yet. ~~Oldest first.~~ |
+| `topic_id={topic_id}` | Morning Briefing and AI Processing | The topic's articles except those with `rejected: true`, with their summaries |
+| `summary=missing` | AI Processing | Articles with no row in `article_summaries` yet |
 
 `limit` (optional, 1-25, default 25) caps the number of items. A response never
 contains more than 25 articles. The endpoint does not accept or return a cursor.
@@ -106,6 +140,13 @@ Articles are not sorted chronologically, and consumers do not distinguish recent
 articles from older ones. Articles have no expiration or automatic deletion: once
 stored, they remain in the database. This does not affect `summarized_at`, which is
 metadata about summary generation rather than article age.
+The topic filter includes articles without a summary (`rejected: null`) and
+articles with `rejected: false`; it excludes articles with `rejected: true`
+before applying `limit`. This also ensures topic summaries are based only on
+eligible articles. For `summary=missing`, a rejected summary still counts as
+an existing summary and is not retried automatically. The limit applies after
+the filter, so rejected articles cannot fill response slots.
+AI Processing reads `content` from these article responses to generate summaries.
 
 ```text
 Header: Authorization: Bearer <service token>
@@ -123,7 +164,7 @@ Header: Authorization: Bearer <service token>
 
 ### GET /internal/v1/articles/{article_id}
 
-Used by Personalization when an article is saved: the response already contains the summary, which goes into the saved-article snapshot.
+Used by Personalization when an article is saved: the response already contains the summary, which goes into the saved-article snapshot. An article with `rejected: true` is treated as unavailable to readers, even though its row remains stored for deduplication.
 
 ```text
 Header: Authorization: Bearer <service token>
@@ -131,7 +172,7 @@ Header: Authorization: Bearer <service token>
 200 OK                <article>
 401 Unauthorized
 403 Forbidden         INSUFFICIENT_SCOPE
-404 Not Found         ARTICLE_NOT_FOUND
+404 Not Found         ARTICLE_NOT_FOUND (unknown or rejected article)
 ```
 
 ### PUT /internal/v1/articles/{article_id}/summary
@@ -142,11 +183,16 @@ Called by AI Processing's summary command. Creates or replaces the article's sum
 Header: Authorization: Bearer <service token with summaries:write>
 Body:
 {
-  "summary": str,              1-2000 chars, written in the article's language
-  "summary_llm_model": str             stored (column summary_llm_model) for traceability, not returned
+  "text": str | null,          1-2000 chars in the article's language if accepted;
+                                 null if rejected (never an empty string)
+  "llm_model": str,            stored for traceability, not returned
+  "rejected": bool,
+  "quality_comment": str,      0-2000 chars
+  "generation_duration_ms": int  non-negative duration measured by AI Processing
 }
 
-200 OK                <article>, with summary and summarized_at set
+200 OK                <article>, with quality metadata set; if rejected,
+                      summary is null and read_time_minutes is 0
 401 Unauthorized
 403 Forbidden         INSUFFICIENT_SCOPE
 404 Not Found         ARTICLE_NOT_FOUND
@@ -161,8 +207,8 @@ Called by AI Processing's summary command. Replaces the topic's latest summary; 
 Header: Authorization: Bearer <service token with summaries:write>
 Body:
 {
-  "summary": str,              1-2000 chars
-  "summary_llm_model": str             stored (column summary_llm_model) for traceability, not returned
+  "text": str,                 1-2000 chars
+  "llm_model": str             stored for traceability, not returned
 }
 
 200 OK                <topic>, with summary and summarized_at set

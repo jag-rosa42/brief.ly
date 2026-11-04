@@ -141,6 +141,9 @@ Header: Authorization: Bearer <access token>
 Service path: `POST /me/saved-articles/{article_id}`. Public twin: `POST /public/v1/me/saved-articles/{article_id}`.
 
 Personalization calls `GET /internal/v1/articles/{article_id}` on Content Management with its service token, and stores the snapshot, summary included. It never calls AI Processing.
+Content Management returns `ARTICLE_NOT_FOUND` for an unknown or rejected article,
+so a rejected article cannot be added to saved articles. A snapshot that was
+saved before a later rejection remains unchanged.
 
 ```text
 Header: Authorization: Bearer <access token>
@@ -149,7 +152,7 @@ Body: none
 201 Created           the saved item, same shape as one entry of GET
 401 Unauthorized
 404 Not Found         PROFILE_NOT_FOUND
-404 Not Found         ARTICLE_NOT_FOUND (unknown to Content Management)
+404 Not Found         ARTICLE_NOT_FOUND (unknown or rejected in Content Management)
 409 Conflict          ARTICLE_ALREADY_SAVED
 409 Conflict          SAVED_ARTICLES_LIMIT_REACHED (max 12)
 422 Unprocessable     VALIDATION_ERROR (article_id not a UUID)

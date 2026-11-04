@@ -37,10 +37,10 @@ flowchart TD
 | --- | --- | --- | --- | --- |
 | Traefik | Identity | `/internal/v1/api-keys/verify` | none (the API key is in the headers) | Turn an API key into a public API token (phantom token pattern) |
 | Personalization | Content Management | `GET /internal/v1/topics` | Service | Validate `topic_ids`, resolve topic names (cached) |
-| Personalization | Content Management | `GET /internal/v1/articles/{article_id}` | Service | Check the article exists and snapshot it, summary included, on save |
+| Personalization | Content Management | `GET /internal/v1/articles/{article_id}` | Service | Check the article exists and is not rejected, then snapshot it with its summary on save |
 | Morning Briefing | Personalization | `GET /internal/v1/me/profile` | User (forwarded: access token or public API token) | Interests and saved articles |
-| Morning Briefing | Content Management | `GET /internal/v1/topics`, `GET /internal/v1/articles?topic_id=` | Service | Topics and articles, with their summaries |
-| AI Processing | Content Management | `GET /internal/v1/articles?summary=missing`, `GET /internal/v1/topics`, `GET /internal/v1/articles?topic_id=` | Service | What to summarize (articles, then each topic from its articles) |
+| Morning Briefing | Content Management | `GET /internal/v1/topics`, `GET /internal/v1/articles?topic_id=` | Service | All topics and their non-rejected articles, with their summaries |
+| AI Processing | Content Management | `GET /internal/v1/articles?summary=missing`, `GET /internal/v1/topics`, `GET /internal/v1/articles?topic_id=` | Service | Articles without summary rows, then all topics using their non-rejected articles |
 | AI Processing | Content Management | `PUT /internal/v1/articles/{article_id}/summary`, `PUT /internal/v1/topics/{topic_id}/summary` | Service (`summaries:write`) | Store the summaries |
 | Any service | Identity | `POST /internal/v1/oauth/token` | Client id + secret | Get a service token (not implemented yet) |
 
@@ -71,22 +71,28 @@ Related name to look up: the **Content Enricher** pattern in *Enterprise Integra
 
 2. SUMMARY RUN (manual: make summarize)
    AI Processing ──GET /internal/v1/articles?summary=missing──▶ Content Management   max 25, no cursor
-   AI Processing ──article text──▶ LLM ──▶ summary
+   AI Processing ──article content and language──▶ LLM ──▶ summary
    AI Processing ──PUT /internal/v1/articles/{id}/summary──▶ Content Management   stores it
    AI Processing ──PUT /internal/v1/topics/{id}/summary────▶ Content Management   stores it
    repeat the article loop until the GET returns an empty list or AI Processing
    reaches 3 consecutive failures to add a summary; a successful write resets
    the global failure counter
    (this failure definition is provisional and may change during development)
+   for a rejected article, AI Processing writes text=null and rejected=true;
+   Content Management returns summary=null and read_time_minutes=0
+   the rejected article retains its summary row for deduplication and is not
+   selected again by summary=missing; topic article lists exclude it
 
 3. DASHBOARD (each request)
    Morning Briefing ──GET /internal/v1/me/profile──▶ Personalization   (user token)
    Morning Briefing ──GET /internal/v1/topics, /internal/v1/articles?topic_id=──▶ Content Management   (service token)
    the topics and articles arrive with their summaries
+   rejected articles are absent; the topic catalog remains complete
 
 4. SAVE AN ARTICLE
    Personalization ──GET /internal/v1/articles/{id}──▶ Content Management   (service token)
    the article arrives with its summary → copied into the saved-article snapshot
+   a rejected article returns ARTICLE_NOT_FOUND and cannot be newly saved
 ```
 
 ### How each service gets a summary
