@@ -132,15 +132,19 @@ host port is `SSH_PORT` or `2222` by default.
 For development browser access, the Makefile reads the non-secret port
 variables from the repository `.env` and passes them to `create-vm.sh`. The
 script forwards the matching ports into the VM. Compose then forwards each VM
-port to its container. For example,
-`CONTENT_MANAGEMENT_PORT=8083` provides this complete route:
+port to its container. Only the gateway publishes application ports
+(ADR-0006), so `GATEWAY_HTTPS_PORT=8443` provides this complete route:
 
 ```text
-host localhost:8083 → QEMU → VM:8083 → content-management container:8000
+host localhost:8443 → QEMU → VM:8443 → gateway container:8443 → service:8000
 ```
 
-The launcher forwards PostgreSQL ports in `dev` and `local-backend` modes.
-Production mode only forwards the gateway port.
+The launcher forwards PostgreSQL ports in `dev` and `local-backend` modes, and
+Adminer's in `dev` mode. Production mode only forwards the gateway's ports.
+Inside the VM, Compose publishes the database and Adminer ports on every guest
+address (`DEV_BIND_ADDRESS=0.0.0.0`, set by the VM targets): QEMU forwards to
+the guest's network address, not its loopback. QEMU itself only listens on the
+host's `127.0.0.1`.
 
 ### Make-based VM workflow
 
@@ -185,21 +189,23 @@ make launch-vm VM_NETWORK_MODE=dev   # default
 make launch-vm VM_NETWORK_MODE=prod
 ```
 
-Development mode forwards the frontend, every FastAPI service port, and
-Adminer using the ports passed by Make, so a developer can open FastAPI's
-`/docs` pages in a host browser. `local-backend` mode leaves app ports free for
-host processes and is used with explicit database forwarding by `make run-vm`.
-Production mode forwards only `GATEWAY_PORT`; this is the one public application edge.
+Development mode forwards the gateway (`GATEWAY_PORT`, `GATEWAY_HTTPS_PORT`),
+Adminer and the databases using the ports passed by Make. FastAPI's `/docs`
+pages are not routed by the gateway; open them by running the service on the
+host (`make run SERVICE=<name>`). `local-backend` mode leaves app ports free
+for host processes and is used with explicit database forwarding by
+`make run-vm`. Production mode forwards only the gateway's two ports; this is
+the one public application edge.
 Stop a running VM before changing modes because QEMU fixes its forwarded ports
 at startup.
 
-At present, the production edge serves the frontend's Nginx container. Once
-the API Gateway exists, Nginx should route `/api/` to it over the internal
-Compose network, without publishing the Gateway itself. To run production
-Compose configuration, omit the automatic development override:
+The production edge is the Traefik gateway (`srcs/gateway/`): it serves the
+frontend's Nginx container and routes `/api/<service>/...` to the services
+over the `edge` network. To run production Compose configuration, omit the
+automatic development override:
 
 ```bash
-docker compose -f compose.yaml --profile frontend up --build
+docker compose -f compose.yaml --profile frontend --profile backend --profile databases up --build
 ```
 
 Binding the forwarding rule to `127.0.0.1` means other computers on the LAN

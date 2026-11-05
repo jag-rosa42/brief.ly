@@ -266,7 +266,7 @@ make ps-vm
 make logs-vm SERVICE=identity
 ```
 
-Press Ctrl+C to stop following logs; the containers keep running. With the default ports in `.env`, open `http://localhost:8081/docs` for identity, or `http://localhost:5173` for the frontend when it is running.
+Press Ctrl+C to stop following logs; the containers keep running. Containers are reached only through the gateway: after `make vm`, open `https://localhost:8443` (see [README.docker.md](README.docker.md#https-certificate) for the certificate warning). A service's `/docs` page is not routed by the gateway; browse it by running the service on the host with `make run SERVICE=<name>`, then `http://localhost:8081/docs` for identity.
 
 ### 8. Stop the VM and keep a restore point
 
@@ -319,7 +319,7 @@ make ps-vm               # Check container status
 make vm-sync             # Copy changes; development source reloads automatically
 ```
 
-Test at `http://localhost:8081/docs` for identity, or use your service's port from `.env`. Rebuild with `make vm SERVICE=identity` after dependency or image changes.
+Test through the gateway after `make vm` (`https://localhost:8443/api/identity/...`), or open `/docs` with `make run SERVICE=identity` (`http://localhost:8081/docs`). Rebuild with `make vm SERVICE=identity` after dependency or image changes.
 
 If a bug occurs, run `make logs-vm SERVICE=identity`, or `make connect-vm` to inspect Ubuntu directly. Keep editing source on the host.
 
