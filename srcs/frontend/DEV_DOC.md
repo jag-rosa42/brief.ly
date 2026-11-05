@@ -14,14 +14,14 @@ These Make targets are convenience wrappers for the frontend package commands. Y
 
 ```bash
 cd srcs/frontend
-npm install       # install dependencies declared in package.json
+npm ci            # install the exact versions from package-lock.json
 npm run dev       # start Vite with live reload
 npx vitest --watch  # run tests continuously while coding
 npm run lint      # lint the React and TypeScript source
 npm run build     # verify the production build
 ```
 
-Run `npm install` after cloning the project, after frontend dependencies change, or if `node_modules` has been removed. Use `npm run dev` for a frontend-only local session; use `make dev-docker` when you need the containerised frontend together with backend services and databases.
+Run `npm ci` after cloning the project, after pulling or switching to a branch that changes `package-lock.json`, or if `node_modules` has been removed. It never rewrites the lockfile. Use `npm install <package>` only to add or update a dependency, and commit the updated `package-lock.json` with it. Use `npm run dev` for a frontend-only local session; use `make dev-docker` when you need the containerised frontend together with backend services and databases.
 
 ## Containerised frontend
 
