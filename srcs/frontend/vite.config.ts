@@ -14,6 +14,10 @@ const hmrHost = process.env.VITE_HMR_HOST;
 // Defaults to the locally exposed identity service (make run SERVICE=identity).
 // Inside Docker, compose.override.yaml sets it to http://identity:8000.
 const identityTarget = process.env.IDENTITY_URL ?? "http://localhost:8081";
+// Target of the /api/personalization proxy.
+// Defaults to the locally exposed personalization service (make run SERVICE=personalization).
+// Inside Docker, compose.override.yaml sets it to http://personalization:8000.
+const personalizationTarget = process.env.PERSONALIZATION_URL ?? "http://localhost:8082";
 
 export default defineConfig({
 	base: "/",
@@ -33,6 +37,12 @@ export default defineConfig({
 				secure: false,
 				changeOrigin: true,
 				rewrite: (p) => p.replace(/^\/api\/identity/, ""),
+			},
+			"/api/personalization": {
+				target: personalizationTarget,
+				secure: false,
+				changeOrigin: true,
+				rewrite: (p) => p.replace(/^\/api\/personalization/, ""),
 			},
 		},
 		...(hmrHost

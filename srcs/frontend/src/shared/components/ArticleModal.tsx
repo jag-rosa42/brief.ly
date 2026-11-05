@@ -4,7 +4,7 @@ import { Text } from "@/shared/components/Text";
 import { Division } from "@/shared/components/Division";
 import { Link } from "@/shared/components/Link";
 
-export interface Story {
+export interface Article {
 	id: string;
 	title: string;
 	category: string;
@@ -15,25 +15,25 @@ export interface Story {
 }
 
 interface ArticleModalProps {
-	story: Story | null;
+	article: Article | null;
 	onClose: () => void;
 }
 
-export function ArticleModal({ story, onClose }: ArticleModalProps) {
+export function ArticleModal({ article, onClose }: ArticleModalProps) {
 	const dialogRef = useRef<HTMLDialogElement>(null);
 	const titleId = useId();
 
 	useEffect(() => {
 		const dialog = dialogRef.current;
 		if (!dialog) return;
-		if (story && !dialog.open) {
+		if (article && !dialog.open) {
 			dialog.showModal();
-		} else if (!story && dialog.open) {
+		} else if (!article && dialog.open) {
 			dialog.close();
 		}
-	}, [story]);
+	}, [article]);
 	useEffect(() => {
-		if (!story) return;
+		if (!article) return;
 
 		const previousOverflow = document.body.style.overflow;
 		document.body.style.overflow = "hidden";
@@ -41,7 +41,7 @@ export function ArticleModal({ story, onClose }: ArticleModalProps) {
 		return () => {
 			document.body.style.overflow = previousOverflow;
 		};
-	}, [story]);
+	}, [article]);
 
 	function handleClick(e: React.MouseEvent<HTMLDialogElement>) {
 		if (e.target === e.currentTarget) {
@@ -56,7 +56,7 @@ export function ArticleModal({ story, onClose }: ArticleModalProps) {
 			onClick={handleClick}
 			className="m-auto w-[calc(100%-2rem)] max-w-4xl max-h-[90vh] bg-transparent p-0 backdrop:bg-black/50"
 		>
-			{story && (
+			{article && (
 				<Division variant="featurecard" className="relative flex max-h-[90vh] flex-col shadow-sm">
 					<Button
 						type="button"
@@ -69,19 +69,19 @@ export function ArticleModal({ story, onClose }: ArticleModalProps) {
 					</Button>
 					<div className="min-h-0 flex-1 overflow-y-auto pr-2">
 						<Text variant="title" id={titleId} className="pr-10">
-							{story.title}
+							{article.title}
 						</Text>
-						{story.url && (
+						{article.url && (
 							<Link
-								to={story.url}
+								to={article.url}
 								variant="primary"
 								external
 								className="mt-6 mb-6 inline-flex items-center gap-2 font-semibold"
 							>
-								Read the full article on {story.source} ↗
+								Read the full article on {article.source} ↗
 							</Link>
 						)}
-						<Text variant="lead">{story.summary}</Text>
+						<Text variant="lead">{article.summary}</Text>
 					</div>
 				</Division>
 			)}

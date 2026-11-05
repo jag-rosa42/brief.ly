@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { useDashboardData } from "@/utils/useDashboardData";
-import { useSavedArticles } from "@/app/useSavedArticles";
 import { Button } from "@/shared/components/Button";
 import { ArticleCard } from "@/shared/components/ArticleCard";
-import { ArticleModal, type Story } from "@/shared/components/ArticleModal";
+import { ArticleModal, type Article } from "@/shared/components/ArticleModal";
 import { Dropdown } from "@/shared/components/Dropdown";
 import { Input } from "@/shared/components/Input";
 import { Text } from "@/shared/components/Text";
 import { Division } from "@/shared/components/Division";
+import type { SavedArticle } from "@/features/saved-articles/types";
+import { Spinner } from "@/shared/components/Spinner";
+import { useSavedArticlesList } from "@/features/saved-articles/hooks/useSavedArticlesList";
 
 const ARTICLES_PER_PAGE = 4;
 const DEFAULT_READING_TIME = 4;
@@ -26,9 +27,16 @@ function buildOptions(values: string[], allLabel: string) {
 	];
 }
 
-function getSavedArticles(stories: Story[], savedIds: Set<string>): Story[] {
-	const uniqueStories = new Map(stories.map((story) => [story.id, story] as const));
-	return [...uniqueStories.values()].filter((story) => savedIds.has(story.id));
+function toArticle(article: SavedArticle): Article {
+	return {
+		id: article.article_id,
+		title: article.title,
+		summary: article.summary ?? "",
+		url: article.url,
+		source: article.source,
+		category: article.topic_id,
+		readingTime: article.read_time_minutes,
+	};
 }
 
 interface FilterValues {
@@ -37,7 +45,7 @@ interface FilterValues {
 	topic: string;
 }
 
-function filterArticles(articles: Story[], { search, source, topic }: FilterValues): Story[] {
+function filterArticles(articles: Article[], { search, source, topic }: FilterValues): Article[] {
 	const keywords = search
 		.toLowerCase()
 		.split(" ")
@@ -52,7 +60,7 @@ function filterArticles(articles: Story[], { search, source, topic }: FilterValu
 	});
 }
 
-function sortByReadingTime(articles: Story[], order: string): Story[] {
+function sortByReadingTime(articles: Article[], order: string): Article[] {
 	const sortedArticles = [...articles];
 
 	sortedArticles.sort((a, b) => {
@@ -73,7 +81,7 @@ function sortByReadingTime(articles: Story[], order: string): Story[] {
 }
 
 interface SavedArticlesFiltersProps {
-	articles: Story[];
+	articles: Article[];
 	search: string;
 	source: string;
 	topic: string;
@@ -170,24 +178,39 @@ function Pagination({ currentPage, pageCount, onPageChange }: PaginationProps) {
 }
 
 export function SavedArticles() {
-	const { data } = useDashboardData();
-	const { savedIds, toggleSave } = useSavedArticles();
+	const { data, isLoading, error, remove } = useSavedArticlesList();
 
 	const [search, setSearch] = useState("");
 	const [source, setSource] = useState("all");
 	const [topic, setTopic] = useState("all");
 	const [order, setOrder] = useState("asc");
 	const [page, setPage] = useState(1);
-	const [openedArticle, setOpenedArticle] = useState<Story | null>(null);
+	const [openedArticle, setOpenedArticle] = useState<Article | null>(null);
 
-	// TODO: remplacer par l'appel API qui renvoie les articles sauvegardés.
-	let allStories: Story[] = [];
-	if (data) {
-		allStories = data.preferences.flatMap((pref) => {
-			return pref.stories;
-		});
+	if (isLoading) {
+		return <Spinner />;
 	}
-	const articles = getSavedArticles(allStories, savedIds);
+
+	if (error) {
+		return (
+			<Division variant="dashboardpage" className="max-w-4xl gap-6">
+				<Text variant="title">Saved Articles</Text>
+				<Text variant="body">Your saved articles couldn't be loaded. Please try again later.</Text>
+			</Division>
+		);
+	}
+
+	const articles = data.map(toArticle);
+
+	if (articles.length === 0) {
+		return (
+			<Division variant="dashboardpage" className="max-w-4xl gap-6">
+				<Text variant="title">Saved Articles</Text>
+				<Text variant="body">You haven't saved any article yet.</Text>
+			</Division>
+		);
+	}
+
 	const filteredArticles = filterArticles(articles, { search, source, topic });
 	const sortedArticles = sortByReadingTime(filteredArticles, order);
 
@@ -202,7 +225,6 @@ export function SavedArticles() {
 		setFilter(value);
 		setPage(1);
 	}
-
 	return (
 		<Division variant="dashboardpage" className="max-w-4xl gap-6">
 			<Text variant="title">Saved Articles</Text>
@@ -218,21 +240,23 @@ export function SavedArticles() {
 				onOrderChange={(value) => changeFilter(setOrder, value)}
 			/>
 
-			{visibleArticles.length === 0 && <Text variant="body">No article was found.</Text>}
+			{visibleArticles.length === 0 && <Text variant="body">No article matches the filters.</Text>}
 
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 				{visibleArticles.map((article) => (
 					<ArticleCard
 						key={article.id}
-						story={article}
+						article={article}
 						isSaved={true}
 						onReadMore={() => setOpenedArticle(article)}
-						onToggleSave={() => toggleSave(article.id)}
+						onToggleSave={() => {
+							void remove(article.id);
+						}}
 					/>
 				))}
 			</div>
 			<Pagination currentPage={currentPage} pageCount={pageCount} onPageChange={setPage} />
-			<ArticleModal story={openedArticle} onClose={() => setOpenedArticle(null)} />
+			<ArticleModal article={openedArticle} onClose={() => setOpenedArticle(null)} />
 		</Division>
 	);
 }

@@ -1,10 +1,10 @@
-import type { Story } from "@/shared/components/ArticleModal";
+import type { Article } from "@/shared/components/ArticleModal";
 
 export interface Preference {
 	id: string;
 	name: string;
 	summary: string;
-	stories: Story[];
+	articles: Article[];
 }
 
 export interface DashboardData {
@@ -20,7 +20,7 @@ export const MOCK_DASHBOARD: DashboardData = {
 			name: "Technologies",
 			summary:
 				"Open-source models keep narrowing the gap with proprietary ones, while infrastructure spending continues to accelerate across Europe and the US.",
-			stories: [
+			articles: [
 				{
 					id: "ai-1",
 					title: "Open-source models narrow the enterprise gap",
@@ -55,7 +55,7 @@ export const MOCK_DASHBOARD: DashboardData = {
 			name: "Science",
 			summary:
 				"European markets open on a measured note as energy and semiconductor shares lead a quiet rise ahead of the central bank commentary.",
-			stories: [
+			articles: [
 				{
 					id: "fin-1",
 					title: "European markets open on a measured high",
@@ -89,7 +89,7 @@ export const MOCK_DASHBOARD: DashboardData = {
 			id: "business",
 			name: "Business",
 			summary: "Insert a business summary",
-			stories: [
+			articles: [
 				{
 					id: "b-1",
 					title: "European businesses accelerate their investment in AI",
@@ -106,7 +106,7 @@ export const MOCK_DASHBOARD: DashboardData = {
 			name: "Entertainment",
 			summary:
 				"Streaming platforms are experimenting with new formats, while independent filmmakers attract growing audiences through innovative storytelling.",
-			stories: [
+			articles: [
 				{
 					id: "ent-1",
 					title: "Independent films find new audiences through streaming",
@@ -123,7 +123,7 @@ export const MOCK_DASHBOARD: DashboardData = {
 			name: "General",
 			summary:
 				"Cities are investing in greener public spaces and more efficient transport networks as communities look for practical ways to improve everyday life.",
-			stories: [
+			articles: [
 				{
 					id: "gen-1",
 					title: "Cities rethink public spaces to improve everyday life",
@@ -140,7 +140,7 @@ export const MOCK_DASHBOARD: DashboardData = {
 			name: "Health",
 			summary:
 				"Public health researchers are investigating how sleep quality, physical activity and everyday habits influence long-term wellbeing.",
-			stories: [
+			articles: [
 				{
 					id: "hea-1",
 					title: "Researchers examine the link between sleep and long-term health",
@@ -157,7 +157,7 @@ export const MOCK_DASHBOARD: DashboardData = {
 			name: "Sport",
 			summary:
 				"Sports teams are exploring new training methods and performance analytics, while young athletes continue to make their mark in international competitions.",
-			stories: [
+			articles: [
 				{
 					id: "spo-1",
 					title: "Performance analytics reshape modern sports training",
