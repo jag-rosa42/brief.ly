@@ -10,10 +10,8 @@ import { ApiKeyRow } from "@/shared/components/ApiKeyRow";
 
 function validateName(value: string): string | null {
 	const name = value.trim();
-	if (name.length < 2)
-		return "Key name must be at least 2 characters.";
-	if (name.length > 30)
-		return "Key name must be at most 30 characters.";
+	if (name.length < 2) return "Key name must be at least 2 characters.";
+	if (name.length > 30) return "Key name must be at most 30 characters.";
 	return null;
 }
 
@@ -23,11 +21,10 @@ interface ConfirmDialogProps {
 	confirmLabel: string;
 	onConfirm: () => void;
 	onCancel: () => void;
-};
+}
 
 function ConfirmDialog({ open, message, confirmLabel, onConfirm, onCancel }: ConfirmDialogProps) {
-	if (!open)
-		return null;
+	if (!open) return null;
 
 	return (
 		<div
@@ -36,8 +33,12 @@ function ConfirmDialog({ open, message, confirmLabel, onConfirm, onCancel }: Con
 		>
 			<Division variant="featurecard" onClick={(e) => e.stopPropagation()}>
 				<Text variant="body">{message}</Text>
-				<Button variant="primary" onClick={onCancel}>Cancel</Button>
-				<Button variant="secondary" onClick={onConfirm}>{confirmLabel}</Button>
+				<Button variant="primary" onClick={onCancel}>
+					Cancel
+				</Button>
+				<Button variant="secondary" onClick={onConfirm}>
+					{confirmLabel}
+				</Button>
 			</Division>
 		</div>
 	);
@@ -45,7 +46,9 @@ function ConfirmDialog({ open, message, confirmLabel, onConfirm, onCancel }: Con
 
 export function PublicApiKeyPage() {
 	const { keys, addKey, deleteKey, limitReached } = useApiKeys();
-	const [pendingCreate, setPendingCreate] = useState<{ name: string; expiresAt: number } | null>(null);
+	const [pendingCreate, setPendingCreate] = useState<{ name: string; expiresAt: number } | null>(
+		null,
+	);
 	const [creating, setCreating] = useState(false);
 	const [name, setName] = useState("");
 	const [error, setError] = useState<string | undefined>();
@@ -77,8 +80,7 @@ export function PublicApiKeyPage() {
 	}
 
 	async function handleCopy() {
-		if (!newKey)
-			return;
+		if (!newKey) return;
 		try {
 			await navigator.clipboard.writeText(newKey.secret);
 			setCopied(true);
@@ -90,24 +92,30 @@ export function PublicApiKeyPage() {
 	function confirmDelete() {
 		if (pendingDelete) {
 			deleteKey(pendingDelete.id);
-			if (newKey?.id === pendingDelete.id)
-				setNewKey(null);
+			if (newKey?.id === pendingDelete.id) setNewKey(null);
 		}
 		setPendingDelete(null);
 	}
 
 	return (
 		<Division variant="dashboardpage" className="items-center">
-			<Text variant="title" className="mb-10 text-center">API keys</Text>
+			<Text variant="title" className="mb-10 text-center">
+				API keys
+			</Text>
 
 			<div className="w-full max-w-lg">
 				<div className="mb-4 flex items-center justify-between">
 					<Text variant="subheading">Manage your public API keys</Text>
-					<Text variant="body" className="text-info">{keys.length} / {MAX_KEYS}</Text>
+					<Text variant="body" className="text-info">
+						{keys.length} / {MAX_KEYS}
+					</Text>
 					<Button
 						variant="secondary"
 						disabled={limitReached || creating}
-						onClick={() => { setCreating(true); setNewKey(null); }}
+						onClick={() => {
+							setCreating(true);
+							setNewKey(null);
+						}}
 					>
 						+
 					</Button>
@@ -119,12 +127,18 @@ export function PublicApiKeyPage() {
 							onSubmit={handleCreate}
 							actions={
 								<div className="flex flex-col gap-3 w-full">
-									<Button type="submit" variant="secondary" className="w-full">Create</Button>
+									<Button type="submit" variant="secondary" className="w-full">
+										Create
+									</Button>
 									<Button
 										type="button"
 										variant="primary"
 										className="w-full"
-										onClick={() => { setCreating(false); setName(""); setError(undefined); }}
+										onClick={() => {
+											setCreating(false);
+											setName("");
+											setError(undefined);
+										}}
 									>
 										Cancel
 									</Button>
@@ -137,7 +151,10 @@ export function PublicApiKeyPage() {
 								name="keyName"
 								value={name}
 								error={error}
-								onChange={(e) => { setName(e.target.value); setError(undefined); }}
+								onChange={(e) => {
+									setName(e.target.value);
+									setError(undefined);
+								}}
 							/>
 							<Text variant="body" className="text-info">
 								This key will expire in 48 hours.
@@ -166,7 +183,12 @@ export function PublicApiKeyPage() {
 											<code className="flex-1 break-all rounded border px-3 py-2 text-sm">
 												{newKey.secret}
 											</code>
-											<Button variant="secondary" onClick={() => { void handleCopy(); }}>
+											<Button
+												variant="secondary"
+												onClick={() => {
+													void handleCopy();
+												}}
+											>
 												{copied ? "Copied ✓" : "Copy"}
 											</Button>
 										</div>

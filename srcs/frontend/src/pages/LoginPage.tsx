@@ -32,13 +32,13 @@ export function LoginPage() {
 	const location = useLocation();
 
 	const navigationState = location.state as LoginLocationState | null;
-	const initialMessage = typeof navigationState?.message === "string" ? navigationState.message : "";
+	const initialMessage =
+		typeof navigationState?.message === "string" ? navigationState.message : "";
 	const [errorMessage, setErrorMessage] = useState(initialMessage);
 
 	async function handleSubmit(e: SyntheticEvent) {
 		e.preventDefault();
-		if (waiting)
-			return;
+		if (waiting) return;
 		setErrorMessage("");
 		setWaiting(true);
 
@@ -82,7 +82,9 @@ export function LoginPage() {
 				</Text>
 				<Division variant="featurecard" className="shadow-sm">
 					<Form
-						onSubmit={(e) => { void handleSubmit(e); }}
+						onSubmit={(e) => {
+							void handleSubmit(e);
+						}}
 						actions={
 							<div className="flex flex-col gap-3 w-full">
 								{errorMessage && (
@@ -90,12 +92,7 @@ export function LoginPage() {
 										{errorMessage}
 									</Text>
 								)}
-								<Button
-									type="submit"
-									variant="secondary"
-									className="w-full"
-									disabled={waiting}
-								>
+								<Button type="submit" variant="secondary" className="w-full" disabled={waiting}>
 									{waiting ? "Logging in..." : "Log in"}
 								</Button>
 							</div>

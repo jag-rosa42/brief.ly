@@ -5,7 +5,4 @@ export interface PreferencesContextValue {
 	updatePreferences: (preferences: string[]) => void;
 }
 
-export const PreferencesContext = createContext<
-	PreferencesContextValue | undefined
->(undefined);
-
+export const PreferencesContext = createContext<PreferencesContextValue | undefined>(undefined);

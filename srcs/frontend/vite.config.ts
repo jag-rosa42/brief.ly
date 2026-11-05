@@ -32,18 +32,17 @@ export default defineConfig({
 				target: identityTarget,
 				secure: false,
 				changeOrigin: true,
-				rewrite: (p) => p.replace(/^\/api\/identity/,""),
+				rewrite: (p) => p.replace(/^\/api\/identity/, ""),
 			},
 		},
 		...(hmrHost
 			? {
-				hmr: {
-					host: hmrHost,
-					protocol: "ws",
-					clientPort:
-						Number(process.env.VITE_HMR_CLIENT_PORT ?? 5173),
-				},
-			}
+					hmr: {
+						host: hmrHost,
+						protocol: "ws",
+						clientPort: Number(process.env.VITE_HMR_CLIENT_PORT ?? 5173),
+					},
+				}
 			: {}),
 		watch: {
 			usePolling,

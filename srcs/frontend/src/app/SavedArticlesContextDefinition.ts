@@ -6,6 +6,4 @@ export interface SavedArticlesContextValue {
 	toggleSave: (id: string) => void;
 }
 
-export const SavedArticlesContext = createContext<
-	SavedArticlesContextValue | undefined
-    >(undefined);
+export const SavedArticlesContext = createContext<SavedArticlesContextValue | undefined>(undefined);

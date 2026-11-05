@@ -9,7 +9,7 @@ export interface Preference {
 
 export interface DashboardData {
 	user: { firstName: string };
-	preferences: Preference[]; 
+	preferences: Preference[];
 }
 
 export const MOCK_DASHBOARD: DashboardData = {
@@ -62,7 +62,8 @@ export const MOCK_DASHBOARD: DashboardData = {
 					category: "Science",
 					source: "Market Wire",
 					url: "https://example.com/markets-open",
-					summary: "Energy and semiconductor shares lead a quiet rise ahead of central bank commentary.",
+					summary:
+						"Energy and semiconductor shares lead a quiet rise ahead of central bank commentary.",
 				},
 				{
 					id: "fin-2",
@@ -70,7 +71,8 @@ export const MOCK_DASHBOARD: DashboardData = {
 					category: "Science",
 					source: "Capital Post",
 					url: "https://example.com/bond-yields",
-					summary: "Investors hold positions as the central bank prepares to announce its next move.",
+					summary:
+						"Investors hold positions as the central bank prepares to announce its next move.",
 				},
 				{
 					id: "fin-3",
@@ -78,44 +80,49 @@ export const MOCK_DASHBOARD: DashboardData = {
 					category: "Science",
 					source: "Venture Notes",
 					url: "https://example.com/startup-funding",
-					summary: "Funding rounds are fewer this quarter, yet median valuations keep climbing in late-stage deals.",
+					summary:
+						"Funding rounds are fewer this quarter, yet median valuations keep climbing in late-stage deals.",
 				},
 			],
 		},
 		{
-            id: "business",
-            name: "Business",
-            summary: "Insert a business summary",
-            stories: [
+			id: "business",
+			name: "Business",
+			summary: "Insert a business summary",
+			stories: [
 				{
 					id: "b-1",
 					title: "European businesses accelerate their investment in AI",
 					category: "Business",
 					source: "Market Wire",
 					url: "https://example.com/european-business-ai",
-					summary:"Companies across Europe are allocating more resources to artificial intelligence, hoping to improve productivity, automate routine tasks and develop new services.",
+					summary:
+						"Companies across Europe are allocating more resources to artificial intelligence, hoping to improve productivity, automate routine tasks and develop new services.",
 				},
 			],
-        },
-        {
-            id: "entertainment",
-            name: "Entertainment",
-            summary: "Streaming platforms are experimenting with new formats, while independent filmmakers attract growing audiences through innovative storytelling.",
-            stories: [
+		},
+		{
+			id: "entertainment",
+			name: "Entertainment",
+			summary:
+				"Streaming platforms are experimenting with new formats, while independent filmmakers attract growing audiences through innovative storytelling.",
+			stories: [
 				{
 					id: "ent-1",
 					title: "Independent films find new audiences through streaming",
 					category: "Entertainment",
 					source: "Screen Weekly",
 					url: "https://example.com/independent-films-streaming",
-					summary:"Independent filmmakers are reaching international audiences through streaming platforms, opening up new opportunities for productions that might otherwise struggle to secure theatrical distribution.",
+					summary:
+						"Independent filmmakers are reaching international audiences through streaming platforms, opening up new opportunities for productions that might otherwise struggle to secure theatrical distribution.",
 				},
 			],
-        },
+		},
 		{
 			id: "general",
 			name: "General",
-			summary:"Cities are investing in greener public spaces and more efficient transport networks as communities look for practical ways to improve everyday life.",
+			summary:
+				"Cities are investing in greener public spaces and more efficient transport networks as communities look for practical ways to improve everyday life.",
 			stories: [
 				{
 					id: "gen-1",
@@ -123,7 +130,8 @@ export const MOCK_DASHBOARD: DashboardData = {
 					category: "General",
 					source: "The Daily Report",
 					url: "https://example.com/cities-public-spaces",
-					summary:"Urban planners are redesigning public spaces with more trees, pedestrian areas and accessible facilities to make neighbourhoods more comfortable and sustainable.",
+					summary:
+						"Urban planners are redesigning public spaces with more trees, pedestrian areas and accessible facilities to make neighbourhoods more comfortable and sustainable.",
 				},
 			],
 		},
@@ -139,14 +147,16 @@ export const MOCK_DASHBOARD: DashboardData = {
 					category: "Health",
 					source: "Health Monitor",
 					url: "https://example.com/sleep-long-term-health",
-					summary:"Researchers are studying how sleep duration and consistency relate to physical and cognitive health, highlighting the importance of regular sleep routines.",
+					summary:
+						"Researchers are studying how sleep duration and consistency relate to physical and cognitive health, highlighting the importance of regular sleep routines.",
 				},
 			],
 		},
 		{
 			id: "sport",
 			name: "Sport",
-			summary:"Sports teams are exploring new training methods and performance analytics, while young athletes continue to make their mark in international competitions.",
+			summary:
+				"Sports teams are exploring new training methods and performance analytics, while young athletes continue to make their mark in international competitions.",
 			stories: [
 				{
 					id: "spo-1",
@@ -154,7 +164,8 @@ export const MOCK_DASHBOARD: DashboardData = {
 					category: "Sport",
 					source: "Sports Journal",
 					url: "https://example.com/sports-performance-analytics",
-					summary:"Coaches are using performance data to analyse player workloads, refine training sessions and identify opportunities to improve team performance throughout the season.",
+					summary:
+						"Coaches are using performance data to analyse player workloads, refine training sessions and identify opportunities to improve team performance throughout the season.",
 				},
 			],
 		},

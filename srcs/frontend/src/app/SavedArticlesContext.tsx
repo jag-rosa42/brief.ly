@@ -16,15 +16,13 @@ export function SavedArticlesProvider({ children }: SavedArticlesProviderProps) 
 		//TODO: API call to save/delete the article
 		setSavedIds((prev) => {
 			const next = new Set(prev);
-			if (next.has(id))
-				next.delete(id);
-			else
-				next.add(id);
-			return (next);
-		}); 
+			if (next.has(id)) next.delete(id);
+			else next.add(id);
+			return next;
+		});
 	}
 	return (
-		<SavedArticlesContext value={{ savedIds, isSaved, toggleSave}}>
+		<SavedArticlesContext value={{ savedIds, isSaved, toggleSave }}>
 			{children}
 		</SavedArticlesContext>
 	);

@@ -25,8 +25,7 @@ export function ArticleModal({ story, onClose }: ArticleModalProps) {
 
 	useEffect(() => {
 		const dialog = dialogRef.current;
-		if(!dialog)
-			return;
+		if (!dialog) return;
 		if (story && !dialog.open) {
 			dialog.showModal();
 		} else if (!story && dialog.open) {
@@ -34,15 +33,15 @@ export function ArticleModal({ story, onClose }: ArticleModalProps) {
 		}
 	}, [story]);
 	useEffect(() => {
-	if (!story) return;
+		if (!story) return;
 
-	const previousOverflow = document.body.style.overflow;
-	document.body.style.overflow = "hidden";
+		const previousOverflow = document.body.style.overflow;
+		document.body.style.overflow = "hidden";
 
-	return () => {
-		document.body.style.overflow = previousOverflow;
-	};
-}, [story]);
+		return () => {
+			document.body.style.overflow = previousOverflow;
+		};
+	}, [story]);
 
 	function handleClick(e: React.MouseEvent<HTMLDialogElement>) {
 		if (e.target === e.currentTarget) {
@@ -58,10 +57,7 @@ export function ArticleModal({ story, onClose }: ArticleModalProps) {
 			className="m-auto w-[calc(100%-2rem)] max-w-4xl max-h-[90vh] bg-transparent p-0 backdrop:bg-black/50"
 		>
 			{story && (
-				<Division
-					variant="featurecard"
-					className="relative flex max-h-[90vh] flex-col shadow-sm"
-				>
+				<Division variant="featurecard" className="relative flex max-h-[90vh] flex-col shadow-sm">
 					<Button
 						type="button"
 						variant="secondary"
@@ -75,7 +71,7 @@ export function ArticleModal({ story, onClose }: ArticleModalProps) {
 						<Text variant="title" id={titleId} className="pr-10">
 							{story.title}
 						</Text>
-							{story.url && (
+						{story.url && (
 							<Link
 								to={story.url}
 								variant="primary"
@@ -85,9 +81,7 @@ export function ArticleModal({ story, onClose }: ArticleModalProps) {
 								Read the full article on {story.source} ↗
 							</Link>
 						)}
-						<Text variant="lead">
-							{story.summary}
-						</Text>
+						<Text variant="lead">{story.summary}</Text>
 					</div>
 				</Division>
 			)}

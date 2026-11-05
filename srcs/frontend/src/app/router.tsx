@@ -18,10 +18,8 @@ function LastPathTracker() {
 	const location = useLocation();
 
 	useEffect(() => {
-		if (isLoading || !isLoggedIn)
-			return;
-		if (GUEST_PATHS.includes(location.pathname))
-			return;
+		if (isLoading || !isLoggedIn) return;
+		if (GUEST_PATHS.includes(location.pathname)) return;
 		sessionStorage.setItem(LAST_PATH, location.pathname);
 	}, [isLoading, isLoggedIn, location.pathname]);
 
@@ -31,29 +29,24 @@ function LastPathTracker() {
 function ProtectedRoute() {
 	const { isLoggedIn, isLoading } = useAuth();
 
-	if (isLoading)
-		return <Spinner />;
-	if (!isLoggedIn)
-		return (<Navigate to="/" replace />)
-	return (<Outlet />);
+	if (isLoading) return <Spinner />;
+	if (!isLoggedIn) return <Navigate to="/" replace />;
+	return <Outlet />;
 }
 
 function GuestRoute() {
 	const { isLoggedIn, isLoading, profileComplete } = useAuth();
 	const [lastPath] = useState(() => sessionStorage.getItem(LAST_PATH));
 
-	if (isLoading)
-		return <Spinner />;
+	if (isLoading) return <Spinner />;
 	if (isLoggedIn) {
 		let target = "/dashboard/profile";
 
-		if (profileComplete)
-			target = "/dashboard/brief";
-		if (lastPath && !GUEST_PATHS.includes(lastPath))
-			target = lastPath;
-		return (<Navigate to={target} replace />);
+		if (profileComplete) target = "/dashboard/brief";
+		if (lastPath && !GUEST_PATHS.includes(lastPath)) target = lastPath;
+		return <Navigate to={target} replace />;
 	}
-	return (<Outlet />);
+	return <Outlet />;
 }
 
 export function AppRouter() {
@@ -62,20 +55,14 @@ export function AppRouter() {
 			<LastPathTracker />
 			<Routes>
 				<Route element={<Layout />}>
-					<Route index
-						element={<LandingPage />} />
-					<Route path="/termsofservice"
-						element={<TermsOfServicePage />} />
-					<Route path="/privacypolicy"
-						element={<PrivacyPolicyPage />} />
+					<Route index element={<LandingPage />} />
+					<Route path="/termsofservice" element={<TermsOfServicePage />} />
+					<Route path="/privacypolicy" element={<PrivacyPolicyPage />} />
 					<Route element={<GuestRoute />}>
-						<Route path="/signup"
-							element={<SignupPage />} />
-						<Route path="/login"
-							element={<LoginPage />} />
+						<Route path="/signup" element={<SignupPage />} />
+						<Route path="/login" element={<LoginPage />} />
 					</Route>
-					<Route path="*"
-						element={<NotFoundPage />} />
+					<Route path="*" element={<NotFoundPage />} />
 				</Route>
 				<Route element={<ProtectedRoute />}>
 					{DASHBOARD_TABS.map((tab) => (

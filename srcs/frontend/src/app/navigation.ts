@@ -1,5 +1,10 @@
-export const DASHBOARD_TABS: readonly string[] = ["brief", "profile", "saved", "publicapikey"] as const;
-export type DashboardTab = typeof DASHBOARD_TABS[number];
+export const DASHBOARD_TABS: readonly string[] = [
+	"brief",
+	"profile",
+	"saved",
+	"publicapikey",
+] as const;
+export type DashboardTab = (typeof DASHBOARD_TABS)[number];
 
 // sessionStorage key of the last page visited while logged in.
 export const LAST_PATH = "lastPath";

@@ -48,10 +48,8 @@ export class Session {
 	setAccessToken(token: string | null): void {
 		this.accessToken = token;
 
-		if (token)
-			this.setSessionHint();
-		else
-			this.clearSessionHint();
+		if (token) this.setSessionHint();
+		else this.clearSessionHint();
 	}
 
 	onExpired(listener: () => void): () => void {
@@ -89,8 +87,7 @@ export class Session {
 			return null;
 		}
 
-		if (!response.ok)
-			throw await toApiError(response);
+		if (!response.ok) throw await toApiError(response);
 
 		const body = (await response.json()) as TokenResponse;
 

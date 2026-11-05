@@ -8,7 +8,7 @@ interface FormProps {
 	actions?: React.ReactNode;
 }
 
-export function Form({title, onSubmit, children, actions }: FormProps) {
+export function Form({ title, onSubmit, children, actions }: FormProps) {
 	return (
 		<form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
 			{title && <Text variant="heading">{title}</Text>}

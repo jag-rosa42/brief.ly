@@ -19,7 +19,7 @@ export function FilterChip({
 	className = "",
 	onToggle,
 	options,
-}:FilterChipProps) {
+}: FilterChipProps) {
 	return (
 		<Button
 			type="button"
