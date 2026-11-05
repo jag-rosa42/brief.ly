@@ -85,8 +85,31 @@ providers:
 # =============================================================================
 # LOGGING
 # =============================================================================
+# Traefik's own log: startup, configuration errors, a backend it cannot reach.
 log:
   level: INFO
+
+# =============================================================================
+# ACCESS LOG - one line per request
+# =============================================================================
+# One JSON line per request on stdout (`make logs SERVICE=gateway`), to see
+# which request failed and who answered it:
+#  - no RouterName: no router matched, Traefik answered 404 itself;
+#  - RouterName set, OriginDuration 0: Traefik refused the request before
+#    forwarding it (400 for an encoded path);
+#  - ServiceURL set: the request was forwarded there. A 502/504 there means
+#    either the service is down or too slow (Traefik fills OriginStatus
+#    itself), or the service answered DOWNSTREAM_ERROR/SERVICE_UNAVAILABLE
+#    because a service behind it failed: the service's own logs tell which.
+accessLog:
+  format: json
+  fields:
+    # Keep every request field (method, path, router, statuses, duration...).
+    defaultMode: keep
+    headers:
+      # Never write headers: Authorization carries tokens and Cookie the
+      # refresh token. Written explicitly so a later change can't leak them.
+      defaultMode: drop
 
 # =============================================================================
 # METRICS (Prometheus)
