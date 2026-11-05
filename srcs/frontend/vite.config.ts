@@ -10,13 +10,17 @@ import tailwindcss from "@tailwindcss/vite";
 const usePolling = process.env.VITE_USE_POLLING === "true";
 // Optional host the browser uses to connect to Vite's live-reload (HMR) server.
 const hmrHost = process.env.VITE_HMR_HOST;
-// Target of the /api/identity proxy.
-// Defaults to the locally exposed identity service (make run SERVICE=identity).
-// Inside Docker, compose.override.yaml sets it to http://identity:8000.
+// Protocol of that connection. In Docker, the page comes from the gateway over
+// HTTPS, so the browser must use "wss" (compose.override.yaml sets it, with the
+// gateway's port as VITE_HMR_CLIENT_PORT); the gateway forwards it to Vite.
+const hmrProtocol = process.env.VITE_HMR_PROTOCOL === "wss" ? "wss" : "ws";
+// Target of the /api/identity proxy, used only by `make frontend` on the host:
+// the locally exposed identity service (make run SERVICE=identity).
+// In Docker, the gateway routes /api before a request reaches Vite.
 const identityTarget = process.env.IDENTITY_URL ?? "http://localhost:8081";
-// Target of the /api/personalization proxy.
-// Defaults to the locally exposed personalization service (make run SERVICE=personalization).
-// Inside Docker, compose.override.yaml sets it to http://personalization:8000.
+// Target of the /api/personalization proxy, used only by `make frontend` on the
+// host: the locally exposed personalization service (make run SERVICE=personalization).
+// In Docker, the gateway routes /api before a request reaches Vite.
 const personalizationTarget = process.env.PERSONALIZATION_URL ?? "http://localhost:8082";
 
 export default defineConfig({
@@ -49,7 +53,7 @@ export default defineConfig({
 			? {
 					hmr: {
 						host: hmrHost,
-						protocol: "ws",
+						protocol: hmrProtocol,
 						clientPort: Number(process.env.VITE_HMR_CLIENT_PORT ?? 5173),
 					},
 				}
