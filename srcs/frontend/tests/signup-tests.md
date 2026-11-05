@@ -4,8 +4,8 @@ How to manually check the sign up page against the ticket, using only the browse
 
 ## Prerequisites
 
-- The stack is running (frontend, `identity`, database) and `http://localhost:5173/signup` loads.
-- `identity` is healthy: `podman ps` shows it as `Up (healthy)`.
+- The stack is running (frontend, `identity`, database) and `https://localhost:8443/signup` loads (through the gateway).
+- `identity` is healthy: `docker ps` shows it as `Up (healthy)`.
 - Use a **new email** for every successful registration (e.g. `test1@example.com`, `test2@example.com`). Registering the same email twice returns a 409.
 
 ## DevTools setup (once per session)
@@ -50,34 +50,34 @@ Expected:
 - No error message is displayed.
 
 ### 3. Data sent to the server (URL and body)
- 
+
 **Goal:** check that the form sends the email and password **inside the request body**, never in the URL, and that only the needed fields are sent.
- 
+
 **Steps**
- 
+
 1. Clear the Network list (trash icon).
 2. Fill the form with a new email written with spaces around it (e.g. `  test2@example.com  `), a password of at least 8 characters, and the same password in the confirmation field.
 3. Click **Sign up**.
 4. In the Network tab, click the line named `register` (method `POST`).
 **Check A: the URL (Headers tab, "Request URL")**
- 
+
 | Expected | Problem |
 |---|---|
-| `http://localhost:5173/api/identity/auth/register` | `.../register?email=test2@example.com&password=...` |
- 
+| `https://localhost:8443/api/identity/auth/register` | `.../register?email=test2@example.com&password=...` |
+
 Anything after a `?` means the browser submitted the form by itself instead of using our code. The password would then be visible in the address bar, the browser history and the server logs.
- 
+
 **Check B: the body (Request or Payload tab)**
- 
+
 Expected:
- 
+
 ```json
 {
   "email": "test2@example.com",
   "password": "your-test-password"
 }
 ```
- 
+
 - `email` has **no spaces** around it (the code trims it).
 - `password` is present.
 - There is **no `confirmPass`**: that field is only used in the browser to check that both passwords match, so the server does not need it.
@@ -109,7 +109,7 @@ Set the menu back to **No Throttling** afterwards.
 
 ### 6. Generic server error
 
-1. Stop the identity service: `podman stop identity`.
+1. Stop the identity service: `docker stop identity`.
 2. Submit a valid form with a new email.
 
 Expected:
@@ -118,7 +118,7 @@ Expected:
 - Message `Something went wrong, please try again`.
 - The button is enabled again.
 
-Restart the service afterwards: `podman start identity`, and wait until it is healthy before testing again.
+Restart the service afterwards: `docker start identity`, and wait until it is healthy before testing again.
 
 ### 7. Loading state and double submission
 
@@ -136,7 +136,7 @@ Set the menu back to **No Throttling** afterwards.
 ## Cleanup checklist
 
 - [ ] Throttling is back to **No Throttling**.
-- [ ] `identity` is running again (`podman ps`).
+- [ ] `identity` is running again (`docker ps`).
 - [ ] Test accounts created during the session are no longer needed (or can be removed from the database, e.g. with Adminer).
 
 ## Moving to other pages

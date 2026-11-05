@@ -207,13 +207,13 @@ Implementation details:
 
 ### 📌 Required Actions
 
-1. [ ] Add the gateway service and its configuration in `srcs/gateway/`
-2. [ ] Declare the `edge` and `backend` networks in `compose.yaml`
-3. [ ] Remove published ports from every container except the gateway
+1. [x] Add the gateway service and its configuration in `srcs/gateway/`
+2. [x] Declare the `edge` and `backend` networks in `compose.yaml`
+3. [x] Remove published ports from every container except the gateway
    (production)
-4. [ ] Add automatic certificate generation, with mkcert files taking priority
-5. [ ] Review the frontend nginx configuration for behind-a-proxy issues
-6. [ ] Update `docs/architecture/02_overview.md` (gateway responsibilities)
+4. [x] Add automatic certificate generation, with mkcert files taking priority
+5. [x] Review the frontend nginx configuration for behind-a-proxy issues
+6. [x] Update `docs/architecture/02_overview.md` (gateway responsibilities)
 
 ---
 

@@ -69,15 +69,33 @@ The frontend does not communicate directly with backend services.
 
 ### 3.2 API Gateway
 
-The Gateway is the single entry point between the frontend and backend.
+The Gateway (Traefik, configured with files in `srcs/gateway/`) is the single
+entry point for the browser, scripts and the public API. It is the only
+container that publishes ports: `https://localhost:8443`, and `8080`, which
+only redirects to HTTPS (ADR-0006).
 
 Responsibilities:
 
-- Request routing
-- Authentication validation
-- Authorization checks
-- Rate limiting (if required)
-- API aggregation when needed
+- TLS termination: HTTPS outside, plain HTTP inside the backend
+- Routing an allowlist of paths: `/api/<service>/<resource>` goes to the
+  service with `/api/<service>` removed; every other path that is not under
+  `/api` or `/public` goes to the frontend
+- Refusing everything else: `/internal`, `/health`, `/metrics` and `/docs`
+  are never routed (`404`), and percent-encoded paths are refused (`400`)
+- Rate limiting and API-key checks for the public API (ADR-0009, later)
+
+It does **not** validate user tokens: each service verifies them itself with
+`shared_auth` (ADR-0007, ADR-0008). It does not aggregate APIs either.
+
+Two container networks:
+
+| Network | Members |
+| --- | --- |
+| `edge` | gateway, frontend, Identity, Personalization, Morning Briefing |
+| `backend` | every backend service, `pgsql`, `pgvector` |
+
+Content Management and AI Processing are only on `backend`, so the gateway
+cannot reach them at all.
 
 The Gateway hides internal service topology from the frontend.
 
@@ -124,14 +142,14 @@ Example:
 ```text
 Frontend
 
-GET /api/profile
+GET https://localhost:8443/api/personalization/me/profile
 
    │
    ▼
 
-Gateway
+Gateway (removes /api/personalization)
 
-   │
+   │  GET http://personalization:8000/me/profile
    ▼
 
 Personalization Service
