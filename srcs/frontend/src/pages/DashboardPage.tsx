@@ -7,6 +7,7 @@ import { ProfilePage } from "@/pages/ProfilePage";
 import { Sidebar } from "@/shared/components/Sidebar";
 import { PublicApiKeyPage } from "@/pages/PublicApiKeyPage";
 import type { DashboardTab } from "@/app/navigation";
+import { useLogout } from "@/app/useLogout";
 
 const tabs: (TabItem & { value: DashboardTab })[] = [
 	{ value: "brief", label: "Morning Briefing" },
@@ -17,7 +18,8 @@ const tabs: (TabItem & { value: DashboardTab })[] = [
 
 export function DashboardPage({ tab: activeTab }: { tab: DashboardTab }) {
 	const navigate = useNavigate();
-	const { profileComplete, logout } = useAuth();
+	const { profileComplete } = useAuth();
+	const logout = useLogout();
 
 	if (!profileComplete && activeTab !== "profile") {
 		return <Navigate to="/dashboard/profile" replace />;
