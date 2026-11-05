@@ -34,13 +34,13 @@ export function SignupPage() {
 	const { signup } = useAuth();
 	const location = useLocation();
 	const navigationState = location.state as SignupLocationState | null;
-	const initialMessage = typeof navigationState?.message === "string" ? navigationState.message : "";
+	const initialMessage =
+		typeof navigationState?.message === "string" ? navigationState.message : "";
 	const [errorMessage, setErrorMessage] = useState(initialMessage);
 
 	async function handleSubmit(e: SyntheticEvent) {
 		e.preventDefault();
-		if (waiting)
-			return;
+		if (waiting) return;
 		setErrorMessage("");
 		setWaiting(true);
 
@@ -55,8 +55,7 @@ export function SignupPage() {
 			setErrorMessage("Passwords do not match");
 			setWaiting(false);
 			return;
-		}
-		else if (password.length < 8) {
+		} else if (password.length < 8) {
 			setErrorMessage("Password must be at least 8 characters");
 			setWaiting(false);
 			return;
@@ -90,7 +89,9 @@ export function SignupPage() {
 				</Text>
 				<Division variant="featurecard" className="shadow-sm">
 					<Form
-						onSubmit={(e) => { void handleSubmit(e); }}
+						onSubmit={(e) => {
+							void handleSubmit(e);
+						}}
 						actions={
 							<div className="flex flex-col gap-3 w-full">
 								{errorMessage && (
@@ -98,12 +99,7 @@ export function SignupPage() {
 										{errorMessage}
 									</Text>
 								)}
-								<Button
-									type="submit"
-									variant="secondary"
-									className="w-full"
-									disabled={waiting}
-								>
+								<Button type="submit" variant="secondary" className="w-full" disabled={waiting}>
 									{waiting ? "Signing up..." : "Sign up"}
 								</Button>
 							</div>

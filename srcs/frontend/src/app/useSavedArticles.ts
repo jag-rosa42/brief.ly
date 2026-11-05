@@ -7,5 +7,5 @@ export function useSavedArticles() {
 	if (context === undefined) {
 		throw new Error("useSavedArticles must be used within a SavedArticlesProvider");
 	}
-	return (context);
+	return context;
 }

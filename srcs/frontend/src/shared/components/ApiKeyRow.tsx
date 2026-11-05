@@ -9,7 +9,9 @@ export function ApiKeyRow({ apiKey, onDelete }: { apiKey: ApiKey; onDelete: () =
 	return (
 		<div className="flex items-center justify-between gap-3 py-2">
 			<div className="flex flex-col">
-				<Text variant="body" className="font-semibold">{apiKey.name}</Text>
+				<Text variant="body" className="font-semibold">
+					{apiKey.name}
+				</Text>
 				<code className="text-sm">••••{apiKey.lastChars}</code>
 				<Text variant="body" className="text-info text-sm">
 					Expires on {formatDate(apiKey.expires)}

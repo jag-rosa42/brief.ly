@@ -7,9 +7,7 @@ interface PreferencesProviderProps {
 	children: ReactNode;
 }
 
-export function PreferencesProvider({
-	children,
-}: PreferencesProviderProps) {
+export function PreferencesProvider({ children }: PreferencesProviderProps) {
 	//TODO: API call to get user's preferences
 	const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
 
@@ -19,9 +17,7 @@ export function PreferencesProvider({
 	}
 
 	return (
-		<PreferencesContext
-			value={{ selectedPreferences, updatePreferences }}
-		>
+		<PreferencesContext value={{ selectedPreferences, updatePreferences }}>
 			{children}
 		</PreferencesContext>
 	);

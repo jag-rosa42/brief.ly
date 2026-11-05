@@ -104,7 +104,8 @@ function PreferencesSection({ tabs }: PreferencesSectionProps) {
 		content = (
 			<Division variant="dashboardcard">
 				<Text variant="body">
-					You haven't selected any preferences yet. Complete your profile to get your personalised brief.
+					You haven't selected any preferences yet. Complete your profile to get your personalised
+					brief.
 				</Text>
 			</Division>
 		);
@@ -121,7 +122,7 @@ function PreferencesSection({ tabs }: PreferencesSectionProps) {
 export function BriefPage() {
 	//TODO: API call to get Dashboard data: connect
 	const { data, isLoading, error } = useDashboardData();
-	
+
 	const [selectedStory, setSelectedStory] = useState<Story | null>(null);
 	const [today] = useState(() => new Date());
 
@@ -129,9 +130,7 @@ export function BriefPage() {
 	const { isSaved, toggleSave } = useSavedArticles();
 
 	if (isLoading) {
-		return (
-			<Spinner />
-		);
+		return <Spinner />;
 	}
 
 	if (error || !data) {

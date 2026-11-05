@@ -2,8 +2,14 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 import { AuthContext } from "@/app/AuthContextDefinition";
-import { register as apiRegister, login as apiLogin, logout as apiLogout, restoreSession, getMe } from "@/features/auth/identity";
-import { type Account } from "@/features/auth/types"
+import {
+	register as apiRegister,
+	login as apiLogin,
+	logout as apiLogout,
+	restoreSession,
+	getMe,
+} from "@/features/auth/identity";
+import { type Account } from "@/features/auth/types";
 import { session } from "@/shared/components/api/client";
 import { LAST_PATH } from "@/app/navigation";
 
@@ -16,9 +22,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 	const [isLoading, setIsLoading] = useState(true);
 
 	//TODO: Temporaire : à remplacer quand le profil sera relié au backend.
-	const [profileComplete, setProfileComplete] = useState(() => localStorage.getItem("profileComplete") === "true");
+	const [profileComplete, setProfileComplete] = useState(
+		() => localStorage.getItem("profileComplete") === "true",
+	);
 
-	const isLoggedIn = (account !== null);
+	const isLoggedIn = account !== null;
 
 	async function login(email: string, password: string) {
 		await apiLogin(email, password);
@@ -49,8 +57,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 				if (restored) {
 					const account = await getMe();
 
-					if (!active)
-						return;
+					if (!active) return;
 
 					setAccount(account);
 

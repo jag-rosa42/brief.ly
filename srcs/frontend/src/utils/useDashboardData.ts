@@ -13,14 +13,17 @@ interface UseDashboardData {
 // react-query, en gardant le même retour { data, isLoading, error }.
 // DashboardPage n'aura pas besoin de changer.
 export function useDashboardData(): UseDashboardData {
-		const { selectedPreferences } = usePreferences();
+	const { selectedPreferences } = usePreferences();
 
-	const data = useMemo<DashboardData>(() => ({
-		...MOCK_DASHBOARD,
-		preferences: MOCK_DASHBOARD.preferences.filter((pref) =>
-			selectedPreferences.includes(pref.id)
-		),
-	}), [selectedPreferences]);
+	const data = useMemo<DashboardData>(
+		() => ({
+			...MOCK_DASHBOARD,
+			preferences: MOCK_DASHBOARD.preferences.filter((pref) =>
+				selectedPreferences.includes(pref.id),
+			),
+		}),
+		[selectedPreferences],
+	);
 
 	return { data, isLoading: false, error: null };
 }

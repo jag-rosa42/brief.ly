@@ -33,10 +33,10 @@ export function DashboardPage({ tab: activeTab }: { tab: DashboardTab }) {
 			<Sidebar
 				tabs={visibleTabs}
 				activeTab={activeTab}
-				onSelectTab={
-					(value) => void navigate(`/dashboard/${value}`)
-				}
-				onDisconnect={() => { void logout(); }}
+				onSelectTab={(value) => void navigate(`/dashboard/${value}`)}
+				onDisconnect={() => {
+					void logout();
+				}}
 			/>
 			<main className="flex-1 min-w-0 p-8">
 				{activeTab === "brief" && <BriefPage />}

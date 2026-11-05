@@ -9,13 +9,13 @@ interface StaticPageProps {
 	children: ReactNode;
 }
 
-export function StaticPage({title, lastUpdated, children,}: StaticPageProps) {
+export function StaticPage({ title, lastUpdated, children }: StaticPageProps) {
 	return (
 		<main className="max-w-2xl mx-auto px-6 py-16">
 			<Text variant="title" className="mb-6">
 				{title}
 			</Text>
-			
+
 			<Text variant="body" className="mb-10">
 				Last updated: {lastUpdated}
 			</Text>
@@ -29,22 +29,19 @@ export function StaticPage({title, lastUpdated, children,}: StaticPageProps) {
 	);
 }
 
-
 interface StaticSectionProps {
 	title: string;
 	children: ReactNode;
 }
 
-export function StaticSection({title,children,}: StaticSectionProps) {
+export function StaticSection({ title, children }: StaticSectionProps) {
 	return (
 		<section className="mb-8">
 			<Text variant="subheading" className="mb-3">
 				{title}
 			</Text>
 
-			<Division variant="content">
-				{children}
-			</Division>
+			<Division variant="content">{children}</Division>
 		</section>
 	);
 }

@@ -4,10 +4,10 @@
 @import "tailwindcss/utilities.css" layer(utilities);
 
 @layer base {
-  button:not(:disabled),
-  [role="button"]:not([aria-disabled="true"]) {
-    cursor: pointer;
-  }
+	button:not(:disabled),
+	[role="button"]:not([aria-disabled="true"]) {
+		cursor: pointer;
+	}
 }
 
 /* Identité visuelle du site — un seul endroit à modifier.
@@ -15,17 +15,16 @@
    correspondantes : bg-primary, text-primary, border-primary,
    bg-secondary, text-accent, etc. */
 @theme {
-
 	--font-sans: "Sofia Sans Variable", sans-serif;
 	--font-serif: "Fraunces Variable", serif;
 
-	--color-primary: #D4751A;
-	--color-secondary: #B79A7A;
-	--color-accent: #493A33;
-	--color-background: #F2EBE0;
-	--color-error: #E62E1C;
-	--color-info: #7A807A;
-	--color-success: #778B6B;
+	--color-primary: #d4751a;
+	--color-secondary: #b79a7a;
+	--color-accent: #493a33;
+	--color-background: #f2ebe0;
+	--color-error: #e62e1c;
+	--color-info: #7a807a;
+	--color-success: #778b6b;
 
 	--color-primary-light: color-mix(in srgb, var(--color-primary) 11%, white);
 	--color-primary-dark: color-mix(in srgb, var(--color-primary) 85%, black);

@@ -6,7 +6,9 @@ export function Layout() {
 	return (
 		<div className="bg-background min-h-screen flex flex-col">
 			<Header />
-			<div className="flex-1"><Outlet /></div>
+			<div className="flex-1">
+				<Outlet />
+			</div>
 			<Footer />
 		</div>
 	);

@@ -5,20 +5,11 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 	selected?: boolean;
 }
 
-export function Button({
-	variant,
-	children,
-	className,
-	selected,
-	...props
-}: ButtonProps) {
+export function Button({ variant, children, className, selected, ...props }: ButtonProps) {
 	const style = getButtonStyle(variant, selected);
 
 	return (
-		<button
-			{...props}
-			className={`${style} ${className ?? ""}`}
-		>
+		<button {...props} className={`${style} ${className ?? ""}`}>
 			{children}
 		</button>
 	);

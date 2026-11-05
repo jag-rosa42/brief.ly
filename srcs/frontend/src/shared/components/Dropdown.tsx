@@ -1,6 +1,6 @@
 import type { ChangeEvent } from "react";
 
-import { getDropdownStyle, type DropdownOption, type DropdownVariant, } from "./dropdownVariants";
+import { getDropdownStyle, type DropdownOption, type DropdownVariant } from "./dropdownVariants";
 
 export interface DropdownFieldProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 	label?: string;
@@ -22,17 +22,13 @@ export function Dropdown({
 	className = "",
 	id,
 	...props
-}:DropdownFieldProps) {
+}: DropdownFieldProps) {
 	const style = getDropdownStyle(variant);
 	const dropdownId = id ?? props.name;
 	return (
 		<label htmlFor={dropdownId} className="flex flex-col gap-1">
 			{label}
-		<select
-			id={dropdownId}
-			{...props}
-			className={`${style} ${className}`}
-			>
+			<select id={dropdownId} {...props} className={`${style} ${className}`}>
 				<option value="" disabled>
 					{placeholder}
 				</option>
@@ -44,6 +40,6 @@ export function Dropdown({
 			</select>
 			{error && <span className="text-sm text-error">{error}</span>}
 			{info && <span className="text-sm text-info">{info}</span>}
-			</label>
+		</label>
 	);
 }

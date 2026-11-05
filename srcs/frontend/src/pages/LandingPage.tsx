@@ -17,45 +17,34 @@ export function LandingPage() {
 					Your daily digest, tuned to what actually matters to you
 				</Text>
 				<Text variant="body" className="max-w-2xl mx-auto">
-					Brief.ly reads the sources so you don't have to —
-					pick your topics, and get sharp, personalized summaries
-					delivered every day.
+					Brief.ly reads the sources so you don't have to — pick your topics, and get sharp,
+					personalized summaries delivered every day.
 				</Text>
 
 				<div className="mt-7">
-					<Link
-						to={startLink}
-						variant="main">
+					<Link to={startLink} variant="main">
 						Start the journey
 					</Link>
 				</div>
 			</section>
 			<section className="grid grid-cols-1 md:grid-cols-3 gap-6 px-6 pt-12 pb-12 max-w-6xl mx-auto">
 				<Division variant="featurecard">
-					<Text variant="heading">
-						Pick your topics
-					</Text>
+					<Text variant="heading">Pick your topics</Text>
 					<Text variant="body">
-						Tell us what you care about — AI, finance, science,
-						whatever — and we'll build your feed around it.
+						Tell us what you care about — AI, finance, science, whatever — and we'll build your feed
+						around it.
 					</Text>
 				</Division>
 				<Division variant="featurecard">
-					<Text variant="heading">
-						Get the essence, fast
-					</Text>
+					<Text variant="heading">Get the essence, fast</Text>
 					<Text variant="body">
-						Every article, boiled down to what matters. No fluff,
-						no clickbait, just the key points.
+						Every article, boiled down to what matters. No fluff, no clickbait, just the key points.
 					</Text>
 				</Division>
 				<Division variant="featurecard">
-					<Text variant="heading">
-						Stay ahead, not overwhelmed
-					</Text>
+					<Text variant="heading">Stay ahead, not overwhelmed</Text>
 					<Text variant="body">
-						A daily digest that respects your time — skim in
-						minutes, stay genuinely informed.
+						A daily digest that respects your time — skim in minutes, stay genuinely informed.
 					</Text>
 				</Division>
 			</section>

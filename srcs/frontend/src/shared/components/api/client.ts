@@ -12,10 +12,7 @@ export type { ApiOptions } from "@/shared/components/api/request";
 // the token is checked whenever a request is made so that the user's status (connected/non connected)
 // is updated at that moment.
 
-export async function apiFetch<T>(
-	path: string,
-	options: ApiOptions = {},
-): Promise<T> {
+export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
 	const auth = options.auth !== false;
 	const token = session.getAccessToken();
 
@@ -29,12 +26,10 @@ export async function apiFetch<T>(
 	if (auth && response.status === 401) {
 		const error = await toApiError(response);
 
-		if (error.code !== "TOKEN_EXPIRED" || (await session.refresh()) === null)
-			throw error;
+		if (error.code !== "TOKEN_EXPIRED" || (await session.refresh()) === null) throw error;
 		response = await send(path, options);
 	}
-	if (!response.ok)
-		throw await toApiError(response);
+	if (!response.ok) throw await toApiError(response);
 
 	if (response.status === 204) {
 		return undefined as T;

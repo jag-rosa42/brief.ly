@@ -7,7 +7,7 @@ import { ArticleModal, type Story } from "@/shared/components/ArticleModal";
 import { Dropdown } from "@/shared/components/Dropdown";
 import { Input } from "@/shared/components/Input";
 import { Text } from "@/shared/components/Text";
-import { Division } from "@/shared/components/Division"
+import { Division } from "@/shared/components/Division";
 
 const ARTICLES_PER_PAGE = 4;
 const DEFAULT_READING_TIME = 4;
@@ -38,7 +38,10 @@ interface FilterValues {
 }
 
 function filterArticles(articles: Story[], { search, source, topic }: FilterValues): Story[] {
-	const keywords = search.toLowerCase().split(" ").filter((word) => word !== "");
+	const keywords = search
+		.toLowerCase()
+		.split(" ")
+		.filter((word) => word !== "");
 
 	return articles.filter((article) => {
 		const content = `${article.title} ${article.summary}`.toLowerCase();
@@ -57,7 +60,7 @@ function sortByReadingTime(articles: Story[], order: string): Story[] {
 		let timeB = b.readingTime;
 
 		timeA ??= DEFAULT_READING_TIME;
-  		timeB ??= DEFAULT_READING_TIME;
+		timeB ??= DEFAULT_READING_TIME;
 
 		if (order === "asc") {
 			return timeA - timeB;
@@ -106,7 +109,10 @@ function SavedArticlesFilters({
 				name="source"
 				label="Source"
 				variant="main"
-				options={buildOptions(articles.map((article) => article.source), "All sources")}
+				options={buildOptions(
+					articles.map((article) => article.source),
+					"All sources",
+				)}
 				value={source}
 				onChange={(e) => onSourceChange(e.target.value)}
 			/>
@@ -114,7 +120,10 @@ function SavedArticlesFilters({
 				name="topic"
 				label="Topic"
 				variant="main"
-				options={buildOptions(articles.map((article) => article.category), "All topics")}
+				options={buildOptions(
+					articles.map((article) => article.category),
+					"All topics",
+				)}
 				value={topic}
 				onChange={(e) => onTopicChange(e.target.value)}
 			/>
@@ -139,11 +148,21 @@ interface PaginationProps {
 function Pagination({ currentPage, pageCount, onPageChange }: PaginationProps) {
 	return (
 		<div className="flex items-center justify-center gap-4">
-			<Button variant="primary" disabled={currentPage === 1} onClick={() => onPageChange(currentPage - 1)}>
+			<Button
+				variant="primary"
+				disabled={currentPage === 1}
+				onClick={() => onPageChange(currentPage - 1)}
+			>
 				🡨
 			</Button>
-			<Text variant="body">Page {currentPage} / {pageCount}</Text>
-			<Button variant="primary" disabled={currentPage === pageCount} onClick={() => onPageChange(currentPage + 1)}>
+			<Text variant="body">
+				Page {currentPage} / {pageCount}
+			</Text>
+			<Button
+				variant="primary"
+				disabled={currentPage === pageCount}
+				onClick={() => onPageChange(currentPage + 1)}
+			>
 				🡪
 			</Button>
 		</div>
@@ -165,7 +184,7 @@ export function SavedArticles() {
 	let allStories: Story[] = [];
 	if (data) {
 		allStories = data.preferences.flatMap((pref) => {
-			return (pref.stories);
+			return pref.stories;
 		});
 	}
 	const articles = getSavedArticles(allStories, savedIds);
