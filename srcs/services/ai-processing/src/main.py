@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from shared_errors import register_shared_exception_handlers
 
-from src.api.routers import api_routers, root_routers
+from src.api.routers import root_routers
 from src.infrastructure.config.app import app_settings
 
 
@@ -19,7 +19,6 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(root_routers)
-    app.include_router(api_routers)
 
     register_shared_exception_handlers(app)
 

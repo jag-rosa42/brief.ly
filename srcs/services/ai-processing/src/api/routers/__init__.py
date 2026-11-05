@@ -14,14 +14,5 @@ from src.api.routers.health.router import router as health_router
 root_routers = APIRouter()
 root_routers.include_router(health_router)
 
-
-# ---------------------------------------------------------------------------
-# API endpoints
-# ---------------------------------------------------------------------------
-# All routers registered here are exposed under the /api prefix.
-#
-# Example:
-#   auth_router -> POST /api/auth/...
-# ---------------------------------------------------------------------------
-api_routers = APIRouter(prefix="/api")
-# api_routers.include_router()
+# No business routes: AI Processing is a worker that writes summaries to
+# Content Management (ADR-0010). Nobody calls it during a request.
