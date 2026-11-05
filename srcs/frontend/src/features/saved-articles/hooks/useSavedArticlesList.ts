@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { deleteSavedArticle, getSavedArticles } from "@/features/saved-articles/api";
 import type { SavedArticle } from "@/features/saved-articles/types";
+import { useNotify } from "@/app/useNotify";
 
 export function useSavedArticlesList() {
 	const [data, setData] = useState<SavedArticle[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const { notify } = useNotify();
 
 	useEffect(() => {
 		let active = true;
@@ -39,8 +41,9 @@ export function useSavedArticlesList() {
 		try {
 			await deleteSavedArticle(articleId);
 			setData((prev) => prev.filter((article) => article.article_id !== articleId));
+			notify("The article has been removed from your saved articles.", "success");
 		} catch {
-			// TODO: notify the user that the article could not be removed.
+			notify("The article could not be removed, please try again.", "error");
 		}
 	}
 

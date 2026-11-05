@@ -13,6 +13,7 @@ import { Division } from "@/shared/components/Division";
 import isEmail from "validator/lib/isEmail";
 
 import { ApiError } from "@/shared/components/api/client";
+import { useNotify } from "@/app/useNotify";
 
 interface SignupLocationState {
 	message?: unknown;
@@ -32,6 +33,7 @@ export function SignupPage() {
 	const [waiting, setWaiting] = useState(false);
 	const navigate = useNavigate();
 	const { signup } = useAuth();
+	const { notify } = useNotify();
 	const location = useLocation();
 	const navigationState = location.state as SignupLocationState | null;
 	const initialMessage =
@@ -62,6 +64,7 @@ export function SignupPage() {
 		}
 		try {
 			await signup(email.trim(), password);
+			notify("Your account has been created.", "success");
 			void navigate("/dashboard/profile");
 		} catch (err) {
 			if (err instanceof ApiError && err.code === "EMAIL_ALREADY_REGISTERED") {
@@ -69,9 +72,9 @@ export function SignupPage() {
 			} else if (err instanceof ApiError && err.code === "VALIDATION_ERROR") {
 				setErrorMessage("Some fields are invalid, please check your input");
 			} else if (err instanceof ApiError) {
-				setErrorMessage("Something went wrong, please try again");
+				notify("Something went wrong, please try again", "error");
 			} else {
-				setErrorMessage("Unable to reach the server");
+				notify("Unable to reach the server", "error");
 			}
 		} finally {
 			setWaiting(false);

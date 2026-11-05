@@ -1,8 +1,8 @@
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/useAuth";
 import { Link } from "@/shared/components/Link";
 import { Button } from "@/shared/components/Button";
 import { Logo } from "@/shared/components/Logo";
+import { useLogout } from "@/app/useLogout";
 
 export function Header() {
 	const { isLoggedIn } = useAuth();
@@ -16,8 +16,9 @@ export function Header() {
 }
 
 export function NavbarLogged() {
-	const navigate = useNavigate();
-	const { profileComplete, logout } = useAuth();
+	const { profileComplete } = useAuth();
+	const logout = useLogout();
+
 	return (
 		<div className="flex gap-4">
 			<Button
@@ -25,7 +26,6 @@ export function NavbarLogged() {
 				variant="primary"
 				onClick={() => {
 					void logout();
-					void navigate("/");
 				}}
 			>
 				Log out

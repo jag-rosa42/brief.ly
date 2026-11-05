@@ -12,6 +12,7 @@ import { Division } from "@/shared/components/Division";
 
 import isEmail from "validator/lib/isEmail";
 import { ApiError } from "@/shared/components/api/client";
+import { useNotify } from "@/app/useNotify";
 
 interface LoginLocationState {
 	message?: unknown;
@@ -29,6 +30,7 @@ export function LoginPage() {
 	const [email, setEmail] = useState("");
 	const [waiting, setWaiting] = useState(false);
 	const { login } = useAuth();
+	const { notify } = useNotify();
 	const location = useLocation();
 
 	const navigationState = location.state as LoginLocationState | null;
@@ -56,15 +58,16 @@ export function LoginPage() {
 		}
 		try {
 			await login(email.trim(), password);
+			notify("Logged in successfully", "success");
 		} catch (err) {
 			if (err instanceof ApiError && err.code === "INVALID_CREDENTIALS") {
 				setErrorMessage("Invalid email or password");
 			} else if (err instanceof ApiError && err.code === "VALIDATION_ERROR") {
 				setErrorMessage("Some fields are invalid, please check your input");
 			} else if (err instanceof ApiError) {
-				setErrorMessage("Something went wrong, please try again");
+				notify("Something went wrong, please try again", "error");
 			} else {
-				setErrorMessage("Unable to reach the server");
+				notify("Unable to reach the server", "error");
 			}
 		} finally {
 			setWaiting(false);

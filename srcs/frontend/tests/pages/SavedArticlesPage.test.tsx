@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, expect, test, vi } from "vitest";
 import { AuthContext, type AuthContextValue } from "@/app/AuthContextDefinition";
+import { NotificationProvider } from "@/app/NotificationContext";
 import { AppRouter } from "@/app/router";
 import { deleteSavedArticle, getSavedArticles } from "@/features/saved-articles/api";
 import type { SavedArticle } from "@/features/saved-articles/types";
@@ -48,7 +49,9 @@ function answerWith(items: SavedArticle[]) {
 function renderPage() {
 	render(
 		<MemoryRouter>
-			<SavedArticles />
+			<NotificationProvider>
+				<SavedArticles />
+			</NotificationProvider>
 		</MemoryRouter>,
 	);
 }
@@ -100,6 +103,9 @@ test("removes the article when clicking Saved", async () => {
 	expect(deleteSavedArticle).toHaveBeenCalledWith(FIRST.article_id);
 	await waitFor(() => expect(screen.queryByText(FIRST.title)).not.toBeInTheDocument());
 	expect(screen.getByText(SECOND.title)).toBeInTheDocument();
+	expect(screen.getByRole("status")).toHaveTextContent(
+		"The article has been removed from your saved articles.",
+	);
 });
 
 test("keeps the article when the removal fails", async () => {
@@ -109,8 +115,10 @@ test("keeps the article when the removal fails", async () => {
 	renderPage();
 	fireEvent.click((await screen.findAllByRole("button", { name: "Saved" }))[0]);
 
-	// Wait for the failed call, otherwise the check below would run before the answer.
-	await waitFor(() => expect(deleteSavedArticle).toHaveBeenCalledWith(FIRST.article_id));
+	// Wait for the error, otherwise the checks below would run before the answer.
+	expect(await screen.findByRole("alert")).toHaveTextContent(
+		"The article could not be removed, please try again.",
+	);
 	expect(screen.getByText(FIRST.title)).toBeInTheDocument();
 	expect(screen.getByText(SECOND.title)).toBeInTheDocument();
 });
