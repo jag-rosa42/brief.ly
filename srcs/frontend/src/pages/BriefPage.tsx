@@ -3,7 +3,7 @@ import { Division } from "@/shared/components/Division";
 import { Text } from "@/shared/components/Text";
 import { Tabs, type TabItem } from "@/shared/components/Tab";
 import { ArticleCard } from "@/shared/components/ArticleCard";
-import { ArticleModal, type Story } from "@/shared/components/ArticleModal";
+import { ArticleModal, type Article } from "@/shared/components/ArticleModal";
 import { useDashboardData } from "@/utils/useDashboardData";
 import { useSavedArticles } from "@/app/useSavedArticles";
 import { Spinner } from "@/shared/components/Spinner";
@@ -12,14 +12,14 @@ interface Preference {
 	id: string;
 	name: string;
 	summary: string;
-	stories: Story[];
+	articles: Article[];
 }
 
 interface PreferencePanelProps {
 	preference: Preference;
 	isSaved: (id: string) => boolean;
 	onToggleSave: (id: string) => void;
-	onReadMore: (story: Story) => void;
+	onReadMore: (article: Article) => void;
 }
 
 interface DashboardHeaderProps {
@@ -81,13 +81,13 @@ function PreferencePanel({ preference, isSaved, onToggleSave, onReadMore }: Pref
 				</div>
 
 				<div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-					{preference.stories.map((story) => (
+					{preference.articles.map((article) => (
 						<ArticleCard
-							key={story.id}
-							story={story}
-							isSaved={isSaved(story.id)}
-							onReadMore={() => onReadMore(story)}
-							onToggleSave={() => onToggleSave(story.id)}
+							key={article.id}
+							article={article}
+							isSaved={isSaved(article.id)}
+							onReadMore={() => onReadMore(article)}
+							onToggleSave={() => onToggleSave(article.id)}
 						/>
 					))}
 				</div>
@@ -123,7 +123,7 @@ export function BriefPage() {
 	//TODO: API call to get Dashboard data: connect
 	const { data, isLoading, error } = useDashboardData();
 
-	const [selectedStory, setSelectedStory] = useState<Story | null>(null);
+	const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 	const [today] = useState(() => new Date());
 
 	// TODO: call API here to get the saved articles' ids
@@ -148,7 +148,7 @@ export function BriefPage() {
 				preference={preference}
 				isSaved={isSaved}
 				onToggleSave={toggleSave}
-				onReadMore={setSelectedStory}
+				onReadMore={setSelectedArticle}
 			/>
 		),
 	}));
@@ -157,7 +157,7 @@ export function BriefPage() {
 		<Division variant="dashboardpage" className="max-w-6x1 gap-8">
 			<DashboardHeader firstName={data.user.firstName} today={today} />
 			<PreferencesSection tabs={tabs} />
-			<ArticleModal story={selectedStory} onClose={() => setSelectedStory(null)} />
+			<ArticleModal article={selectedArticle} onClose={() => setSelectedArticle(null)} />
 		</Division>
 	);
 }

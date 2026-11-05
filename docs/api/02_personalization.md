@@ -10,9 +10,9 @@ It serves the same use cases through two doors: Frontend routes (browser token) 
 | Frontend | GET | `/api/personalization/me/profile` | `/me/profile` | Bearer | 200 | Done |
 | Frontend | PUT | `/api/personalization/me/profile` | `/me/profile` | Bearer | 201 / 200 | Done |
 | Frontend | GET | `/api/personalization/topics` | `/topics` | Bearer | 200 | Done |
-| Frontend | GET | `/api/personalization/me/saved-articles` | `/me/saved-articles` | Bearer | 200 | To do |
+| Frontend | GET | `/api/personalization/me/saved-articles` | `/me/saved-articles` | Bearer | 200 | Done |
 | Frontend | POST | `/api/personalization/me/saved-articles/{article_id}` | `/me/saved-articles/{article_id}` | Bearer | 201 | To do |
-| Frontend | DELETE | `/api/personalization/me/saved-articles/{article_id}` | `/me/saved-articles/{article_id}` | Bearer | 204 | To do |
+| Frontend | DELETE | `/api/personalization/me/saved-articles/{article_id}` | `/me/saved-articles/{article_id}` | Bearer | 204 | Done |
 | Public | GET | `/public/v1/topics` | same | API key (`read`) | 200 | To do |
 | Public | GET | `/public/v1/me/profile` | same | API key (`read`) | 200 | To do |
 | Public | PUT | `/public/v1/me/profile` | same | API key (`write`) | 201 / 200 | To do |

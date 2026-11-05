@@ -66,6 +66,7 @@ services:
       VITE_HMR_HOST: localhost
       VITE_HMR_CLIENT_PORT: ${FRONTEND_PORT:?Variable not set}
       IDENTITY_URL: http://identity:8000
+      PERSONALIZATION_URL: http://personalization:8000
 
   front-test:
     build:
