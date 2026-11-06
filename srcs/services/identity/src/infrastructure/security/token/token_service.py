@@ -11,6 +11,7 @@ from pydantic import SecretStr
 from src.application.port.token.types import (
     AccessTokenClaims,
     CreatedRefreshToken,
+    CreatedServiceToken,
     CreatedToken,
     RefreshTokenClaims,
 )
@@ -51,11 +52,15 @@ class JWTTokenService:
             TokenType.REFRESH: timedelta(
                 days=security_settings.REFRESH_TOKEN_EXPIRE_DAYS
             ),
+            TokenType.SERVICE: timedelta(
+                minutes=security_settings.SERVICE_TOKEN_EXPIRE_MINUTES
+            ),
         }
 
     def create_access_token(self, account_id: UUID) -> str:
         created_token: CreatedToken = self._create_token(
-            account_id,
+            subject=str(account_id),
+            audience=self._audiences[TokenType.ACCESS],
             token_type=TokenType.ACCESS,
         )
         return created_token.token
@@ -71,7 +76,8 @@ class JWTTokenService:
 
     def create_refresh_token(self, account_id: UUID) -> CreatedRefreshToken:
         refresh_token: CreatedToken = self._create_token(
-            account_id,
+            subject=str(account_id),
+            audience=self._audiences[TokenType.REFRESH],
             token_type=TokenType.REFRESH,
         )
         return CreatedRefreshToken(
@@ -93,27 +99,63 @@ class JWTTokenService:
             expires_at=datetime.fromtimestamp(timestamp=payload.expires_at, tz=UTC),
         )
 
+    def create_service_token(
+        self,
+        client_id: str,
+        audience: str,
+        scopes: frozenset[str],
+    ) -> CreatedServiceToken:
+        """A token for a backend service, with no user (ADR-0007, ADR-0008).
+
+        Same issuer, key and `kid` as access tokens. What differs: the
+        audience is the service being called, `sub` names the calling
+        service, and `scope` lists what it may do there. The receiving
+        service checks all of it with shared_auth.
+        """
+        lifetime: timedelta = self._lifetimes[TokenType.SERVICE]
+        created_token: CreatedToken = self._create_token(
+            subject=f"service:{client_id}",
+            audience=audience,
+            token_type=TokenType.SERVICE,
+            # RFC 6749 §3.3 and RFC 9068: the scopes are one space-separated
+            # string. Sorted, so the same request always gives the same claim.
+            extra_claims={"scope": " ".join(sorted(scopes))},
+        )
+        return CreatedServiceToken(
+            token=created_token.token,
+            expires_in=int(lifetime.total_seconds()),
+        )
+
     @staticmethod
     def hash_token(token: str) -> str:
         return hashlib.sha256(token.encode()).hexdigest()
 
-    def _create_token(self, account_id: UUID, token_type: TokenType) -> CreatedToken:
+    def _create_token(
+        self,
+        subject: str,
+        audience: str,
+        token_type: TokenType,
+        extra_claims: dict[str, Any] | None = None,
+    ) -> CreatedToken:
         now: datetime = datetime.now(UTC)
         token_id: UUID = uuid4()
         expires_at: datetime = now + self._lifetimes[token_type]
         payload: dict[str, Any] = {
+            # Extra claim goes first so that an extra one can never replace a standard one
+            **(extra_claims or {}),
             "iss": self._issuer,
-            "aud": self._audiences[token_type],
-            "jti": str(token_id),  # token id
-            "sub": str(account_id),  # subject
+            "aud": audience,
+            "jti": str(token_id),  # jwt token id
+            "sub": subject,
             "type": token_type,
             "iat": now,  # Issued at
             "exp": expires_at,
         }
+        # Sign the claims with Identity's private key; the header carries the `kid`
         token: str = jwt.encode(
             payload,
-            self._private_key.get_secret_value(),
-            self._algorithm,
+            key=self._private_key.get_secret_value(),
+            algorithm=self._algorithm,
             headers={"kid": self._key_id},
         )
         return CreatedToken(id=token_id, token=token, expires_at=expires_at)

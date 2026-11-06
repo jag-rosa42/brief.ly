@@ -19,6 +19,9 @@ pytest_plugins: list[str] = [
     # Accounts depend on sessions
     "tests.fixtures.accounts",
 
+    # Service clients (client credentials)
+    "tests.fixtures.oauth",
+
     # Infrastructure fixtures
     "tests.fixtures.database",
     "tests.fixtures.http",
