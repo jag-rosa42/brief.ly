@@ -4,6 +4,7 @@ from uuid import UUID
 
 import httpx2 as httpx
 import pytest
+from shared_errors import InfrastructureError
 
 from src.application.models.article import Article
 from src.infrastructure.clients.OllamaSummarizerClient import OllamaSummarizerClient
@@ -158,8 +159,30 @@ def test_summarize_article_rejects_streamed_provider_error() -> None:
         ),
     ) as http_client:
         client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
-        with pytest.raises(RuntimeError, match="Ollama failed"):
+        with pytest.raises(InfrastructureError, match="Ollama failed"):
             client.ai_summarize_article(ARTICLE)
+
+
+def test_summarize_article_reports_ollama_timeout() -> None:
+    def fail(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("too slow", request=request)
+
+    with httpx.Client(
+        base_url="http://ollama:11434", transport=httpx.MockTransport(fail)
+    ) as http_client:
+        client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
+        with pytest.raises(InfrastructureError, match="Ollama is unavailable"):
+            client.ai_summarize_article(ARTICLE)
+
+
+def test_summarize_topic_reports_unavailable_ollama() -> None:
+    with httpx.Client(
+        base_url="http://ollama:11434",
+        transport=httpx.MockTransport(lambda request: httpx.Response(503)),
+    ) as http_client:
+        client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
+        with pytest.raises(InfrastructureError, match="Ollama is unavailable"):
+            client.ai_summarize_topic("local-news", ["First.", "Second."])
 
 
 def test_summarize_topic_uses_stored_summaries_and_validates_result() -> None:

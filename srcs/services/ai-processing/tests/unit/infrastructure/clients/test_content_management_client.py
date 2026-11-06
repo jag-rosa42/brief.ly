@@ -3,10 +3,23 @@ from uuid import UUID
 
 import httpx2 as httpx
 import pytest
+from shared_errors import InfrastructureError
 
 from src.application.models.article_assessment import ArticleAssessment
 from src.infrastructure.clients.ContentManagementClient import ContentManagementClient
 from tests.model import DEFAULT_MODEL
+
+
+def test_requests_omit_authorization_header() -> None:
+    def respond(request: httpx.Request) -> httpx.Response:
+        assert "Authorization" not in request.headers
+        return httpx.Response(200, json={"items": []})
+
+    with httpx.Client(
+        base_url="http://content-management", transport=httpx.MockTransport(respond)
+    ) as http_client:
+        client = ContentManagementClient(http_client)
+        assert client.list_missing_articles(limit=25) == []
 
 
 def test_list_missing_articles_map_response() -> None:
@@ -70,7 +83,7 @@ def test_save_article_assessment_sends_expected_put() -> None:
         )
 
 
-def test_save_article_assessment_raises_on_failed_put() -> None:
+def test_save_article_assessment_reports_unavailable_service() -> None:
     article_id = UUID("123e4567-e89b-12d3-a456-426614174000")
 
     with httpx.Client(
@@ -78,10 +91,37 @@ def test_save_article_assessment_raises_on_failed_put() -> None:
         transport=httpx.MockTransport(lambda request: httpx.Response(503)),
     ) as http_client:
         client = ContentManagementClient(http_client)
-        with pytest.raises(httpx.HTTPStatusError):
+        with pytest.raises(InfrastructureError, match="Content Management"):
             client.save_article_assessment(
                 article_id,
                 ArticleAssessment(False, "Complete article", "A concise summary.", 1234),
+                DEFAULT_MODEL,
+            )
+
+
+def test_list_missing_articles_reports_connection_failure() -> None:
+    def fail(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connection refused", request=request)
+
+    with httpx.Client(
+        base_url="http://content-management", transport=httpx.MockTransport(fail)
+    ) as http_client:
+        client = ContentManagementClient(http_client)
+        with pytest.raises(InfrastructureError, match="Content Management"):
+            client.list_missing_articles(limit=25)
+
+
+def test_save_article_assessment_preserves_non_availability_error() -> None:
+    article_id = UUID("123e4567-e89b-12d3-a456-426614174000")
+    with httpx.Client(
+        base_url="http://content-management",
+        transport=httpx.MockTransport(lambda request: httpx.Response(404)),
+    ) as http_client:
+        client = ContentManagementClient(http_client)
+        with pytest.raises(httpx.HTTPStatusError):
+            client.save_article_assessment(
+                article_id,
+                ArticleAssessment(False, "Complete article", "A summary.", 1234),
                 DEFAULT_MODEL,
             )
 
