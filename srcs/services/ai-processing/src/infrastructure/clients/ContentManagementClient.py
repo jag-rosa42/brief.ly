@@ -1,9 +1,13 @@
+from urllib.parse import quote
 from uuid import UUID
 
 from httpx2 import Client
 
 from src.application.models.article import Article
 from src.application.models.article_assessment import ArticleAssessment
+from src.application.models.topic_article_summary import (
+    TopicArticleSummary,
+)
 
 
 class ContentManagementClient:
@@ -49,3 +53,48 @@ class ContentManagementClient:
         )
         response.raise_for_status()
 
+    def list_topics(self) -> list[str]:
+        response = self.http_client.get(
+            "/internal/v1/topics",
+            timeout=10,
+        )
+        response.raise_for_status()
+        topics = response.json()
+        if not isinstance(topics, list):
+            raise ValueError("Content Management returned invalid topics")
+        topic_ids = [topic["id"] for topic in topics]
+        if any(not isinstance(topic_id, str) or not topic_id for topic_id in topic_ids):
+            raise ValueError("Content Management returned an invalid topic ID")
+        return topic_ids
+
+    def list_topic_article_summaries(
+        self, topic_id: str, limit: int
+    ) -> list[TopicArticleSummary]:
+        params: dict[str, str | int] = {"topic_id": topic_id, "limit": limit}
+        response = self.http_client.get(
+            "/internal/v1/articles",
+            params=params,
+            timeout=10,
+        )
+        response.raise_for_status()
+        data = response.json()
+        items = data["items"]
+        if not isinstance(items, list) or len(items) > limit:
+            raise ValueError("Content Management returned an invalid topic article list")
+        summaries = [
+            TopicArticleSummary(
+                article_id=UUID(item["article_id"]), summary=item["summary"]
+            )
+            for item in items
+        ]
+        if any(not isinstance(item.summary, str) for item in summaries):
+            raise ValueError("Content Management returned an invalid article summary")
+        return summaries
+
+    def save_topic_summary(self, topic_id: str, summary: str, llm_model: str) -> None:
+        response = self.http_client.put(
+            f"/internal/v1/topics/{quote(topic_id, safe='')}/summary",
+            json={"text": summary, "llm_model": llm_model},
+            timeout=10,
+        )
+        response.raise_for_status()
