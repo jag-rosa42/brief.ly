@@ -87,6 +87,7 @@ def test_lists_articles_by_topic(
                 "publisher_name": "Example source",
                 "url": "https://example.com/article",
                 "topic_id": "science",
+                "language": "en",
                 "content": article.content,
                 "read_time_minutes": 1,
                 "summary": "Example summary",

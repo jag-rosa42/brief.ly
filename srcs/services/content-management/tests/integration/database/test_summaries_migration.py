@@ -32,7 +32,10 @@ def test_migration_extracts_article_summaries_to_a_dedicated_table(
     assert isinstance(columns["rejected"]["type"], Boolean)
     assert isinstance(columns["quality_comment"]["type"], Text)
     assert isinstance(columns["generation_duration_ms"]["type"], BigInteger)
-    assert all(not column["nullable"] for column in columns.values())
+    assert columns["text"]["nullable"]
+    assert all(
+        not column["nullable"] for name, column in columns.items() if name != "text"
+    )
 
     foreign_keys = inspector.get_foreign_keys("article_summaries")
     assert len(foreign_keys) == 1

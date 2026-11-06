@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Annotated, Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 from src.domain.entities import NormalizedArticle
 
@@ -23,11 +23,21 @@ QualityComment = Annotated[
 class UpdateArticleSummaryRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    text: Summary
+    text: Summary | None = Field(
+        description="Null when rejected is true; non-empty when rejected is false."
+    )
     llm_model: SummaryLlmModel
     rejected: bool
     quality_comment: QualityComment
     generation_duration_ms: Annotated[int, Field(ge=0)]
+
+    @model_validator(mode="after")
+    def validate_text_for_rejection(self) -> Self:
+        if self.rejected and self.text is not None:
+            raise ValueError("A rejected article must have a null summary.")
+        if not self.rejected and self.text is None:
+            raise ValueError("An accepted article must have a summary.")
+        return self
 
 
 class ArticleResponse(BaseModel):
@@ -36,6 +46,7 @@ class ArticleResponse(BaseModel):
     publisher_name: str
     url: str
     topic_id: str
+    language: str
     content: str
     read_time_minutes: int
     summary: str | None
@@ -52,9 +63,14 @@ class ArticleResponse(BaseModel):
             publisher_name=article.publisher_name,
             url=article.url,
             topic_id=article.category,
+            language=article.language,
             content=article.content,
             read_time_minutes=article.read_time_minutes,
-            summary=article.summary.text if article.summary is not None else None,
+            summary=(
+                article.summary.text
+                if article.summary is not None and not article.summary.rejected
+                else None
+            ),
             summarized_at=(
                 article.summary.summarized_at if article.summary is not None else None
             ),

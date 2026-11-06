@@ -123,7 +123,7 @@ Header: Authorization: Bearer <access token>
     {
       "article_id": UUID,
       "title": str,
-      "source": str,
+      "publisher_name": str,           copied from Content Management at save time
       "topic_id": str,
       "summary": str | null,           copied from Content Management at save time;
                                        null if the article was not summarized yet

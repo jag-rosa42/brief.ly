@@ -19,7 +19,7 @@ class UpdateArticleSummary:
     def execute(
         self,
         article_id: UUID,
-        text: str,
+        text: str | None,
         llm_model: str,
         rejected: bool,
         quality_comment: str,

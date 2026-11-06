@@ -56,6 +56,8 @@ def test_list_returns_the_saved_articles(
         str(older.article_id),
     ]
     assert items[0]["title"] == "Article"
+    assert items[0]["publisher_name"] == "Source"
+    assert "source" not in items[0]
     assert items[0]["summary"] is None
     assert "account_id" not in items[0]
 

@@ -68,7 +68,8 @@ def test_article_summary_model_declares_the_required_persistence_contract():
     assert isinstance(table.columns["rejected"].type, Boolean)
     assert isinstance(table.columns["quality_comment"].type, Text)
     assert isinstance(table.columns["generation_duration_ms"].type, BigInteger)
-    assert all(not column.nullable for column in table.columns)
+    assert table.columns["text"].nullable
+    assert all(not column.nullable for column in table.columns if column.name != "text")
 
     foreign_key = next(iter(table.foreign_keys))
     assert foreign_key.target_fullname == "normalized_articles.id"

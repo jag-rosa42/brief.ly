@@ -26,7 +26,7 @@ class NormalizedArticle:
 
     @property
     def read_time_minutes(self) -> int:
-        if self.summary is None:
+        if self.summary is None or self.summary.rejected or self.summary.text is None:
             return 0
         summary_words = self.summary.text.split()
         if not summary_words:

@@ -28,7 +28,7 @@ class ArticleSummaryModel(Base):
         ForeignKey("normalized_articles.id", ondelete="CASCADE"),
         primary_key=True,
     )
-    text: Mapped[str] = mapped_column(String(2000))
+    text: Mapped[str | None] = mapped_column(String(2000), nullable=True)
     summarized_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     llm_model: Mapped[str] = mapped_column()
     rejected: Mapped[bool] = mapped_column(Boolean)
