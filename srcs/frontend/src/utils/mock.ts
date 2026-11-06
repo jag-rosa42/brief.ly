@@ -16,8 +16,8 @@ export const MOCK_DASHBOARD: DashboardData = {
 	user: { firstName: "Kate" },
 	preferences: [
 		{
-			id: "technologies",
-			name: "Technologies",
+			id: "technology",
+			name: "Technology",
 			summary:
 				"Open-source models keep narrowing the gap with proprietary ones, while infrastructure spending continues to accelerate across Europe and the US.",
 			articles: [
@@ -153,8 +153,8 @@ export const MOCK_DASHBOARD: DashboardData = {
 			],
 		},
 		{
-			id: "sport",
-			name: "Sport",
+			id: "sports",
+			name: "Sports",
 			summary:
 				"Sports teams are exploring new training methods and performance analytics, while young athletes continue to make their mark in international competitions.",
 			articles: [

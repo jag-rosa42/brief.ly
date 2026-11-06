@@ -1,6 +1,5 @@
 import { MOCK_DASHBOARD, type DashboardData } from "@/utils/mock";
-import { useMemo } from "react";
-import { usePreferences } from "@/app/usePreferences";
+import { useProfile } from "@/app/useProfile";
 
 interface UseDashboardData {
 	data: DashboardData | null;
@@ -8,22 +7,23 @@ interface UseDashboardData {
 	error: string | null;
 }
 
-// Aujourd'hui : renvoie les mocks.
-// Plus tard : remplace le contenu par un fetch (useState + useEffect) ou
-// react-query, en gardant le même retour { data, isLoading, error }.
-// DashboardPage n'aura pas besoin de changer.
-export function useDashboardData(): UseDashboardData {
-	const { selectedPreferences } = usePreferences();
+// Dashboard data is currently mocked.
+// User preferences are retrieved from the real Personalization profile
+// and used to filter the mock preferences.
+// TODO: replace MOCK_DASHBOARD with real API data
 
-	const data = useMemo<DashboardData>(
-		() => ({
-			...MOCK_DASHBOARD,
-			preferences: MOCK_DASHBOARD.preferences.filter((pref) =>
-				selectedPreferences.includes(pref.id),
-			),
-		}),
-		[selectedPreferences],
-	);
+export function useDashboardData(): UseDashboardData {
+	const { profile } = useProfile();
+	let selectedPreferences: string[] = [];
+
+	if (profile?.topic_ids) {
+		selectedPreferences = profile.topic_ids;
+	}
+
+	const data: DashboardData = {
+		...MOCK_DASHBOARD,
+		preferences: MOCK_DASHBOARD.preferences.filter((pref) => selectedPreferences.includes(pref.id)),
+	};
 
 	return { data, isLoading: false, error: null };
 }

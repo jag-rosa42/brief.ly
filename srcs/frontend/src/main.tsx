@@ -7,19 +7,19 @@ import "@/index.css";
 import App from "@/App.tsx";
 import { AuthProvider } from "@/app/AuthContext";
 import { SavedArticlesProvider } from "@/app/SavedArticlesContext";
-import { PreferencesProvider } from "@/app/PreferencesContext";
 import { NotificationProvider } from "@/app/NotificationContext";
+import { ProfileProvider } from "@/app/ProfileContext";
 
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>
 		<BrowserRouter>
 			<NotificationProvider>
 				<AuthProvider>
-					<PreferencesProvider>
+					<ProfileProvider>
 						<SavedArticlesProvider>
 							<App />
 						</SavedArticlesProvider>
-					</PreferencesProvider>
+					</ProfileProvider>
 				</AuthProvider>
 			</NotificationProvider>
 		</BrowserRouter>

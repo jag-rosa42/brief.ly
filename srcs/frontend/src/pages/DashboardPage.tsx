@@ -1,4 +1,3 @@
-import { useAuth } from "@/app/useAuth";
 import { Navigate, useNavigate } from "react-router-dom";
 import { type TabItem } from "@/shared/components/Tab";
 import { SavedArticles } from "@/pages/SavedArticlesPage";
@@ -8,6 +7,10 @@ import { Sidebar } from "@/shared/components/Sidebar";
 import { PublicApiKeyPage } from "@/pages/PublicApiKeyPage";
 import type { DashboardTab } from "@/app/navigation";
 import { useLogout } from "@/app/useLogout";
+import { useProfile } from "@/app/useProfile";
+import { Text } from "@/shared/components/Text";
+import { Button } from "@/shared/components/Button";
+import { Division } from "@/shared/components/Division";
 
 const tabs: (TabItem & { value: DashboardTab })[] = [
 	{ value: "brief", label: "Morning Briefing" },
@@ -18,16 +21,36 @@ const tabs: (TabItem & { value: DashboardTab })[] = [
 
 export function DashboardPage({ tab: activeTab }: { tab: DashboardTab }) {
 	const navigate = useNavigate();
-	const { profileComplete } = useAuth();
 	const logout = useLogout();
+	const { profile, loading, error, reload } = useProfile();
 
-	if (!profileComplete && activeTab !== "profile") {
+	if (loading) {
+		return (
+			<Division variant="dashboardpage" className="items-center">
+				<Text variant="body">Loading...</Text>
+			</Division>
+		);
+	}
+	if (error) {
+		return (
+			<Division variant="dashboardpage" className="items-center">
+				<Text variant="error" role="alert">
+					{error}
+				</Text>
+				<Button variant="secondary" onClick={() => void reload()}>
+					Retry
+				</Button>
+			</Division>
+		);
+	}
+	const isProfileComplete = profile !== null;
+	if (!isProfileComplete && activeTab !== "profile") {
 		return <Navigate to="/dashboard/profile" replace />;
 	}
 
 	const visibleTabs = tabs.map((tab) => ({
 		...tab,
-		disabled: !profileComplete && tab.value !== "profile",
+		disabled: !isProfileComplete && tab.value !== "profile",
 	}));
 
 	return (
