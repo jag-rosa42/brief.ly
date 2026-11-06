@@ -7,6 +7,7 @@ import pytest
 
 from src.application.models.article import Article
 from src.infrastructure.clients.OllamaSummarizerClient import OllamaSummarizerClient
+from tests.model import DEFAULT_MODEL
 
 ARTICLE = Article(
     id=UUID("123e4567-e89b-12d3-a456-426614174000"),
@@ -34,7 +35,7 @@ def test_summarize_article_joins_streamed_json_chunks() -> None:
         assert request.method == "POST"
         assert request.url.path == "/api/chat"
         body = json.loads(request.content)
-        assert body["model"] == "gemma3:1b"
+        assert body["model"] == DEFAULT_MODEL
         assert body["stream"] is True
         assert body["options"]["temperature"] == 0
         schema = body["format"]
@@ -70,7 +71,7 @@ def test_summarize_article_joins_streamed_json_chunks() -> None:
     with httpx.Client(
         base_url="http://ollama:11434", transport=httpx.MockTransport(respond)
     ) as http_client:
-        client = OllamaSummarizerClient(http_client, "gemma3:1b", 120.0)
+        client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
         with patch(
             "src.infrastructure.clients.OllamaSummarizerClient.perf_counter",
             side_effect=[10.0, 10.123],
@@ -97,7 +98,7 @@ def test_summarize_article_can_report_rejection() -> None:
             lambda request: httpx.Response(200, content=ollama_line(assessment))
         ),
     ) as http_client:
-        client = OllamaSummarizerClient(http_client, "gemma3:1b", 120.0)
+        client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
         result = client.ai_summarize_article(ARTICLE)
 
     assert result.rejected is True
@@ -122,7 +123,7 @@ def test_summarize_article_rejects_incomplete_or_empty_stream(
             lambda request: httpx.Response(200, content=response_content)
         ),
     ) as http_client:
-        client = OllamaSummarizerClient(http_client, "gemma3:1b", 120.0)
+        client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
         with pytest.raises(ValueError, match="incomplete or empty"):
             client.ai_summarize_article(ARTICLE)
 
@@ -144,7 +145,7 @@ def test_summarize_article_rejects_invalid_assessment(assessment: str) -> None:
             lambda request: httpx.Response(200, content=ollama_line(assessment))
         ),
     ) as http_client:
-        client = OllamaSummarizerClient(http_client, "gemma3:1b", 120.0)
+        client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
         with pytest.raises(ValueError):
             client.ai_summarize_article(ARTICLE)
 
@@ -156,7 +157,7 @@ def test_summarize_article_rejects_streamed_provider_error() -> None:
             lambda request: httpx.Response(200, content=b'{"error":"model failed"}\n')
         ),
     ) as http_client:
-        client = OllamaSummarizerClient(http_client, "gemma3:1b", 120.0)
+        client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
         with pytest.raises(RuntimeError, match="Ollama failed"):
             client.ai_summarize_article(ARTICLE)
 
@@ -167,7 +168,7 @@ def test_summarize_topic_uses_stored_summaries_and_validates_result() -> None:
         assert request.url.path == "/api/chat"
         body = json.loads(request.content)
         assert body["stream"] is True
-        assert body["model"] == "gemma3:1b"
+        assert body["model"] == DEFAULT_MODEL
         assert body["options"]["temperature"] == 0
         assert body["format"] == {
             "type": "object",
@@ -199,7 +200,7 @@ def test_summarize_topic_uses_stored_summaries_and_validates_result() -> None:
     with httpx.Client(
         base_url="http://ollama:11434", transport=httpx.MockTransport(respond)
     ) as http_client:
-        client = OllamaSummarizerClient(http_client, "gemma3:1b", 120.0)
+        client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
         result = client.ai_summarize_topic(
             "local-news", ["Library opened.", "Museum reopened."]
         )
@@ -227,7 +228,7 @@ def test_summarize_topic_rejects_invalid_json_content(content: str) -> None:
             lambda request: httpx.Response(200, content=ollama_line(content))
         ),
     ) as http_client:
-        client = OllamaSummarizerClient(http_client, "gemma3:1b", 120.0)
+        client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
         with pytest.raises(ValueError, match="invalid topic summary"):
             client.ai_summarize_topic(
                 "local-news", ["Library opened.", "Museum reopened."]
@@ -250,7 +251,7 @@ def test_summarize_topic_rejects_incomplete_or_empty_stream(
             lambda request: httpx.Response(200, content=response_content)
         ),
     ) as http_client:
-        client = OllamaSummarizerClient(http_client, "gemma3:1b", 120.0)
+        client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
         with pytest.raises(ValueError, match="incomplete or empty topic summary"):
             client.ai_summarize_topic(
                 "local-news", ["Library opened.", "Museum reopened."]

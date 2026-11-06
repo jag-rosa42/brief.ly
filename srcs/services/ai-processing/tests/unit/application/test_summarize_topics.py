@@ -6,7 +6,9 @@ import pytest
 from src.application.models.topic_article_summary import (
     TopicArticleSummary,
 )
+from src.application.summarize_articles_and_topics import SummarizeArticlesAndTopics
 from src.application.summarize_topics import SummarizeTopics
+from tests.model import DEFAULT_MODEL
 
 
 def article_summary(number: int) -> TopicArticleSummary:
@@ -44,7 +46,7 @@ def test_reads_one_list_and_combines_summaries_in_bounded_groups() -> None:
 
     content_management = ContentManagement()
     summarizer = Summarizer()
-    SummarizeTopics(content_management, summarizer, "gemma3:1b").execute()
+    SummarizeTopics(content_management, summarizer, DEFAULT_MODEL).execute()
 
     assert content_management.reads == [
         ("science", 25),
@@ -58,7 +60,7 @@ def test_reads_one_list_and_combines_summaries_in_bounded_groups() -> None:
         (
             "technology",
             "[[summary-1|summary-2|summary-3|summary-4]|summary-5]",
-            "gemma3:1b",
+            DEFAULT_MODEL,
         ),
     ]
 
@@ -87,7 +89,7 @@ def test_duplicate_article_stops_before_topic_write() -> None:
 
     content_management = ContentManagement()
     with pytest.raises(ValueError, match="duplicate article"):
-        SummarizeTopics(content_management, Summarizer(), "gemma3:1b").execute()
+        SummarizeTopics(content_management, Summarizer(), DEFAULT_MODEL).execute()
 
     assert content_management.written is False
 
@@ -116,7 +118,7 @@ def test_topic_with_25_articles_uses_one_read() -> None:
             return " | ".join(summaries)
 
     content_management = ContentManagement()
-    SummarizeTopics(content_management, Summarizer(), "gemma3:1b").execute()
+    SummarizeTopics(content_management, Summarizer(), DEFAULT_MODEL).execute()
 
     assert content_management.reads == 1
     assert re.findall(r"summary-\d+", content_management.written or "") == [
@@ -145,5 +147,18 @@ def test_missing_article_summary_stops_before_topic_write() -> None:
 
     content_management = ContentManagement()
     with pytest.raises(ValueError, match="invalid article summary"):
-        SummarizeTopics(content_management, Summarizer(), "gemma3:1b").execute()
+        SummarizeTopics(content_management, Summarizer(), DEFAULT_MODEL).execute()
     assert content_management.written is False
+
+
+def test_failed_article_phase_prevents_topic_phase() -> None:
+    class Articles:
+        def execute(self) -> None:
+            raise RuntimeError("article write failed")
+
+    class Topics:
+        def execute(self) -> None:
+            raise AssertionError("Topic phase must wait for articles")
+
+    with pytest.raises(RuntimeError, match="article write failed"):
+        SummarizeArticlesAndTopics(Articles(), Topics()).execute()

@@ -6,6 +6,7 @@ import pytest
 
 from src.application.models.article_assessment import ArticleAssessment
 from src.infrastructure.clients.ContentManagementClient import ContentManagementClient
+from tests.model import DEFAULT_MODEL
 
 
 def test_list_missing_articles_map_response() -> None:
@@ -53,7 +54,7 @@ def test_save_article_assessment_sends_expected_put() -> None:
             "text": "A concise summary.",
             "rejected": False,
             "quality_comment": "Complete article",
-            "llm_model": "gemma3:1b",
+            "llm_model": DEFAULT_MODEL,
             "generation_duration_ms": 1234,
         }
         return httpx.Response(200, json={"article_id": str(article_id)})
@@ -65,7 +66,7 @@ def test_save_article_assessment_sends_expected_put() -> None:
         client.save_article_assessment(
             article_id,
             ArticleAssessment(False, "Complete article", "A concise summary.", 1234),
-            "gemma3:1b",
+            DEFAULT_MODEL,
         )
 
 
@@ -81,7 +82,7 @@ def test_save_article_assessment_raises_on_failed_put() -> None:
             client.save_article_assessment(
                 article_id,
                 ArticleAssessment(False, "Complete article", "A concise summary.", 1234),
-                "gemma3:1b",
+                DEFAULT_MODEL,
             )
 
 
@@ -95,7 +96,7 @@ def test_rejected_assessment_uses_same_put_endpoint() -> None:
             "text": None,
             "rejected": True,
             "quality_comment": "Article is incomplete",
-            "llm_model": "gemma3:1b",
+            "llm_model": DEFAULT_MODEL,
             "generation_duration_ms": 1234,
         }
         return httpx.Response(200)
@@ -107,7 +108,7 @@ def test_rejected_assessment_uses_same_put_endpoint() -> None:
         client.save_article_assessment(
             article_id,
             ArticleAssessment(True, "Article is incomplete", None, 1234),
-            "gemma3:1b",
+            DEFAULT_MODEL,
         )
 
 
@@ -138,7 +139,7 @@ def test_topic_read_uses_existing_response_and_write_uses_contract_body() -> Non
         assert request.url.path == "/internal/v1/topics/technology/summary"
         assert json.loads(request.content) == {
             "text": "Combined topic summary",
-            "llm_model": "gemma3:1b",
+            "llm_model": DEFAULT_MODEL,
         }
         return httpx.Response(200)
 
@@ -148,7 +149,7 @@ def test_topic_read_uses_existing_response_and_write_uses_contract_body() -> Non
         client = ContentManagementClient(http_client)
         assert client.list_topics() == ["technology"]
         articles = client.list_topic_article_summaries("technology", 25)
-        client.save_topic_summary("technology", "Combined topic summary", "gemma3:1b")
+        client.save_topic_summary("technology", "Combined topic summary", DEFAULT_MODEL)
 
     assert [(item.article_id, item.summary) for item in articles] == [
         (article_id, "Stored summary")
