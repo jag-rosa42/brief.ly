@@ -50,6 +50,7 @@ def test_maps_an_article_to_the_public_contract(
         "publisher_name": article.publisher_name,
         "url": article.url,
         "topic_id": article.category,
+        "language": article.language,
         "content": article.content,
         "read_time_minutes": 1,
         "summary": "A summary",
@@ -59,3 +60,21 @@ def test_maps_an_article_to_the_public_contract(
         "generation_duration_ms": 750,
     }
     assert "summary_llm_model" not in type(response).model_fields
+
+
+def test_rejected_article_never_exposes_summary_text(
+    normalized_article: NormalizedArticle,
+) -> None:
+    article = replace(
+        normalized_article,
+        summary=ArticleSummary(
+            text="Legacy summary",
+            summarized_at=datetime(2026, 11, 3, 10, tzinfo=UTC),
+            llm_model="private-model",
+            rejected=True,
+            quality_comment="Rejected",
+            generation_duration_ms=750,
+        ),
+    )
+
+    assert ArticleResponse.from_domain(article).summary is None

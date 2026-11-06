@@ -10,7 +10,7 @@ from src.domain.entities.saved_article import SavedArticle
 class SavedArticleResponse(BaseModel):
     article_id: UUID
     title: str
-    source: str
+    publisher_name: str
     topic_id: str
     summary: str | None
     url: str
@@ -26,7 +26,7 @@ class SavedArticleResponse(BaseModel):
         return cls(
             article_id=saved_article.article_id,
             title=saved_article.title,
-            source=saved_article.source,
+            publisher_name=saved_article.source,
             topic_id=saved_article.topic_id,
             summary=saved_article.summary,
             url=saved_article.url,

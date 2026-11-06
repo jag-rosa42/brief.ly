@@ -59,6 +59,44 @@ def test_lists_articles_by_topic(
 
 
 @pytest.mark.integration
+def test_topic_list_excludes_rejected_articles_before_limit(
+    db_session: Session,
+    source_model,
+    normalized_article: NormalizedArticle,
+    article_summary: ArticleSummary,
+):
+    rejected_article = replace(
+        normalized_article,
+        summary=replace(article_summary, rejected=True),
+    )
+    accepted_article = replace(
+        normalized_article,
+        id=uuid4(),
+        discovered_article_external_id="accepted-summary",
+        summary=replace(article_summary, rejected=False),
+    )
+    missing_summary_article = replace(
+        normalized_article,
+        id=uuid4(),
+        discovered_article_external_id="missing-summary-for-topic",
+    )
+    db_session.add(source_model)
+    db_session.flush()
+    repository = SqlAlchemyNormalizedArticleRepository(db_session)
+    for article in (rejected_article, accepted_article, missing_summary_article):
+        repository.save(source_model.id, article)
+    db_session.flush()
+
+    articles = repository.list_by_topic_id(normalized_article.category, limit=2)
+
+    assert {article.id for article in articles} == {
+        accepted_article.id,
+        missing_summary_article.id,
+    }
+    assert repository.get_by_id(rejected_article.id) == rejected_article
+
+
+@pytest.mark.integration
 def test_lists_only_articles_with_missing_summaries(
     db_session: Session,
     source_model,
@@ -133,3 +171,27 @@ def test_update_summary_persists_metadata(
     assert persisted_summary.text == article_summary.text
     assert persisted_summary.llm_model == article_summary.llm_model
     assert persisted_summary.summarized_at == article_summary.summarized_at
+
+
+@pytest.mark.integration
+def test_update_summary_persists_null_text_for_rejected_article(
+    db_session: Session,
+    source_model,
+    normalized_article: NormalizedArticle,
+    article_summary: ArticleSummary,
+):
+    db_session.add(source_model)
+    db_session.flush()
+    repository = SqlAlchemyNormalizedArticleRepository(db_session)
+    repository.save(source_model.id, normalized_article)
+    db_session.flush()
+
+    rejected_summary = replace(article_summary, text=None, rejected=True)
+    article = repository.update_summary(normalized_article.id, rejected_summary)
+    db_session.flush()
+
+    assert article is not None
+    assert article.summary == rejected_summary
+    persisted = db_session.get(ArticleSummaryModel, normalized_article.id)
+    assert persisted is not None
+    assert persisted.text is None

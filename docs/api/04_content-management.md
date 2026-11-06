@@ -8,9 +8,9 @@ A topic is never hard-deleted, so a profile can never point at a missing topic. 
 | --- | --- | --- | --- | --- | --- |
 | Internal | POST | `/internal/v1/ingestion-runs` | Service (`ingestion:run`) | 201 | Partial (token check missing) |
 | Internal | GET | `/internal/v1/topics` | Service (`topics:read`) | 200 | Partial (see below) |
-| Internal | GET | `/internal/v1/articles?topic_id={topic_id}` | Service (`articles:read`) | 200 | Partial (rejection filter and token check missing) |
+| Internal | GET | `/internal/v1/articles?topic_id={topic_id}` | Service (`articles:read`) | 200 | Partial (token check missing) |
 | Internal | GET | `/internal/v1/articles?summary=missing` | Service (`articles:read`) | 200 | Partial (token check missing) |
-| Internal | GET | `/internal/v1/articles/{article_id}` | Service (`articles:read`) | 200 | Partial (rejection check and token check missing) |
+| Internal | GET | `/internal/v1/articles/{article_id}` | Service (`articles:read`) | 200 | Partial (token check missing) |
 | Internal | PUT | `/internal/v1/articles/{article_id}/summary` | Service (`summaries:write`) | 200 | Partial (token check missing) |
 | Internal | PUT | `/internal/v1/topics/{topic_id}/summary` | Service (`summaries:write`) | 200 | To do |
 | Internal | GET | `/health` | None | 200 | Done |
@@ -23,7 +23,7 @@ A topic is never hard-deleted, so a profile can never point at a missing topic. 
 
 - Only AI Processing's client may get the `summaries:write` scope (Identity's client registry, ADR-0008).
 - Known gap: until service tokens exist (ADR-0008), these routes are unauthenticated and protected only by not being routed and by the `backend` network. Service tokens are built before the Public API.
-- The article GET routes and article summary PUT route exist. The current article-by-topic query still includes rejected articles, and the article-by-ID query still returns them; both need the rejection rules below. `GET /internal/v1/topics` returns only topic IDs today. The topic summary PUT route is not implemented yet.
+- The article GET routes and article summary PUT route exist. The article GET routes apply the rejection rules below. `GET /internal/v1/topics` returns only topic IDs today. The topic summary PUT route is not implemented yet.
 
 The article object, used by every article endpoint:
 

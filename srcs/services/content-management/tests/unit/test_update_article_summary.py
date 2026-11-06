@@ -71,6 +71,29 @@ def test_updates_summary_in_one_transaction(
     assert uow.commit_count == 1
 
 
+def test_persists_a_null_summary_for_a_rejected_article(
+    normalized_article: NormalizedArticle,
+    uow: FakeUnitOfWork,
+) -> None:
+    repository = FakeArticleRepository(normalized_article)
+
+    article = UpdateArticleSummary(uow, repository).execute(
+        article_id=normalized_article.id,
+        text=None,
+        llm_model="test-model",
+        rejected=True,
+        quality_comment="Irrelevant article",
+        generation_duration_ms=1200,
+    )
+
+    assert article.summary is not None
+    assert article.summary.text is None
+    assert article.summary.rejected is True
+    assert article.read_time_minutes == 0
+    assert repository.update_count == 1
+    assert uow.commit_count == 1
+
+
 def test_repeating_the_same_update_preserves_timestamp(
     normalized_article: NormalizedArticle,
     article_summary: ArticleSummary,

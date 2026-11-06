@@ -45,7 +45,7 @@ Header: Authorization: Bearer <access token>
         {
           "article_id": UUID,
           "title": str,
-          "source": str,
+          "publisher_name": str,
           "url": str,
           "summary": str | null,         null until AI Processing has summarized the article
           "read_time_minutes": int,

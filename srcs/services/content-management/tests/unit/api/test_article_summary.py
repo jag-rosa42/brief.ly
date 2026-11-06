@@ -64,6 +64,7 @@ def test_updates_an_article_summary(
         "publisher_name": normalized_article.publisher_name,
         "url": normalized_article.url,
         "topic_id": normalized_article.category,
+        "language": normalized_article.language,
         "content": normalized_article.content,
         "read_time_minutes": 1,
         "summary": "Useful summary",
@@ -82,12 +83,82 @@ def test_updates_an_article_summary(
     )
 
 
+def test_accepts_a_null_summary_for_a_rejected_article(
+    client: TestClient,
+    update_article_summary: Mock,
+    normalized_article: NormalizedArticle,
+) -> None:
+    rejected_article = replace(
+        normalized_article,
+        summary=ArticleSummary(
+            text=None,
+            summarized_at=datetime(2026, 11, 3, 10, 30, tzinfo=UTC),
+            llm_model="test-model",
+            rejected=True,
+            quality_comment="Irrelevant article",
+            generation_duration_ms=1200,
+        ),
+    )
+    update_article_summary.execute.return_value = rejected_article
+
+    response = client.put(
+        routes.article_summary(normalized_article.id),
+        json={
+            "text": None,
+            "llm_model": "test-model",
+            "rejected": True,
+            "quality_comment": "Irrelevant article",
+            "generation_duration_ms": 1200,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["summary"] is None
+    assert response.json()["language"] == normalized_article.language
+    update_article_summary.execute.assert_called_once_with(
+        article_id=normalized_article.id,
+        text=None,
+        llm_model="test-model",
+        rejected=True,
+        quality_comment="Irrelevant article",
+        generation_duration_ms=1200,
+    )
+
+
 @pytest.mark.parametrize(
     "payload",
     [
         {},
         {"text": "", "llm_model": "test-model"},
         {"text": "   ", "llm_model": "test-model"},
+        {
+            "text": "",
+            "llm_model": "test-model",
+            "rejected": False,
+            "quality_comment": "Looks good",
+            "generation_duration_ms": 1200,
+        },
+        {
+            "text": None,
+            "llm_model": "test-model",
+            "rejected": False,
+            "quality_comment": "Looks good",
+            "generation_duration_ms": 1200,
+        },
+        {
+            "text": "Summary",
+            "llm_model": "test-model",
+            "rejected": True,
+            "quality_comment": "Irrelevant article",
+            "generation_duration_ms": 1200,
+        },
+        {
+            "text": "",
+            "llm_model": "test-model",
+            "rejected": True,
+            "quality_comment": "Irrelevant article",
+            "generation_duration_ms": 1200,
+        },
         {"text": "a" * 2001, "llm_model": "test-model"},
         {"text": "Summary", "llm_model": ""},
         {

@@ -11,6 +11,6 @@ class GetArticle:
 
     def execute(self, article_id: UUID) -> NormalizedArticle:
         article = self._repository.get_by_id(article_id)
-        if article is None:
+        if article is None or (article.summary is not None and article.summary.rejected):
             raise ArticleNotFoundError()
         return article

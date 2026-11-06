@@ -19,6 +19,11 @@ class SqlAlchemyNormalizedArticleRepository:
         statement = (
             select(NormalizedArticleModel)
             .where(NormalizedArticleModel.category == topic_id)
+            .where(
+                ~NormalizedArticleModel.summary.has(
+                    ArticleSummaryModel.rejected.is_(True)
+                )
+            )
             .limit(limit)
         )
         return [self._to_domain(model) for model in self._session.scalars(statement)]

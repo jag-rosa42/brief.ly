@@ -1,9 +1,11 @@
+from dataclasses import replace
 from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
 
 from src.application.use_cases.articles import GetArticle
+from src.domain.entities import ArticleSummary
 from src.domain.exception import ArticleNotFoundError
 from src.domain.repositories import NormalizedArticleRepository
 
@@ -30,3 +32,20 @@ def test_raises_when_the_article_does_not_exist(repository: Mock) -> None:
         GetArticle(repository).execute(article_id)
 
     repository.get_by_id.assert_called_once_with(article_id)
+
+
+def test_raises_when_the_article_was_rejected(
+    repository: Mock,
+    normalized_article,
+    article_summary: ArticleSummary,
+) -> None:
+    rejected = replace(
+        normalized_article,
+        summary=replace(article_summary, rejected=True),
+    )
+    repository.get_by_id.return_value = rejected
+
+    with pytest.raises(ArticleNotFoundError):
+        GetArticle(repository).execute(rejected.id)
+
+    repository.get_by_id.assert_called_once_with(rejected.id)
