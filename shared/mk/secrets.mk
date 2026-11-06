@@ -1,8 +1,18 @@
-SECRET_DIR := shared/secrets
+SECRET_DIR         := shared/secrets
+CLIENT_SECRET_DIR  := $(SECRET_DIR)/services
 
-# Password string-based secrets
+# Service client secrets (ADR-0008): one per backend service that asks
+# Identity for service tokens. Identity and that service both mount it.
+# The client list: srcs/services/identity/src/infrastructure/oauth/service_clients.py
+SERVICES_CLIENT_SECRET_FILES := \
+	$(CLIENT_SECRET_DIR)/personalization_client_secret \
+	$(CLIENT_SECRET_DIR)/morning_briefing_client_secret \
+	$(CLIENT_SECRET_DIR)/ai_processing_client_secret
+
+# Password string-based secrets, 32 random characters each
 SECRET_FILES := \
-	$(SECRET_DIR)/postgres_password
+	$(SECRET_DIR)/postgres_password \
+	$(SERVICES_CLIENT_SECRET_FILES)
 
 # JWT keys
 JWT_PRIVATE_KEY := $(SECRET_DIR)/jwt_private_key
@@ -51,7 +61,7 @@ secrets-banner:
 
 # --- Secret directory ---
 secrets-dir:
-	@mkdir -p "$(SECRET_DIR)"
+	@mkdir -p "$(SECRET_DIR)" "$(CLIENT_SECRET_DIR)"
 
 
 # --- Password/String secrets ---

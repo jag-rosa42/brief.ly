@@ -340,6 +340,12 @@ services:
       - jwt_private_key
       - jwt_public_key
       - postgres_password
+      # One secret per service client: Identity compares what each client
+      # sends with these (POST /internal/v1/oauth/token, ADR-0008). Each
+      # client also gets its own secret, in the step that makes it a client.
+      - personalization_client_secret
+      - morning_briefing_client_secret
+      - ai_processing_client_secret
     networks:
       - edge
       - backend
@@ -410,6 +416,12 @@ secrets:
     file: ./shared/secrets/certs/localhost.pem
   tls_private_key:
     file: ./shared/secrets/certs/localhost-key.pem
+  personalization_client_secret:
+    file: ./shared/secrets/services/personalization_client_secret
+  morning_briefing_client_secret:
+    file: ./shared/secrets/services/morning_briefing_client_secret
+  ai_processing_client_secret:
+    file: ./shared/secrets/services/ai_processing_client_secret
 
 volumes:
   pgsql:
