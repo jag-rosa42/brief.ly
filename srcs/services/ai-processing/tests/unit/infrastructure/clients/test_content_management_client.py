@@ -64,9 +64,7 @@ def test_save_article_assessment_sends_expected_put() -> None:
         client = ContentManagementClient(http_client)
         client.save_article_assessment(
             article_id,
-            ArticleAssessment(
-                False, "Complete article", "A concise summary.", 1234
-            ),
+            ArticleAssessment(False, "Complete article", "A concise summary.", 1234),
             "gemma3:1b",
         )
 
@@ -82,9 +80,7 @@ def test_save_article_assessment_raises_on_failed_put() -> None:
         with pytest.raises(httpx.HTTPStatusError):
             client.save_article_assessment(
                 article_id,
-                ArticleAssessment(
-                    False, "Complete article", "A concise summary.", 1234
-                ),
+                ArticleAssessment(False, "Complete article", "A concise summary.", 1234),
                 "gemma3:1b",
             )
 
@@ -115,3 +111,46 @@ def test_rejected_assessment_uses_same_put_endpoint() -> None:
         )
 
 
+def test_topic_read_uses_existing_response_and_write_uses_contract_body() -> None:
+    article_id = UUID("123e4567-e89b-12d3-a456-426614174000")
+    calls: list[str] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        assert "Authorization" not in request.headers
+        if request.method == "GET" and request.url.path == "/internal/v1/topics":
+            calls.append("topics")
+            return httpx.Response(200, json=[{"id": "technology"}])
+        if request.method == "GET":
+            calls.append("articles")
+            assert request.url.path == "/internal/v1/articles"
+            assert request.url.params["topic_id"] == "technology"
+            assert request.url.params["limit"] == "25"
+            assert "cursor" not in request.url.params
+            return httpx.Response(
+                200,
+                json={
+                    "items": [
+                        {"article_id": str(article_id), "summary": "Stored summary"}
+                    ],
+                },
+            )
+        calls.append("put")
+        assert request.url.path == "/internal/v1/topics/technology/summary"
+        assert json.loads(request.content) == {
+            "text": "Combined topic summary",
+            "llm_model": "gemma3:1b",
+        }
+        return httpx.Response(200)
+
+    with httpx.Client(
+        base_url="http://content-management", transport=httpx.MockTransport(respond)
+    ) as http_client:
+        client = ContentManagementClient(http_client)
+        assert client.list_topics() == ["technology"]
+        articles = client.list_topic_article_summaries("technology", 25)
+        client.save_topic_summary("technology", "Combined topic summary", "gemma3:1b")
+
+    assert [(item.article_id, item.summary) for item in articles] == [
+        (article_id, "Stored summary")
+    ]
+    assert calls == ["topics", "articles", "put"]
