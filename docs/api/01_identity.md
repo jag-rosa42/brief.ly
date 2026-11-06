@@ -13,10 +13,10 @@ Identity owns accounts, tokens and API keys. Conventions, tokens and errors are 
 | Frontend | GET | `/api/identity/api-keys` | `/api-keys` | Bearer | 200 | To do |
 | Frontend | DELETE | `/api/identity/api-keys/{key_id}` | `/api-keys/{key_id}` | Bearer | 204 | To do |
 | Internal | any | — | `/internal/v1/api-keys/verify` | Gateway | 200 | To do |
-| Internal | POST | — | `/internal/v1/oauth/token` | Client credentials | 200 | To do |
+| Internal | POST | — | `/internal/v1/oauth/token` | Client credentials | 200 | Done |
 | Internal | GET | — | `/health` | None | 200 | Done |
 
-Where the done routes live on `main`: `srcs/services/identity/src/api/routers/auth/router.py` (auth), `srcs/services/identity/src/api/routers/accounts/router.py` (`/accounts/me`), `srcs/services/identity/src/api/routers/auth/cookie.py` (cookie), `srcs/services/identity/src/api/dependencies/security.py` (CSRF guard).
+Where the done routes live on `main`: `srcs/services/identity/src/api/routers/auth/router.py` (auth), `srcs/services/identity/src/api/routers/accounts/router.py` (`/accounts/me`), `srcs/services/identity/src/api/routers/auth/cookie.py` (cookie), `srcs/services/identity/src/api/dependencies/security.py` (CSRF guard), `srcs/services/identity/src/api/routers/oauth/router.py` (service tokens; the client registry is `srcs/services/identity/src/infrastructure/oauth/service_clients.py`).
 
 ## Refresh cookie
 
@@ -172,6 +172,42 @@ Header: Authorization: Bearer <access token>
 401 Unauthorized
 422 Unprocessable     VALIDATION_ERROR (key_id not a UUID)
 ```
+
+### POST /internal/v1/oauth/token
+
+Gives a backend service a short-lived **service token**, with the OAuth 2.0 client credentials grant (RFC 6749 §4.4, ADR-0008). No user is involved: the token says which service is calling (`sub=service:<client_id>`), for which service (`aud`), and what it may do there (`scope`). The receiving service checks it with `shared_auth` (`require_service_scopes`). `shared_auth`'s `ClientCredentialsTokenProvider` calls this route, caches the token and renews it 30 s before it expires.
+
+Each client authenticates with its client ID and its secret (one Compose secret per client, `<client_id with _>_client_secret`, compared in constant time). The client registry, in Identity's code, says which audience and scopes each client may get:
+
+| Client | Audience | Scopes |
+| --- | --- | --- |
+| `personalization` | `transcendence:content-management` | `topics:read`, `articles:read` |
+| `morning-briefing` | `transcendence:content-management` | `topics:read`, `articles:read` |
+| `ai-processing` | `transcendence:content-management` | `topics:read`, `articles:read`, `summaries:write` |
+
+```text
+Header: Authorization: Basic base64(<client_id>:<client_secret>)
+Header: Content-Type: application/x-www-form-urlencoded
+Body (form):
+  grant_type=client_credentials
+  audience=transcendence:<target-service>
+  scope=<scope> <scope>          space-separated, at least one
+
+200 OK
+{
+  "access_token": str,          JWT: type=service, sub=service:<client_id>, aud, scope, ~5 min
+  "token_type": "Bearer",
+  "expires_in": int             seconds (300)
+}
+Headers: Cache-Control: no-store, Pragma: no-cache
+401 Unauthorized      INVALID_CLIENT (no or malformed Basic header, unknown client, wrong secret;
+                      same answer for all), with header WWW-Authenticate: Basic
+400 Bad Request       UNSUPPORTED_GRANT_TYPE (grant_type other than client_credentials)
+400 Bad Request       INVALID_SCOPE (no scope, a scope or an audience the client may not have)
+422 Unprocessable     VALIDATION_ERROR (grant_type or audience missing, body not a form)
+```
+
+The errors use our shared format with the OAuth 2.0 error names in uppercase (RFC 6749 §5.2 uses `{"error": "invalid_client"}`), so every service answers errors the same way.
 
 ### /internal/v1/api-keys/verify
 

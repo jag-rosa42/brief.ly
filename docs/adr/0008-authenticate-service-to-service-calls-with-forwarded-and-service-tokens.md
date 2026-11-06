@@ -214,14 +214,14 @@ Implementation details:
 
 ### 📌 Required Actions
 
-1. [ ] Create `shared/packages/shared_auth` with its tests
-2. [ ] Wire it into every service (pyproject, Dockerfiles, compose contexts,
+1. [x] Create `shared/packages/shared_auth` with its tests
+2. [x] Wire it into every service (pyproject, Dockerfiles, compose contexts,
    development mounts)
-3. [ ] Add Identity's client-credentials endpoint and the client registry file.
+3. [x] Add Identity's client-credentials endpoint and the client registry file.
    Service tokens are built **before** the Public API (ADR-0009), so no
    public request ever relies on unauthenticated internal routes.
    Until then, internal routes are unauthenticated (known gap).
-4. [ ] Add a secret in `shared/mk/secrets.mk` for each client that needs service
+4. [x] Add a secret in `shared/mk/secrets.mk` for each client that needs service
    tokens: AI Processing, Morning Briefing, Personalization
 5. [ ] Add `/internal/...` routes in the services that need them
 
