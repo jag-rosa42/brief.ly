@@ -10,7 +10,7 @@ import { LoginPage } from "@/pages/LoginPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { useAuth } from "@/app/useAuth";
 import { Spinner } from "@/shared/components/Spinner";
-
+import { useProfile } from "@/app/useProfile";
 import { DASHBOARD_TABS, LAST_PATH, GUEST_PATHS } from "@/app/navigation";
 
 function LastPathTracker() {
@@ -35,14 +35,15 @@ function ProtectedRoute() {
 }
 
 function GuestRoute() {
-	const { isLoggedIn, isLoading, profileComplete } = useAuth();
+	const { isLoggedIn, isLoading } = useAuth();
+	const { profile, loading: profileLoading } = useProfile();
 	const [lastPath] = useState(() => sessionStorage.getItem(LAST_PATH));
 
-	if (isLoading) return <Spinner />;
+	if (isLoading || (isLoggedIn && profileLoading)) return <Spinner />;
 	if (isLoggedIn) {
 		let target = "/dashboard/profile";
 
-		if (profileComplete) target = "/dashboard/brief";
+		if (profile) target = "/dashboard/brief";
 		if (lastPath && !GUEST_PATHS.includes(lastPath)) target = lastPath;
 		return <Navigate to={target} replace />;
 	}

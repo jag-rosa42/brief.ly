@@ -1,9 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/app/useAuth";
-import { useState } from "react";
-import type { SubmitEvent } from "react";
-import { Link } from "@/shared/components/Link";
+import { useProfileForm } from "@/features/profile/useProfileForm";
+import type React from "react";
 
+import { Link } from "@/shared/components/Link";
 import { Division } from "@/shared/components/Division";
 import { Form } from "@/shared/components/Form";
 import { Text } from "@/shared/components/Text";
@@ -11,87 +10,55 @@ import { Input } from "@/shared/components/Input";
 import { Button } from "@/shared/components/Button";
 import { FilterChip } from "@/shared/components/FilterChip";
 import type { FilterChipOption } from "@/shared/components/FilterChip";
-import { usePreferences } from "@/app/usePreferences";
 
-const MIN_INTERESTS = 1;
 const MAX_INTERESTS = 4;
 
-function validateUsername(value: string): string | null {
-	const name = value.trim();
-	if (name.length < 2) return `Username must be at least 2 characters.`;
-	if (name.length > 14) return `Username must be at most 14 characters.`;
-	return null;
-}
-
-//TODO: API call to add, here mock for test
-const InterestOptions: FilterChipOption[] = [
-	{ value: "science", label: "Science" },
-	{ value: "business", label: "Business" },
-	{ value: "entertainment", label: "Entertainment" },
-	{ value: "general", label: "General" },
-	{ value: "health", label: "Health" },
-	{ value: "sport", label: "Sport" },
-	{ value: "technologies", label: "Technologies" },
-];
-
-type FieldName = "Name" | "interests";
-
-type FormErrors = Partial<Record<FieldName, string>>;
-
 export function ProfilePage() {
-	const { selectedPreferences: savedPreferences, updatePreferences } = usePreferences();
-
-	const [Name, setName] = useState("");
-	const [errors, setErrors] = useState<FormErrors>({});
-	const [selectedInterests, setSelectedInterests] = useState<string[]>(savedPreferences);
-	const [saved, setSaved] = useState(false);
-
 	const navigate = useNavigate();
-	const { profileComplete, completeProfile } = useAuth();
-	const limitReached = selectedInterests.length >= MAX_INTERESTS;
+	const {
+		mode,
+		topics,
+		name,
+		setName,
+		topicIds,
+		toggleTopic,
+		loading,
+		loadError,
+		submitting,
+		success,
+		errors,
+		submit,
+		canSubmit,
+	} = useProfileForm();
 
-	function clearError(field: FieldName) {
-		setErrors((prev) => ({ ...prev, [field]: undefined }));
-	}
+	// Transformation des topics du backend en options pour FilterChip
+	const interestOptions: FilterChipOption[] = topics.map((topic) => ({
+		value: topic.id,
+		label: topic.id.charAt(0).toUpperCase() + topic.id.slice(1),
+	}));
 
-	function toggleInterest(value: string) {
-		setSaved(false);
-		clearError("interests");
-		if (selectedInterests.includes(value)) {
-			setSelectedInterests(selectedInterests.filter((v) => v !== value));
-		} else if (!limitReached) {
-			setSelectedInterests([...selectedInterests, value]);
-		}
-	}
-
-	function validate(): boolean {
-		const next: FormErrors = {};
-
-		if (Name.trim() === "") next.Name = "Name is required";
-		else {
-			const nameError = validateUsername(Name);
-			if (nameError) next.Name = nameError;
-		}
-		if (selectedInterests.length < MIN_INTERESTS) {
-			next.interests = "Please select at least one interest";
-		}
-		setErrors(next);
-		return Object.keys(next).length === 0;
-	}
-
-	//TODO: add a function UseEffect with API call and error handling
-	function handleSave(e: SubmitEvent) {
+	async function handleSave(e: React.SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
-		setSaved(false);
+		const wasCreate = mode === "create"; // capturé AVANT le submit
+		const saved = await submit();
 
-		if (!validate()) return;
-		//TODO: add API call
-		updatePreferences(selectedInterests);
-		setSaved(true);
-		if (!profileComplete) {
-			completeProfile();
-			void navigate("/dashboard/brief");
+		if (saved !== null) {
+			if (wasCreate) {
+				void navigate("/dashboard/brief");
+			}
 		}
+	}
+
+	if (loading) {
+		return <Text variant="body">Loading profile...</Text>;
+	}
+
+	if (loadError) {
+		return (
+			<Text variant="error" role="alert">
+				{loadError}
+			</Text>
+		);
 	}
 
 	return (
@@ -105,17 +72,24 @@ export function ProfilePage() {
 				</Text>
 				<Division variant="featurecard" className="shadow-sm">
 					<Form
-						onSubmit={handleSave}
+						onSubmit={(e) => {
+							void handleSave(e);
+						}}
 						actions={
 							<div className="flex flex-col gap-3 w-full">
-								{errors.interests && (
+								{errors.topics && (
 									<Text variant="error" role="alert">
-										{errors.interests}
+										{errors.topics}
 									</Text>
 								)}
-								{saved && <Text variant="success">Profile saved</Text>}
-								<Button type="submit" variant="secondary" className="w-full">
-									Save
+								{errors.form && (
+									<Text variant="error" role="alert">
+										{errors.form}
+									</Text>
+								)}
+								{success && <Text variant="success">Profile saved</Text>}
+								<Button type="submit" variant="secondary" className="w-full" disabled={!canSubmit}>
+									{submitting ? "Saving..." : "Save"}
 								</Button>
 								<Link to="/" variant="primary" className="w-full text-center">
 									Back
@@ -126,13 +100,10 @@ export function ProfilePage() {
 						<Input
 							variant="main"
 							label="Name"
-							value={Name}
+							value={name}
 							name="name"
-							error={errors.Name}
-							onChange={(e) => {
-								setName(e.target.value);
-								clearError("Name");
-							}}
+							error={errors.name}
+							onChange={(e) => setName(e.target.value)}
 						/>
 						<div className="flex flex-col gap-3">
 							<div>
@@ -144,15 +115,15 @@ export function ProfilePage() {
 								</Text>
 							</div>
 							<div className="flex flex-wrap justify-center gap-2">
-								{InterestOptions.map((opt) => {
-									const isSelected = selectedInterests.includes(opt.value);
+								{interestOptions.map((opt) => {
+									const isSelected = topicIds.includes(opt.value);
 									return (
 										<FilterChip
 											key={opt.value}
 											options={opt}
 											selected={isSelected}
-											disabled={!isSelected && limitReached}
-											onToggle={toggleInterest}
+											disabled={!isSelected && topicIds.length >= MAX_INTERESTS}
+											onToggle={toggleTopic}
 										/>
 									);
 								})}
