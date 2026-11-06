@@ -269,13 +269,15 @@ list-services:
 # ============================================================================ #
 
 # Start the complete development stack, or one service and its dependencies.
+# --wait returns once every service with a healthcheck is healthy, and fails if
+# one never gets there: the success message below can then be trusted.
 docker: check-compose-service secrets
 	@if [ -n "$$SERVICE" ]; then \
 		$(call print,$(GREEN_COLOR),[DOCKER] Starting $$SERVICE and its dependencies in dev mode...); \
-		$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d --build "$$SERVICE"; \
+		$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d --wait --build "$$SERVICE"; \
 	else \
 		$(call print,$(GREEN_COLOR),[DOCKER] Starting all services in dev mode...); \
-		$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d --build; \
+		$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d --wait --build; \
 	fi
 	@$(call print,$(GREEN_COLOR),✓ [DOCKER] $(NAME) development environment started successfully! 🥳🥳🥳)
 	@$(call print,$(GREEN_COLOR),  Open https://localhost:$(GATEWAY_HTTPS_PORT))
@@ -283,11 +285,14 @@ docker: check-compose-service secrets
 
 # Build and run production Compose in the current environment. The prod target
 # invokes this from inside the VM after selecting production port forwarding.
+# Detached and waiting, like `make docker`: the command ends once the stack is
+# healthy, and the logs stay available through `make logs`.
 prod-docker: secrets
 	@$(call print,$(GREEN_COLOR),[DOCKER] Starting all services in production mode...)
 	$(PROD_COMPOSE) $(COMPOSE_PROFILES_ALL) build --no-cache && \
-	$(PROD_COMPOSE) $(COMPOSE_PROFILES_ALL) up
+	$(PROD_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d --wait
 	@$(call print,$(GREEN_COLOR),✓ [DOCKER] $(NAME) production environment started successfully! 🥳🥳🥳)
+	@$(call print,$(GREEN_COLOR),  Open https://localhost:$(GATEWAY_HTTPS_PORT))
 
 
 # ============================================================================ #
