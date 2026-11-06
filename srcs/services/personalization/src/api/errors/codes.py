@@ -22,4 +22,11 @@ DOMAIN_ERROR_STATUS_MAP: dict[ErrorCode, HttpErrorConfig] = {
     ErrorCode.VALIDATION_ERROR: HttpErrorConfig(
         status_code=status.HTTP_422_UNPROCESSABLE_CONTENT
     ),
+    ErrorCode.ARTICLE_NOT_FOUND: HttpErrorConfig(status_code=status.HTTP_404_NOT_FOUND),
+    ErrorCode.ARTICLE_ALREADY_SAVED: HttpErrorConfig(
+        status_code=status.HTTP_409_CONFLICT
+    ),
+    ErrorCode.SAVED_ARTICLES_LIMIT_REACHED: HttpErrorConfig(
+        status_code=status.HTTP_409_CONFLICT
+    ),
 }

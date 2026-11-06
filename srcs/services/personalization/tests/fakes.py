@@ -1,7 +1,13 @@
+from dataclasses import replace
+from datetime import UTC, datetime
 from types import TracebackType
 from uuid import UUID
 
-from src.application.exceptions import TopicCatalogUnavailableError
+from src.application.exceptions import (
+    ArticleCatalogUnavailableError,
+    TopicCatalogUnavailableError,
+)
+from src.domain.entities.article import Article
 from src.domain.entities.profile import Profile
 from src.domain.entities.saved_article import SavedArticle
 from src.domain.entities.topic import Topic
@@ -18,6 +24,19 @@ class FakeTopicCatalog:
         if not self._available:
             raise TopicCatalogUnavailableError()
         return {topic_id: Topic(id=topic_id) for topic_id in self._topic_ids}
+
+
+class FakeArticleCatalog:
+    def __init__(self, articles: list[Article], available: bool = True) -> None:
+        self._articles = {article.article_id: article for article in articles}
+        self._available = available
+        self.calls = 0
+
+    def find_by_id(self, article_id: UUID) -> Article | None:
+        self.calls += 1
+        if not self._available:
+            raise ArticleCatalogUnavailableError()
+        return self._articles.get(article_id)
 
 
 class FakeUnitOfWork:
@@ -49,10 +68,19 @@ class FakeSavedArticleRepository:
     def __init__(self) -> None:
         self.saved_articles: dict[tuple[UUID, UUID], SavedArticle] = {}
 
-    def add(self, saved_article: SavedArticle) -> None:
+    def add(self, saved_article: SavedArticle) -> SavedArticle:
+        if saved_article.saved_at is None:
+            saved_article = replace(saved_article, saved_at=datetime.now(UTC))
         self.saved_articles[(saved_article.account_id, saved_article.article_id)] = (
             saved_article
         )
+        return saved_article
+
+    def exists(self, account_id: UUID, article_id: UUID) -> bool:
+        return (account_id, article_id) in self.saved_articles
+
+    def count_for_account(self, account_id: UUID) -> int:
+        return len(self.list_for_account(account_id))
 
     def list_for_account(self, account_id: UUID) -> list[SavedArticle]:
         return [

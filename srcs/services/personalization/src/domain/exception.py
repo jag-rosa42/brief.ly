@@ -11,6 +11,9 @@ class ErrorCode(StrEnum):
     INVALID_INTERESTS = "INVALID_INTERESTS"
     PROFILE_NOT_FOUND = "PROFILE_NOT_FOUND"
     VALIDATION_ERROR = "VALIDATION_ERROR"
+    ARTICLE_NOT_FOUND = "ARTICLE_NOT_FOUND"
+    ARTICLE_ALREADY_SAVED = "ARTICLE_ALREADY_SAVED"
+    SAVED_ARTICLES_LIMIT_REACHED = "SAVED_ARTICLES_LIMIT_REACHED"
 
 
 @dataclass(frozen=True)
@@ -47,6 +50,27 @@ class ProfileNotFoundError(DomainError):
 
     def __init__(self):
         super().__init__("Profile not found")
+
+
+class ArticleNotFoundError(DomainError):
+    code = ErrorCode.ARTICLE_NOT_FOUND
+
+    def __init__(self):
+        super().__init__("Article not found")
+
+
+class ArticleAlreadySavedError(DomainError):
+    code = ErrorCode.ARTICLE_ALREADY_SAVED
+
+    def __init__(self):
+        super().__init__("Article already saved")
+
+
+class SavedArticlesLimitReachedError(DomainError):
+    code = ErrorCode.SAVED_ARTICLES_LIMIT_REACHED
+
+    def __init__(self, limit: int):
+        super().__init__(f"Saved articles limit reached ({limit})")
 
 
 class UnknownTopicsError(DomainError):

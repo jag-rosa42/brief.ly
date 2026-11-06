@@ -1,6 +1,6 @@
 from dataclasses import replace
 from datetime import UTC, datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from sqlalchemy import delete
 from sqlalchemy.orm import Session
@@ -172,3 +172,65 @@ def test_deleting_the_profile_deletes_its_saved_articles(db_session: Session) ->
     db_session.execute(delete(ProfileModel).where(ProfileModel.account_id == account_id))
 
     assert repository.list_for_account(account_id) == []
+
+
+def _snapshot(account_id: UUID) -> SavedArticle:
+    return SavedArticle(
+        account_id=account_id,
+        article_id=uuid4(),
+        title="Article",
+        source="Source",
+        topic_id="Topic",
+        summary=None,
+        url="http://example.com/article",
+        read_time_minutes=0,
+    )
+
+
+def test_add_inserts_the_saved_article_and_returns_its_saved_at(
+    db_session: Session,
+) -> None:
+    repository = SqlAlchemySavedArticleRepository(db_session)
+    account_id = uuid4()
+    SqlAlchemyProfileRepository(db_session).upsert(
+        Profile.create(account_id=account_id, name="John", topic_ids=["science"])
+    )
+    saved_article = _snapshot(account_id)
+
+    added = repository.add(saved_article)
+
+    assert added == saved_article
+    assert added.saved_at is not None
+    assert repository.list_for_account(account_id) == [saved_article]
+
+
+def test_exists_tells_if_the_account_saved_the_article(db_session: Session) -> None:
+    repository = SqlAlchemySavedArticleRepository(db_session)
+    account_id = uuid4()
+    SqlAlchemyProfileRepository(db_session).upsert(
+        Profile.create(account_id=account_id, name="John", topic_ids=["science"])
+    )
+    saved_article = repository.add(_snapshot(account_id))
+
+    assert repository.exists(account_id, saved_article.article_id) is True
+    assert repository.exists(account_id, uuid4()) is False
+    assert repository.exists(uuid4(), saved_article.article_id) is False
+
+
+def test_count_for_account_counts_only_this_account(db_session: Session) -> None:
+    repository = SqlAlchemySavedArticleRepository(db_session)
+    profile_repository = SqlAlchemyProfileRepository(db_session)
+    account_id = uuid4()
+    other_account_id = uuid4()
+    profile_repository.upsert(
+        Profile.create(account_id=account_id, name="John", topic_ids=["science"])
+    )
+    profile_repository.upsert(
+        Profile.create(account_id=other_account_id, name="Jane", topic_ids=["science"])
+    )
+    repository.add(_snapshot(account_id))
+    repository.add(_snapshot(account_id))
+    repository.add(_snapshot(other_account_id))
+
+    assert repository.count_for_account(account_id) == 2
+    assert repository.count_for_account(uuid4()) == 0

@@ -8,3 +8,8 @@ from shared_errors.exceptions import InfrastructureError
 class TopicCatalogUnavailableError(InfrastructureError):
     def __init__(self) -> None:
         super().__init__("topic catalog unavailable")
+
+
+class ArticleCatalogUnavailableError(InfrastructureError):
+    def __init__(self) -> None:
+        super().__init__("article catalog unavailable")
