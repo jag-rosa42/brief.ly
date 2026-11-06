@@ -1,7 +1,10 @@
 import json
+from collections.abc import Iterator
+from contextlib import contextmanager
 from time import perf_counter
 
-from httpx2 import Client
+import httpx2 as httpx
+from shared_errors import InfrastructureError
 
 from src.application.models.article import Article
 from src.application.models.article_assessment import ArticleAssessment
@@ -33,20 +36,31 @@ TOPIC_SUMMARY_FORMAT = {
 
 
 class OllamaSummarizerClient:
-    def __init__(self, http_client: Client, model: str, timeout_seconds: float):
+    def __init__(self, http_client: httpx.Client, model: str, timeout_seconds: float):
         self.http_client = http_client
         self.model = model
         self.timeout_seconds = timeout_seconds
+
+    @contextmanager
+    def _stream_chat(self, body: dict[str, object]) -> Iterator[httpx.Response]:
+        try:
+            with self.http_client.stream(
+                "POST", "/api/chat", json=body, timeout=self.timeout_seconds
+            ) as response:
+                if response.status_code in (502, 503, 504):
+                    raise InfrastructureError("Ollama is unavailable.")
+                response.raise_for_status()
+                yield response
+        except httpx.TransportError as exc:
+            raise InfrastructureError("Ollama is unavailable.") from exc
 
     def ai_summarize_article(self, article: Article) -> ArticleAssessment:
         parts: list[str] = []
         finished = False
 
         started_at = perf_counter()
-        with self.http_client.stream(
-            "POST",
-            "/api/chat",
-            json={
+        with self._stream_chat(
+            {
                 "model": self.model,
                 "messages": [
                     {
@@ -90,17 +104,14 @@ class OllamaSummarizerClient:
                 "format": ARTICLE_ASSESSMENT_FORMAT,
                 "options": {"temperature": 0},
             },
-            timeout=self.timeout_seconds,
         ) as response:
-            response.raise_for_status()
-
             for line in response.iter_lines():
                 if not line:
                     continue
 
                 chunk = json.loads(line)
                 if "error" in chunk:
-                    raise RuntimeError("Ollama failed while generating a summary")
+                    raise InfrastructureError("Ollama failed while generating a summary")
 
                 parts.append(chunk.get("message", {}).get("content", ""))
                 if chunk.get("done") is True:
@@ -149,10 +160,8 @@ class OllamaSummarizerClient:
         )
         parts: list[str] = []
         finished = False
-        with self.http_client.stream(
-            "POST",
-            "/api/chat",
-            json={
+        with self._stream_chat(
+            {
                 "model": self.model,
                 "messages": [
                     {
@@ -181,15 +190,15 @@ class OllamaSummarizerClient:
                 "format": TOPIC_SUMMARY_FORMAT,
                 "options": {"temperature": 0},
             },
-            timeout=self.timeout_seconds,
         ) as response:
-            response.raise_for_status()
             for line in response.iter_lines():
                 if not line:
                     continue
                 chunk = json.loads(line)
                 if "error" in chunk:
-                    raise RuntimeError("Ollama failed while generating a topic summary")
+                    raise InfrastructureError(
+                        "Ollama failed while generating a topic summary"
+                    )
                 parts.append(chunk.get("message", {}).get("content", ""))
                 if chunk.get("done") is True:
                     finished = True

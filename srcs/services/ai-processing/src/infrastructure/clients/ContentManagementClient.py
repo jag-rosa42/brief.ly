@@ -1,7 +1,8 @@
 from urllib.parse import quote
 from uuid import UUID
 
-from httpx2 import Client
+import httpx2 as httpx
+from shared_errors import InfrastructureError
 
 from src.application.models.article import Article
 from src.application.models.article_assessment import ArticleAssessment
@@ -11,15 +12,35 @@ from src.application.models.topic_article_summary import (
 
 
 class ContentManagementClient:
-    def __init__(self, http_client: Client):
+    def __init__(self, http_client: httpx.Client):
         self.http_client = http_client
+
+    def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, str | int] | None = None,
+        json: dict[str, object] | None = None,
+    ) -> httpx.Response:
+        try:
+            response = self.http_client.request(
+                method,
+                path,
+                params=params,
+                json=json,
+                timeout=10,
+            )
+        except httpx.TransportError as exc:
+            raise InfrastructureError("Content Management is unavailable.") from exc
+        if response.status_code in (502, 503, 504):
+            raise InfrastructureError("Content Management is unavailable.")
+        response.raise_for_status()
+        return response
 
     def list_missing_articles(self, limit: int) -> list[Article]:
         params = {"summary": "missing", "limit": limit}
-        response = self.http_client.get(
-            "internal/v1/articles", params=params, timeout=10
-        )
-        response.raise_for_status()
+        response = self._request("GET", "internal/v1/articles", params=params)
         data = response.json()
         articles_received = data["items"]
         articles: list[Article] = []
@@ -40,7 +61,8 @@ class ContentManagementClient:
         assessment: ArticleAssessment,
         llm_model: str,
     ) -> None:
-        response = self.http_client.put(
+        self._request(
+            "PUT",
             f"/internal/v1/articles/{article_id}/summary",
             json={
                 "text": assessment.summary,
@@ -49,16 +71,10 @@ class ContentManagementClient:
                 "llm_model": llm_model,
                 "generation_duration_ms": assessment.generation_duration_ms,
             },
-            timeout=10,
         )
-        response.raise_for_status()
 
     def list_topics(self) -> list[str]:
-        response = self.http_client.get(
-            "/internal/v1/topics",
-            timeout=10,
-        )
-        response.raise_for_status()
+        response = self._request("GET", "/internal/v1/topics")
         topics = response.json()
         if not isinstance(topics, list):
             raise ValueError("Content Management returned invalid topics")
@@ -71,12 +87,11 @@ class ContentManagementClient:
         self, topic_id: str, limit: int
     ) -> list[TopicArticleSummary]:
         params: dict[str, str | int] = {"topic_id": topic_id, "limit": limit}
-        response = self.http_client.get(
+        response = self._request(
+            "GET",
             "/internal/v1/articles",
             params=params,
-            timeout=10,
         )
-        response.raise_for_status()
         data = response.json()
         items = data["items"]
         if not isinstance(items, list) or len(items) > limit:
@@ -92,9 +107,8 @@ class ContentManagementClient:
         return summaries
 
     def save_topic_summary(self, topic_id: str, summary: str, llm_model: str) -> None:
-        response = self.http_client.put(
+        self._request(
+            "PUT",
             f"/internal/v1/topics/{quote(topic_id, safe='')}/summary",
             json={"text": summary, "llm_model": llm_model},
-            timeout=10,
         )
-        response.raise_for_status()
