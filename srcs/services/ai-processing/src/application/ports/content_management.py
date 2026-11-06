@@ -3,13 +3,22 @@ from uuid import UUID
 
 from src.application.models.article import Article
 from src.application.models.article_assessment import ArticleAssessment
-from src.application.models.topic_article_summary import TopicArticleSummaryPage
+from src.application.models.topic_article_summary import TopicArticleSummary
 
 
-class ContentManagementPort(Protocol):
+class ArticleContentManagementPort(Protocol):
     def list_missing_articles(self, limit: int) -> list[Article]: ...
 
     def save_article_assessment(
         self, article_id: UUID, assessment: ArticleAssessment, llm_model: str
     ) -> None: ...
 
+
+class TopicContentManagementPort(Protocol):
+    def list_topics(self) -> list[str]: ...
+
+    def list_topic_article_summaries(
+        self, topic_id: str, limit: int
+    ) -> list[TopicArticleSummary]: ...
+
+    def save_topic_summary(self, topic_id: str, summary: str, llm_model: str) -> None: ...

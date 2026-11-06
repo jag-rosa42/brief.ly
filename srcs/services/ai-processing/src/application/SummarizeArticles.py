@@ -1,6 +1,6 @@
 from src.application.models.article import Article
-from src.application.ports.ai_summarizer import AiSummarizerPort
-from src.application.ports.content_management import ContentManagementPort
+from src.application.ports.ai_summarizer import ArticleSummarizerPort
+from src.application.ports.content_management import ArticleContentManagementPort
 
 # The command entry point creates the HTTP clients and passes them to this use case.
 
@@ -8,8 +8,8 @@ from src.application.ports.content_management import ContentManagementPort
 class SummarizeArticles:
     def __init__(
         self,
-        content_management: ContentManagementPort,
-        ai_summarizer: AiSummarizerPort,
+        content_management: ArticleContentManagementPort,
+        ai_summarizer: ArticleSummarizerPort,
         llm_model: str,
         batch_size: int,
     ) -> None:
