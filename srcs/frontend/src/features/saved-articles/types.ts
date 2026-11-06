@@ -3,7 +3,7 @@ export interface SavedArticle {
 	title: string;
 	url: string;
 	summary: string | null;
-	source: string;
+	publisher_name: string;
 	topic_id: string;
 	read_time_minutes: number;
 	saved_at: string;

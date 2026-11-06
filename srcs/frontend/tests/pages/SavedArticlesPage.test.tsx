@@ -24,7 +24,7 @@ const FIRST: SavedArticle = {
 	title: "Open-source models narrow the enterprise gap",
 	url: "https://www.aitechdaily.com/",
 	summary: "Smaller teams gain access to capable models.",
-	source: "TechDaily",
+	publisher_name: "TechDaily",
 	topic_id: "technologies",
 	read_time_minutes: 3,
 	saved_at: "2026-11-03T08:00:00Z",
@@ -35,7 +35,7 @@ const SECOND: SavedArticle = {
 	title: "Data centres race to secure clean power",
 	url: "https://newenergyweekly.co.uk/",
 	summary: "Operators are signing long-term energy contracts.",
-	source: "Energy Weekly",
+	publisher_name: "Energy Weekly",
 	topic_id: "technologies",
 	read_time_minutes: 5,
 	saved_at: "2026-11-02T08:00:00Z",
@@ -122,6 +122,17 @@ test("shows the link to the original article", async () => {
 	fireEvent.click(await screen.findByRole("button", { name: "Read More →" }));
 
 	expect(screen.getByText("Read the full article on TechDaily ↗")).toBeInTheDocument();
+});
+
+test("filters saved articles by publisher", async () => {
+	answerWith([FIRST, SECOND]);
+
+	renderPage();
+	await screen.findByText(FIRST.title);
+	fireEvent.change(screen.getByLabelText("Source"), { target: { value: "Energy Weekly" } });
+
+	expect(screen.queryByText(FIRST.title)).not.toBeInTheDocument();
+	expect(screen.getByText(SECOND.title)).toBeInTheDocument();
 });
 
 test("shows the filtered state when no article matches the filters", async () => {
