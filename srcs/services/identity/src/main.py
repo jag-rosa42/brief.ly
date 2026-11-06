@@ -6,7 +6,7 @@ from src.api.errors.handlers import (
     register_api_exception_handlers,
     register_domain_exception_handlers,
 )
-from src.api.routers import api_routers, root_routers
+from src.api.routers import api_routers, internal_routers, root_routers
 from src.infrastructure.config.app import app_settings
 
 
@@ -24,6 +24,7 @@ def create_app() -> FastAPI:
 
     app.include_router(root_routers)
     app.include_router(api_routers)
+    app.include_router(internal_routers)
 
     register_shared_exception_handlers(app)
     register_domain_exception_handlers(app)
