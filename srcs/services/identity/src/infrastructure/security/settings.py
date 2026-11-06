@@ -42,6 +42,9 @@ class SecuritySettings(ServiceSettings):
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    # Service tokens are short because they can't be revoked.
+    # The client renews them shortly before they expire.
+    SERVICE_TOKEN_EXPIRE_MINUTES: int = 5
 
 
 security_settings = SecuritySettings()
