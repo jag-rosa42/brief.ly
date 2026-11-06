@@ -5,6 +5,7 @@ import pytest
 from src.application.models.article import Article
 from src.application.models.article_assessment import ArticleAssessment
 from src.application.SummarizeArticles import SummarizeArticles
+from tests.model import DEFAULT_MODEL
 
 
 def make_article(article_id: str) -> Article:
@@ -45,7 +46,7 @@ def test_processes_all_batches_and_stops_on_empty_result() -> None:
 
     content_management = ContentManagement()
     SummarizeArticles(
-        content_management, Summarizer(), "gemma3:1b", batch_size=25
+        content_management, Summarizer(), DEFAULT_MODEL, batch_size=25
     ).execute()
 
     assert content_management.requested_limits == [25, 25, 25]
@@ -55,14 +56,14 @@ def test_processes_all_batches_and_stops_on_empty_result() -> None:
             ArticleAssessment(
                 False, "Complete article", f"Summary of {first.id}", 1234
             ),
-            "gemma3:1b",
+            DEFAULT_MODEL,
         ),
         (
             second.id,
             ArticleAssessment(
                 False, "Complete article", f"Summary of {second.id}", 1234
             ),
-            "gemma3:1b",
+            DEFAULT_MODEL,
         ),
     ]
 
@@ -92,7 +93,7 @@ def test_failed_write_stops_before_fetching_another_batch() -> None:
     content_management = ContentManagement()
     with pytest.raises(RuntimeError, match="write failed"):
         SummarizeArticles(
-            content_management, Summarizer(), "gemma3:1b", batch_size=25
+            content_management, Summarizer(), DEFAULT_MODEL, batch_size=25
         ).execute()
 
     assert content_management.fetch_count == 1
@@ -123,14 +124,14 @@ def test_rejected_article_is_recorded_without_a_summary() -> None:
 
     content_management = ContentManagement()
     SummarizeArticles(
-        content_management, Summarizer(), "gemma3:1b", batch_size=25
+        content_management, Summarizer(), DEFAULT_MODEL, batch_size=25
     ).execute()
 
     assert content_management.saved == [
         (
             article.id,
             ArticleAssessment(True, "Article is incomplete", None, 1234),
-            "gemma3:1b",
+            DEFAULT_MODEL,
         )
     ]
     assert content_management.fetch_count == 2
