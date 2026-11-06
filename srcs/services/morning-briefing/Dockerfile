@@ -10,6 +10,7 @@ COPY ./pyproject.toml ./
 COPY ./uv.lock ./
 
 COPY --from=shared_errors / /app/shared/packages/shared_errors/
+COPY --from=shared_auth / /app/shared/packages/shared_auth/
 
 # --no-editable: production gets a plain copy of the shared packages in the
 # virtual environment, not a link to their source folder.
