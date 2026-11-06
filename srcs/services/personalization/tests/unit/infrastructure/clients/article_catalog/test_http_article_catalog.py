@@ -1,0 +1,121 @@
+from collections.abc import Callable
+from typing import Any
+from uuid import UUID
+
+import httpx2 as httpx
+import pytest
+
+from src.application.exceptions import ArticleCatalogUnavailableError
+from src.domain.entities.article import Article
+from src.infrastructure.clients.article_catalog.http_article_catalog import (
+    ARTICLES_PATH,
+    HttpArticleCatalog,
+)
+
+BASE_URL = "http://content-management"
+ARTICLE_ID = UUID("6f1c1b2e-1d2a-4c3b-9a8e-111111111111")
+
+# The article object of Content Management, with the fields we don't keep.
+ARTICLE_JSON: dict[str, Any] = {
+    "article_id": str(ARTICLE_ID),
+    "title": "Open-source models narrow the enterprise gap",
+    "publisher_name": "TechDaily",
+    "url": "https://www.aitechdaily.com/",
+    "topic_id": "technology",
+    "read_time_minutes": 3,
+    "summary": "Smaller teams gain access to capable models.",
+    "summarized_at": "2026-11-03T08:00:00Z",
+    "rejected": False,
+    "quality_comment": None,
+    "generation_duration_ms": 1200,
+}
+
+
+def _catalog(handler: Callable[[httpx.Request], httpx.Response]) -> HttpArticleCatalog:
+    """Build a catalog whose HTTP calls are answered by `handler` instead of CM."""
+    client = httpx.Client(transport=httpx.MockTransport(handler), base_url=BASE_URL)
+    return HttpArticleCatalog(BASE_URL, client=client)
+
+
+def test_find_by_id_returns_the_article() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=ARTICLE_JSON)
+
+    article = _catalog(handler).find_by_id(ARTICLE_ID)
+
+    assert article == Article(
+        article_id=ARTICLE_ID,
+        title="Open-source models narrow the enterprise gap",
+        source="TechDaily",
+        topic_id="technology",
+        summary="Smaller teams gain access to capable models.",
+        url="https://www.aitechdaily.com/",
+        read_time_minutes=3,
+    )
+
+
+def test_find_by_id_keeps_a_missing_summary() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=ARTICLE_JSON | {"summary": None})
+
+    article = _catalog(handler).find_by_id(ARTICLE_ID)
+
+    assert article is not None
+    assert article.summary is None
+
+
+def test_find_by_id_calls_the_article_endpoint() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json=ARTICLE_JSON)
+
+    _catalog(handler).find_by_id(ARTICLE_ID)
+
+    assert len(requests) == 1
+    assert requests[0].method == "GET"
+    assert requests[0].url.path == ARTICLES_PATH.format(article_id=ARTICLE_ID)
+
+
+def test_find_by_id_returns_none_when_the_article_is_unknown() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404, json={"error": {"code": "ARTICLE_NOT_FOUND"}})
+
+    assert _catalog(handler).find_by_id(ARTICLE_ID) is None
+
+
+def test_find_by_id_raises_when_content_management_returns_an_error() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(500, json={})
+
+    with pytest.raises(ArticleCatalogUnavailableError):
+        _catalog(handler).find_by_id(ARTICLE_ID)
+
+
+def test_find_by_id_raises_when_content_management_is_down() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connection error")
+
+    with pytest.raises(ArticleCatalogUnavailableError) as exc_info:
+        _catalog(handler).find_by_id(ARTICLE_ID)
+
+    assert isinstance(exc_info.value.__cause__, httpx.ConnectError)
+
+
+def test_find_by_id_raises_when_a_field_is_missing() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        article_json = dict(ARTICLE_JSON)
+        del article_json["publisher_name"]
+        return httpx.Response(200, json=article_json)
+
+    with pytest.raises(ArticleCatalogUnavailableError):
+        _catalog(handler).find_by_id(ARTICLE_ID)
+
+
+def test_find_by_id_raises_when_the_article_id_is_not_a_uuid() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=ARTICLE_JSON | {"article_id": "not-a-uuid"})
+
+    with pytest.raises(ArticleCatalogUnavailableError):
+        _catalog(handler).find_by_id(ARTICLE_ID)

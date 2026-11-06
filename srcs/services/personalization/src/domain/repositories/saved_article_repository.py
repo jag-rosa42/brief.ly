@@ -9,6 +9,14 @@ class SavedArticleRepository(Protocol):
         """Return the account's saved articles, most recently saved first."""
         ...
 
+    def add(self, saved_article: SavedArticle) -> SavedArticle:
+        """Insert the saved article and return it with its saved_at."""
+        ...
+
+    def exists(self, account_id: UUID, article_id: UUID) -> bool: ...
+
+    def count_for_account(self, account_id: UUID) -> int: ...
+
     def delete(self, account_id: UUID, article_id: UUID) -> None:
         """Remove the article from the account's saved articles.
 
