@@ -22,6 +22,15 @@ ARTICLE_ASSESSMENT_FORMAT = {
     "additionalProperties": False,
 }
 
+TOPIC_SUMMARY_FORMAT = {
+    "type": "object",
+    "properties": {
+        "summary": {"type": "string", "minLength": 1, "maxLength": 2000},
+    },
+    "required": ["summary"],
+    "additionalProperties": False,
+}
+
 
 class OllamaSummarizerClient:
     def __init__(self, http_client: Client, model: str, timeout_seconds: float):
@@ -131,3 +140,71 @@ class OllamaSummarizerClient:
             generation_duration_ms=max(0, round((perf_counter() - started_at) * 1000)),
         )
 
+    def ai_summarize_topic(self, topic_id: str, summaries: list[str]) -> str:
+        if not 2 <= len(summaries) <= 4:
+            raise ValueError("Topic summarizer needs 2 to 4 input summaries")
+
+        numbered_summaries = "\n".join(
+            f"{index}. {summary}" for index, summary in enumerate(summaries, start=1)
+        )
+        parts: list[str] = []
+        finished = False
+        with self.http_client.stream(
+            "POST",
+            "/api/chat",
+            json={
+                "model": self.model,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": (
+                            "Combine the provided summaries into one concise summary "
+                            "for the topic. Inputs may summarize individual articles "
+                            "or earlier groups of articles. Preserve the most important "
+                            "distinct facts, remove repetition, and keep unrelated "
+                            "events distinct. Use only facts stated in the inputs; do "
+                            "not invent details or imply that separate reports describe "
+                            "the same event. Write in their shared language, or English "
+                            "if they use different languages. Keep the summary within "
+                            "2000 characters. Return only a JSON object with the key "
+                            "summary."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Topic: {topic_id}\nInput summaries:\n{numbered_summaries}"
+                        ),
+                    },
+                ],
+                "stream": True,
+                "format": TOPIC_SUMMARY_FORMAT,
+                "options": {"temperature": 0},
+            },
+            timeout=self.timeout_seconds,
+        ) as response:
+            response.raise_for_status()
+            for line in response.iter_lines():
+                if not line:
+                    continue
+                chunk = json.loads(line)
+                if "error" in chunk:
+                    raise RuntimeError("Ollama failed while generating a topic summary")
+                parts.append(chunk.get("message", {}).get("content", ""))
+                if chunk.get("done") is True:
+                    finished = True
+                    break
+
+        content = "".join(parts).strip()
+        if not finished or not content:
+            raise ValueError("Ollama returned an incomplete or empty topic summary")
+        try:
+            result = json.loads(content)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Ollama returned an invalid topic summary") from exc
+        if not isinstance(result, dict) or set(result) != {"summary"}:
+            raise ValueError("Ollama returned an invalid topic summary")
+        summary = result["summary"]
+        if not isinstance(summary, str) or not 1 <= len(summary.strip()) <= 2000:
+            raise ValueError("Ollama returned an invalid topic summary")
+        return summary.strip()
