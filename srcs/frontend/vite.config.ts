@@ -48,6 +48,14 @@ export default defineConfig({
 				changeOrigin: true,
 				rewrite: (p) => p.replace(/^\/api\/personalization/, ""),
 			},
+			// Local mode only (make run SERVICE=morning-briefing).
+			// In Docker, the gateway routes /api before a request reaches Vite.
+			"/api/morning-briefing": {
+				target: process.env.MORNING_BRIEFING_URL ?? "http://localhost:8085",
+				secure: false,
+				changeOrigin: true,
+				rewrite: (p) => p.replace(/^\/api\/morning-briefing/, ""),
+			},
 		},
 		...(hmrHost
 			? {

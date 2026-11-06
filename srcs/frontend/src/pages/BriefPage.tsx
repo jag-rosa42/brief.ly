@@ -1,22 +1,16 @@
 import { useState } from "react";
+import { Navigate } from "react-router-dom";
 import { Division } from "@/shared/components/Division";
 import { Text } from "@/shared/components/Text";
 import { Tabs, type TabItem } from "@/shared/components/Tab";
 import { ArticleCard } from "@/shared/components/ArticleCard";
 import { ArticleModal, type Article } from "@/shared/components/ArticleModal";
-import { useDashboardData } from "@/utils/useDashboardData";
-import { useSavedArticles } from "@/app/useSavedArticles";
 import { Spinner } from "@/shared/components/Spinner";
-
-interface Preference {
-	id: string;
-	name: string;
-	summary: string;
-	articles: Article[];
-}
+import { useBriefing } from "@/features/briefing/hooks/useBriefing";
+import type { BriefingArticle, TopicCluster } from "@/features/briefing/types";
 
 interface PreferencePanelProps {
-	preference: Preference;
+	cluster: TopicCluster;
 	isSaved: (id: string) => boolean;
 	onToggleSave: (id: string) => void;
 	onReadMore: (article: Article) => void;
@@ -29,6 +23,23 @@ interface DashboardHeaderProps {
 
 interface PreferencesSectionProps {
 	tabs: TabItem[];
+}
+
+// Topic ids are lowercase words ("technologies"): shown with a capital letter.
+function topicLabel(topicId: string): string {
+	return topicId.charAt(0).toUpperCase() + topicId.slice(1);
+}
+
+function toArticle(article: BriefingArticle): Article {
+	return {
+		id: article.article_id,
+		title: article.title,
+		summary: article.summary ?? "",
+		url: article.url,
+		source: article.publisher_name,
+		category: topicLabel(article.topic_id),
+		readingTime: article.read_time_minutes,
+	};
 }
 
 function formatDate(date: Date): string {
@@ -62,13 +73,38 @@ function DashboardHeader({ firstName, today }: DashboardHeaderProps) {
 	);
 }
 
-function PreferencePanel({ preference, isSaved, onToggleSave, onReadMore }: PreferencePanelProps) {
+function PreferencePanel({ cluster, isSaved, onToggleSave, onReadMore }: PreferencePanelProps) {
+	const articles = cluster.articles.map(toArticle);
+
+	let stories;
+	if (articles.length > 0) {
+		stories = (
+			<div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+				{articles.map((article) => (
+					<ArticleCard
+						key={article.id}
+						article={article}
+						isSaved={isSaved(article.id)}
+						onReadMore={() => onReadMore(article)}
+						onToggleSave={() => onToggleSave(article.id)}
+					/>
+				))}
+			</div>
+		);
+	} else {
+		stories = (
+			<Text variant="body" className="text-info">
+				No story for this topic today.
+			</Text>
+		);
+	}
+
 	return (
 		<div className="flex flex-col gap-8">
 			<Division variant="dashboardcard">
-				<Text variant="subheading">Summary of {preference.name} today</Text>
+				<Text variant="subheading">Summary of {topicLabel(cluster.topic_id)} today</Text>
 				<Text variant="body" className="text-accent/80">
-					{preference.summary}
+					{cluster.summary ?? "The summary of this topic is not ready yet."}
 				</Text>
 			</Division>
 
@@ -80,17 +116,7 @@ function PreferencePanel({ preference, isSaved, onToggleSave, onReadMore }: Pref
 					</Text>
 				</div>
 
-				<div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-					{preference.articles.map((article) => (
-						<ArticleCard
-							key={article.id}
-							article={article}
-							isSaved={isSaved(article.id)}
-							onReadMore={() => onReadMore(article)}
-							onToggleSave={() => onToggleSave(article.id)}
-						/>
-					))}
-				</div>
+				{stories}
 			</section>
 		</div>
 	);
@@ -120,17 +146,17 @@ function PreferencesSection({ tabs }: PreferencesSectionProps) {
 }
 
 export function BriefPage() {
-	//TODO: API call to get Dashboard data: connect
-	const { data, isLoading, error } = useDashboardData();
+	const { data, isLoading, error, profileMissing, isSaved, toggleSave } = useBriefing();
 
 	const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 	const [today] = useState(() => new Date());
 
-	// TODO: call API here to get the saved articles' ids
-	const { isSaved, toggleSave } = useSavedArticles();
-
 	if (isLoading) {
 		return <Spinner />;
+	}
+
+	if (profileMissing) {
+		return <Navigate to="/dashboard/profile" replace />;
 	}
 
 	if (error || !data) {
@@ -140,12 +166,12 @@ export function BriefPage() {
 			</Text>
 		);
 	}
-	const tabs: TabItem[] = data.preferences.map((preference) => ({
-		value: preference.id,
-		label: preference.name,
+	const tabs: TabItem[] = data.topic_clusters.map((cluster) => ({
+		value: cluster.topic_id,
+		label: topicLabel(cluster.topic_id),
 		content: (
 			<PreferencePanel
-				preference={preference}
+				cluster={cluster}
 				isSaved={isSaved}
 				onToggleSave={toggleSave}
 				onReadMore={setSelectedArticle}
@@ -155,7 +181,7 @@ export function BriefPage() {
 
 	return (
 		<Division variant="dashboardpage" className="max-w-6x1 gap-8">
-			<DashboardHeader firstName={data.user.firstName} today={today} />
+			<DashboardHeader firstName={data.profile.name} today={today} />
 			<PreferencesSection tabs={tabs} />
 			<ArticleModal article={selectedArticle} onClose={() => setSelectedArticle(null)} />
 		</Division>
