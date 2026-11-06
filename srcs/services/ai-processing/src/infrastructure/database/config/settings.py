@@ -26,7 +26,7 @@ class DatabaseSettings(ServiceSettings):
     # Driver used by the application.
     DATABASE_DRIVER: Literal["psycopg", "asyncpg"] = "psycopg"
     POSTGRES_HOST: str
-    POSTGRES_PORT: int = 5433
+    POSTGRES_PORT: int = 5432
     POSTGRES_USER: str
     # SecretStr prevents the password from being accidentally printed
     # or included in logs.
