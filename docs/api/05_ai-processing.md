@@ -1,23 +1,23 @@
 # AI Processing (internal only)
 
-AI Processing writes the summaries of articles and topics. It is a **worker**: it has no business routes (only `/health`, and `/metrics` later), and nobody calls it. It runs as commands started by hand inside its container, reads articles from Content Management and writes summaries back there. It is only on the `backend` network. Why it works this way: [06_service-to-service.md](06_service-to-service.md#summaries-an-enrichment-pipeline) and ADR-0010.
+AI Processing assesses and summarizes articles, then summarizes topics. It is a **worker** with no business routes: its HTTP API exposes only `/health`. Run it manually with `make summarize` from the repository root on the host (via SSH to the VM) or `python -m src.worker` inside its container. It reads articles from Content Management and writes results back there. It is only on the `backend` network. See [the service README](../../srcs/services/ai-processing/README.md) for setup.
 
 | Kind | Method | Service path | Auth | Success | Status |
 | --- | --- | --- | --- | --- | --- |
 | Internal | GET | `/health` | None | 200 | Done |
 
-On `main`, AI Processing only has `/health`. Its API router still uses the old `/api` prefix (`srcs/services/ai-processing/src/api/routers/__init__.py`) and can be emptied, since the service has no business routes.
+The health route is registered at the application root, without an `/api` prefix.
 
 | Command | What it does | Calls | Status |
 | --- | --- | --- | --- |
-| `summarize` (e.g. `make summarize`) | Processes article summaries in a bounded loop, then summarizes every topic from its articles | `GET /internal/v1/articles?summary=missing`, `GET /internal/v1/topics`, `GET /internal/v1/articles?topic_id=`, `PUT .../summary` on Content Management, with its service token | To do |
+| `summarize` (e.g. `make summarize`) | Assesses missing articles, then summarizes each topic from up to 25 returned articles | `GET /internal/v1/articles?summary=missing&limit=25` (default batch size), `GET /internal/v1/topics`, one `GET /internal/v1/articles?topic_id=...&limit=25` per topic, `PUT .../summary` on Content Management | Worker implemented; topic summary PUT pending in Content Management |
 | `embed` (later) | Stores article embeddings in its own pgvector database | `GET /internal/v1/articles...` on Content Management | To do |
 
-The article-summary loop fetches at most 25 articles per response and uses no
-cursor. It stops when Content Management returns an empty list or when AI
-Processing reaches three consecutive failures to add summaries to Content
-Management. A successful summary write resets the global consecutive-failure
-counter to zero.
+The article loop uses `ARTICLE_BATCH_SIZE` (default 25) as the request limit and
+uses no cursor. It fetches the next batch only after writing an assessment for
+every article in the current batch. An empty response ends the article phase;
+the first provider, validation, or write failure stops the worker. The topic
+phase starts only after the article phase finishes successfully.
 Each article response includes the stored `content` and `language`; AI
 Processing uses the language when generating the summary. For a rejected
 article, AI Processing sends `text: null` and `rejected: true` to the article
@@ -37,5 +37,16 @@ latest summary and returns its text and `summarized_at` in the topic object.
 For this guard, the current working definition of a failure is an attempt for an
 article that ends without its summary being successfully stored in Content
 Management. This definition is provisional and may be refined during development.
+=======
+For each topic, AI Processing reads one list of at most 25 non-rejected articles
+from Content Management. Every returned article must have a non-empty stored
+summary; otherwise the worker stops without writing that topic. It combines
+the summaries in groups of two to four until one remains (a leftover single
+summary passes through unchanged) and sends it in the
+`text` field of the topic summary PUT. It skips topics with no articles because
+the topic summary PUT contract requires non-null text. The selected 25 articles
+are determined by Content Management's current query, which has no defined
+ordering.
 
-Its own database (pgvector) holds only its working data: embeddings, for grouping similar articles and for RAG later. It never stores summaries.
+Its pgvector database is provisioned for future working data such as embeddings;
+the current worker does not use it or store summaries locally.
