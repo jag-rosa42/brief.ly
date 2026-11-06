@@ -101,6 +101,7 @@ help:
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) init-env                    $(CYAN_COLOR)Force generating .env files from their .env.example templates$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ingest                      $(CYAN_COLOR)Trigger ingestion through a locally running content-management service$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ingest-vm                   $(CYAN_COLOR)Trigger ingestion through content-management in the VM$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) summarize                   $(CYAN_COLOR)Run the summary worker in the VM's AI Processing container$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) test SERVICE=<name>         $(CYAN_COLOR)Run service tests locally with a VM test database$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) lint SERVICE=<name>         $(CYAN_COLOR)Lint a service locally$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) run SERVICE=<name>          $(CYAN_COLOR)Run one backend locally with databases in the VM$(DEFAULT_COLOR)\n"
@@ -247,6 +248,10 @@ run: check-service vm-databases
 	@$(call print,$(CYAN_COLOR),[SERVICE] Running $(SERVICE) locally with VM databases...)
 	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) ensure-databases -s
 	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) run -s
+
+# Run the worker in the existing AI Processing container inside the VM.
+summarize: launch-vm
+	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && $(PROD_COMPOSE) $(COMPOSE_PROFILES_ALL) exec -T ai-processing python -m src.worker'
 
 #service testing
 test: check-service vm-databases
@@ -496,7 +501,7 @@ fclean-vm: launch-vm
 .PHONY: clean fclean logs down reset-db secrets check-service check-compose-service \
 		vm-databases \
 		frontend frontend-install frontend-build frontend-test \
-		dev dev-databases docker vm sync run migration upgrade downgrade \
+		dev dev-databases docker vm sync run summarize migration upgrade downgrade \
 		test lint typecheck shell list-services status clear-cache reinstall \
 		up build ps logs init-env create-vm launch-vm stop-vm debug-create-vm \
 		connect-vm vm-wait vm-sync prod prod-docker fclean-vm $(addsuffix -vm,$(VM_DOCKER_TARGETS))

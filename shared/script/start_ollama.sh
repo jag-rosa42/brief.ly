@@ -1,7 +1,13 @@
 #!/bin/sh
 set -eu
 
-model=${LLM_MODEL:-gemma2:2b}
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+model_env_file="$script_dir/../../srcs/services/ai-processing/.env"
+model=$(sed -n 's/^OLLAMA_MODEL=//p' "$model_env_file")
+if [ -z "$model" ]; then
+    echo "OLLAMA_MODEL must be set in $model_env_file" >&2
+    exit 1
+fi
 host=${OLLAMA_HOST:-127.0.0.1:11434}
 state_dir="$HOME/.ollama/ft-transcendance"
 models_dir=
