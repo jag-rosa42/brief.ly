@@ -33,7 +33,7 @@ function toArticle(article: SavedArticle): Article {
 		title: article.title,
 		summary: article.summary ?? "",
 		url: article.url,
-		source: article.source,
+		source: article.publisher_name,
 		category: article.topic_id,
 		readingTime: article.read_time_minutes,
 	};
