@@ -161,3 +161,97 @@ def test_summarize_article_rejects_streamed_provider_error() -> None:
             client.ai_summarize_article(ARTICLE)
 
 
+def test_summarize_topic_uses_stored_summaries_and_validates_result() -> None:
+    def respond(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
+        assert request.url.path == "/api/chat"
+        body = json.loads(request.content)
+        assert body["stream"] is True
+        assert body["model"] == "gemma3:1b"
+        assert body["options"]["temperature"] == 0
+        assert body["format"] == {
+            "type": "object",
+            "properties": {
+                "summary": {"type": "string", "minLength": 1, "maxLength": 2000}
+            },
+            "required": ["summary"],
+            "additionalProperties": False,
+        }
+        system_prompt = body["messages"][0]["content"]
+        assert "earlier groups of articles" in system_prompt
+        assert "keep unrelated events distinct" in system_prompt
+        assert "do not invent details" in system_prompt
+        assert "JSON object with the key summary" in system_prompt
+        prompt = body["messages"][1]["content"]
+        assert "Topic: local-news" in prompt
+        assert "Input summaries:" in prompt
+        assert "1. Library opened." in prompt
+        assert "2. Museum reopened." in prompt
+        assert ARTICLE.content not in prompt
+        content = json.dumps({"summary": "Local venues opened."})
+        midpoint = len(content) // 2
+        return httpx.Response(
+            200,
+            content=ollama_line(content[:midpoint], done=False)
+            + ollama_line(content[midpoint:]),
+        )
+
+    with httpx.Client(
+        base_url="http://ollama:11434", transport=httpx.MockTransport(respond)
+    ) as http_client:
+        client = OllamaSummarizerClient(http_client, "gemma3:1b", 120.0)
+        result = client.ai_summarize_topic(
+            "local-news", ["Library opened.", "Museum reopened."]
+        )
+
+    assert result == "Local venues opened."
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        "Local venues opened.",
+        "{not json}",
+        json.dumps({"summary": ""}),
+        json.dumps({"summary": " "}),
+        json.dumps({"summary": "x" * 2001}),
+        json.dumps({"summary": None}),
+        json.dumps({"summary": "Valid", "extra": "unexpected"}),
+        json.dumps(["Valid"]),
+    ],
+)
+def test_summarize_topic_rejects_invalid_json_content(content: str) -> None:
+    with httpx.Client(
+        base_url="http://ollama:11434",
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(200, content=ollama_line(content))
+        ),
+    ) as http_client:
+        client = OllamaSummarizerClient(http_client, "gemma3:1b", 120.0)
+        with pytest.raises(ValueError, match="invalid topic summary"):
+            client.ai_summarize_topic(
+                "local-news", ["Library opened.", "Museum reopened."]
+            )
+
+
+@pytest.mark.parametrize(
+    "response_content",
+    [
+        ollama_line('{"summary": "Partial"}', done=False),
+        ollama_line("  "),
+    ],
+)
+def test_summarize_topic_rejects_incomplete_or_empty_stream(
+    response_content: bytes,
+) -> None:
+    with httpx.Client(
+        base_url="http://ollama:11434",
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(200, content=response_content)
+        ),
+    ) as http_client:
+        client = OllamaSummarizerClient(http_client, "gemma3:1b", 120.0)
+        with pytest.raises(ValueError, match="incomplete or empty topic summary"):
+            client.ai_summarize_topic(
+                "local-news", ["Library opened.", "Museum reopened."]
+            )
