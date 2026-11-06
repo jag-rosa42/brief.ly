@@ -5,6 +5,7 @@ include .env
 include shared/mk/colors.mk
 include shared/mk/secrets.mk
 include shared/mk/ingest.mk
+include shared/mk/llm.mk
 
 NAME := Transcendence
 .DEFAULT_GOAL := help
@@ -95,6 +96,8 @@ help:
 	@printf "$(GREEN_COLOR)  Databases$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) vm-databases                $(CYAN_COLOR)Start PostgreSQL and pgvector in the VM for local backend development$(DEFAULT_COLOR)\n"
 	@printf "$(GREEN_COLOR)  Backend$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ollama                     $(CYAN_COLOR)Start local Ollama and pull the small summary model$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ollama-down                $(CYAN_COLOR)Stop the Ollama server started by make$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) init-env                    $(CYAN_COLOR)Force generating .env files from their .env.example templates$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ingest                      $(CYAN_COLOR)Trigger ingestion through a locally running content-management service$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ingest-vm                   $(CYAN_COLOR)Trigger ingestion through content-management in the VM$(DEFAULT_COLOR)\n"
