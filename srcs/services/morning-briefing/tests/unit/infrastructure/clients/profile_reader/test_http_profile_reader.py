@@ -99,3 +99,11 @@ def test_get_raises_when_the_response_is_invalid() -> None:
 
     with pytest.raises(ProfileReaderUnavailableError):
         _reader(handler).get(TOKEN)
+
+
+def test_get_raises_when_the_response_is_not_json() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=b"not json")
+
+    with pytest.raises(ProfileReaderUnavailableError):
+        _reader(handler).get(TOKEN)
