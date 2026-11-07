@@ -45,7 +45,7 @@ def test_list_by_topic_returns_the_articles() -> None:
         Article(
             article_id=ARTICLE_ID,
             title="Open-source models narrow the enterprise gap",
-            source="TechDaily",
+            publisher_name="TechDaily",
             url="https://www.aitechdaily.com/",
             summary="Smaller teams gain access to capable models.",
             read_time_minutes=3,

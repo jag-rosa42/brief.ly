@@ -6,7 +6,7 @@ from uuid import UUID
 class Article:
     article_id: UUID
     title: str
-    source: str
+    publisher_name: str
     url: str
     summary: str | None
     read_time_minutes: int

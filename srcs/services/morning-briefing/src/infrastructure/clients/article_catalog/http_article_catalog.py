@@ -7,7 +7,7 @@ from src.domain.entities.article import Article
 
 # Contract: docs/api/04_content-management.md, GET /internal/v1/articles?topic_id=
 # returns {"items": [<article>]}, or 404 TOPIC_NOT_FOUND for an unknown topic.
-# We keep the fields of the briefing only, and return `publisher_name` as `source`.
+# We keep the fields of the briefing only.
 ARTICLES_PATH = "/internal/v1/articles"
 TIMEOUT_SECONDS = 2.0
 
@@ -31,7 +31,7 @@ class HttpArticleCatalog:
                 Article(
                     article_id=UUID(item["article_id"]),
                     title=item["title"],
-                    source=item["publisher_name"],
+                    publisher_name=item["publisher_name"],
                     url=item["url"],
                     summary=item["summary"],
                     read_time_minutes=item["read_time_minutes"],

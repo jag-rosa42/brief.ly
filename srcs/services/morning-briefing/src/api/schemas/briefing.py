@@ -8,8 +8,6 @@ from src.domain.entities.briefing import Briefing, TopicCluster
 from src.domain.entities.profile import Profile
 
 # Response of GET /briefing (docs/api/03_morning-briefing.md).
-# The domain keeps the article's `source`; the API calls it `publisher_name`,
-# like Content Management and Personalization. The renaming happens here only.
 
 
 class BriefingProfileResponse(BaseModel):
@@ -40,7 +38,7 @@ class BriefingArticleResponse(BaseModel):
         return cls(
             article_id=article.article_id,
             title=article.title,
-            publisher_name=article.source,
+            publisher_name=article.publisher_name,
             url=article.url,
             summary=article.summary,
             read_time_minutes=article.read_time_minutes,
