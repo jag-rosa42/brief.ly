@@ -12,3 +12,4 @@ the route names remain unchanged.
 from src.main import app
 
 HEALTH: str = app.url_path_for("health_check")
+BRIEFING: str = app.url_path_for("get_briefing")

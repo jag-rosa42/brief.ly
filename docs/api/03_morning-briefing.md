@@ -2,11 +2,11 @@
 
 A single endpoint returns everything the dashboard needs: one topic cluster per profile interest, each with its summary and its articles. The briefing is built on each request; nothing is precomputed. Conventions, tokens and errors are in [00_conventions.md](00_conventions.md).
 
-Nothing is implemented yet: on `main`, Morning Briefing only has `/health`, and its API router still uses the old `/api` prefix (`srcs/services/morning-briefing/src/api/routers/__init__.py`).
+The Frontend route is implemented. The Public routes are not yet.
 
 | Kind | Method | Caller path | Service path | Auth | Success | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| Frontend | GET | `/api/morning-briefing/briefing` | `/briefing` | Bearer | 200 | To do |
+| Frontend | GET | `/api/morning-briefing/briefing` | `/briefing` | Bearer | 200 | Done |
 | Public | GET | `/public/v1/morning-briefing` | same | API key (`read`) | 200 | To do |
 | Public | GET | `/public/v1/openapi/morning-briefing.json` | same | None | 200 | To do |
 | Internal | GET | — | `/health` | None | 200 | Done |

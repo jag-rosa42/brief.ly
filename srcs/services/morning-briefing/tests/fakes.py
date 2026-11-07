@@ -2,6 +2,7 @@ from uuid import UUID
 
 from src.application.exceptions import (
     ArticleCatalogUnavailableError,
+    ProfileReaderUnavailableError,
     TopicCatalogUnavailableError,
 )
 from src.domain.entities.article import Article
@@ -10,12 +11,25 @@ from src.domain.entities.topic import Topic
 
 
 class FakeProfileReader:
-    def __init__(self, profile: Profile | None) -> None:
+    def __init__(
+        self,
+        profile: Profile | None,
+        available: bool = True,
+        error: Exception | None = None,
+    ) -> None:
         self._profile = profile
+        self._available = available
+        # Raised as is: e.g. shared_auth's TokenExpiredError, which the real
+        # client raises when Personalization answers 401 TOKEN_EXPIRED.
+        self._error = error
         self.tokens: list[str] = []
 
     def get(self, user_token: str) -> Profile | None:
         self.tokens.append(user_token)
+        if self._error is not None:
+            raise self._error
+        if not self._available:
+            raise ProfileReaderUnavailableError()
         return self._profile
 
 
