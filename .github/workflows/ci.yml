@@ -50,6 +50,7 @@ jobs:
               - 'shared/packages/shared_errors/**'
             morning-briefing:
               - 'srcs/services/morning-briefing/**'
+              - 'shared/packages/shared_auth/**'
               - 'shared/packages/shared_errors/**'
             personalization:
               - 'srcs/services/personalization/**'
@@ -131,6 +132,7 @@ jobs:
     uses: ./.github/workflows/reusable-python.yml
     with:
       working-directory: srcs/services/morning-briefing
+      generate-jwt-keys: true
 
   personalization:
     needs: check-changes
