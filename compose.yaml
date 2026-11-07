@@ -133,6 +133,7 @@ x-morning-briefing-image-build: &morning-briefing-image-build
     dockerfile: Dockerfile
     additional_contexts:
       shared_errors: ./shared/packages/shared_errors
+      shared_auth: ./shared/packages/shared_auth
   image: morning-briefing
   env_file:
     - ./srcs/services/morning-briefing/.env
@@ -350,11 +351,20 @@ services:
 
   morning-briefing:
     <<: [*morning-briefing-image-build, *backend-service]
+    environment:
+      POSTGRES_HOST: pgsql
+      POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
+      POSTGRES_DEFAULT_DB_NAME: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
+      CONTENT_MANAGEMENT_URL: ${CONTENT_MANAGEMENT_INTERNAL_URL:?Variable not set}
+      PERSONALIZATION_URL: ${PERSONALIZATION_INTERNAL_URL:?Variable not set}
     depends_on:
       pgsql:
         condition: service_healthy
       prestart-morning-briefing:
         condition: service_completed_successfully
+    secrets:
+      - jwt_public_key
+      - postgres_password
     networks:
       - edge
       - backend
