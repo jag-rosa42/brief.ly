@@ -29,4 +29,3 @@ root_routers.include_router(health_router)
 #   service: GET /briefing
 # ---------------------------------------------------------------------------
 api_routers = APIRouter()
-# api_routers.include_router()
