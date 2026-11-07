@@ -33,6 +33,7 @@ x-morning-briefing-dev-image-build: &morning-briefing-dev-image-build
   volumes:
     - ./srcs/services/morning-briefing:/app/srcs/services/morning-briefing
     - ./shared/packages/shared_errors:/app/shared/packages/shared_errors
+    - ./shared/packages/shared_auth:/app/shared/packages/shared_auth
 
 # Personalization
 x-personalization-dev-image-build: &personalization-dev-image-build
