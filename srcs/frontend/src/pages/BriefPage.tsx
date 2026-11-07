@@ -173,7 +173,9 @@ export function BriefPage() {
 			<PreferencePanel
 				cluster={cluster}
 				isSaved={isSaved}
-				onToggleSave={toggleSave}
+				onToggleSave={(id) => {
+					void toggleSave(id);
+				}}
 				onReadMore={setSelectedArticle}
 			/>
 		),
