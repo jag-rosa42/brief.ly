@@ -10,6 +10,7 @@ from src.domain.entities.profile import Profile
 # DownstreamClient forwards the user's token and translates the errors:
 # unreachable or 502/503/504 -> 503, 401 TOKEN_EXPIRED -> 401 TOKEN_EXPIRED,
 # any other error -> DownstreamError (502), except the 404 handled below.
+# A body that is not the expected JSON -> ProfileReaderUnavailableError (503).
 PROFILE_PATH = "/internal/v1/me/profile"
 PROFILE_NOT_FOUND = "PROFILE_NOT_FOUND"
 
@@ -28,6 +29,8 @@ class HttpProfileReader:
             ):
                 return None
             raise
+        except ValueError as error:  # the body is not JSON
+            raise ProfileReaderUnavailableError() from error
 
         try:
             return Profile(
