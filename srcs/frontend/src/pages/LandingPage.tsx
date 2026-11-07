@@ -2,13 +2,15 @@ import { Link } from "@/shared/components/Link";
 import { Division } from "@/shared/components/Division";
 import { Text } from "@/shared/components/Text";
 import { useAuth } from "@/app/useAuth";
+import { useProfile } from "@/app/useProfile";
 
 export function LandingPage() {
-	const { isLoggedIn, profileComplete } = useAuth();
+	const { isLoggedIn } = useAuth();
+	const { isProfileComplete, loading } = useProfile();
 
 	let startLink = "/signup";
 	if (isLoggedIn) {
-		startLink = profileComplete ? "/dashboard/brief" : "/dashboard/profile";
+		startLink = isProfileComplete ? "/dashboard/brief" : "/dashboard/profile";
 	}
 	return (
 		<main>
@@ -22,9 +24,11 @@ export function LandingPage() {
 				</Text>
 
 				<div className="mt-7">
-					<Link to={startLink} variant="main">
-						Start the journey
-					</Link>
+					{!loading && (
+						<Link to={startLink} variant="main">
+							Start the journey
+						</Link>
+					)}
 				</div>
 			</section>
 			<section className="grid grid-cols-1 md:grid-cols-3 gap-6 px-6 pt-12 pb-12 max-w-6xl mx-auto">

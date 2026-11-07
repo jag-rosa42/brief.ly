@@ -31,7 +31,7 @@ export function useProfileForm() {
 		try {
 			setTopics(await getTopics());
 		} catch (e) {
-			if ((e as ApiError).status === 401) return;
+			if (e instanceof ApiError && e.status === 401) return;
 			setLoadError("Unable to load interests.");
 		} finally {
 			setLoading(false);
@@ -48,7 +48,7 @@ export function useProfileForm() {
 			})
 			.catch((e: unknown) => {
 				if (ignore) return;
-				if ((e as ApiError).status === 401) return;
+				if (e instanceof ApiError && e.status === 401) return;
 				setLoadError("Unable to load interests.");
 			})
 			.finally(() => {
@@ -131,9 +131,8 @@ export function useProfileForm() {
 			setSuccess(true);
 			return saved;
 		} catch (e) {
-			const err = e as ApiError;
-			if (err.status === 401) return null;
-			setServerErrors(mapProfileError(err));
+			if (e instanceof ApiError && e.status === 401) return null;
+			setServerErrors(mapProfileError(e));
 			return null;
 		} finally {
 			setSubmitting(false);
@@ -154,6 +153,6 @@ export function useProfileForm() {
 		success,
 		errors,
 		submit,
-		canSubmit: !submitting && !isEmptyUpdate,
+		canSubmit: !submitting && !loading && !loadError && !isEmptyUpdate,
 	};
 }

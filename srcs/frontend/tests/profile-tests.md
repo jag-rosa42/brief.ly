@@ -6,7 +6,7 @@ How to manually check the profile editing page. Each scenario lists the steps, t
 
 ## Prerequisites
 
-- The stack is running (frontend, identity, personalization, database and API gateway) and `http://localhost:5173` loads.
+- The stack is running (frontend, identity, personalization, database and API gateway) and `http://localhost:8443` loads.
 - The user is registered and logged in.
 - The user already has a profile containing a name and interests.
 - The API gateway is healthy and forwards Personalization requests correctly.
@@ -113,7 +113,7 @@ For each case, enter the invalid value and click the update button.
 | --- | --- |
 | Empty name | Validation error |
 | Name containing only spaces | Validation error |
-| Name exceeding 14 characters after trimming | Validation error |
+| Name exceeding 50 characters after trimming | Validation error |
 | No interest selected | Validation error |
 | More than 4 interests selected | Prevented by the interface or validation error |
 | Valid name and 1 interest | No validation error |

@@ -7,7 +7,7 @@ export interface FormErrors {
 }
 
 const NAME_MIN = 1;
-const NAME_MAX = 14;
+const NAME_MAX = 50;
 
 export function validate(name: string, topicIds: string[]): FormErrors {
 	const errors: FormErrors = {};
@@ -20,9 +20,13 @@ export function validate(name: string, topicIds: string[]): FormErrors {
 }
 
 // Traduit une ApiError en erreurs par champ.
-export function mapProfileError(err: ApiError): FormErrors {
+export function mapProfileError(err: unknown): FormErrors {
+	// Cas 0 : ce n'est pas une ApiError (coupure réseau, TypeError...) : message générique.
+	if (!(err instanceof ApiError)) {
+		return { form: "Unable to reach the server. Check your connection and try again." };
+	}
 	// Cas 1 : le service est indisponible, on affiche un message général.
-	if (err.status === 503) {
+	if (err.status === 502 || err.status === 503 || err.status === 504) {
 		return { form: "Service temporarily unavailable. Please try again later." };
 	}
 	// Cas 2 : le back a refusé les données (validation).
@@ -52,10 +56,10 @@ export function mapProfileError(err: ApiError): FormErrors {
 		// Si aucune erreur n'a pu être associée, on affiche le message global de l'erreur.
 		const noErrorFound = !errors.name && !errors.topics && !errors.form;
 		if (noErrorFound) {
-			errors.form = err.message;
+			errors.form = "Some information is invalid. Please check your entries and try again.";
 		}
 		return errors;
 	}
 	// Cas 3 : toute autre erreur (réseau, 500...) : message général.
-	return { form: err.message };
+	return { form: "Unable to save your profile. Please try again." };
 }

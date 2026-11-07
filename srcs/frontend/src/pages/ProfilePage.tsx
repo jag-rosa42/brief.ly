@@ -10,6 +10,7 @@ import { Input } from "@/shared/components/Input";
 import { Button } from "@/shared/components/Button";
 import { FilterChip } from "@/shared/components/FilterChip";
 import type { FilterChipOption } from "@/shared/components/FilterChip";
+import { useProfile } from "@/app/useProfile";
 
 const MAX_INTERESTS = 4;
 
@@ -24,12 +25,14 @@ export function ProfilePage() {
 		toggleTopic,
 		loading,
 		loadError,
+		reload,
 		submitting,
 		success,
 		errors,
 		submit,
 		canSubmit,
 	} = useProfileForm();
+	const { isProfileComplete } = useProfile();
 
 	// Transformation des topics du backend en options pour FilterChip
 	const interestOptions: FilterChipOption[] = topics.map((topic) => ({
@@ -47,18 +50,6 @@ export function ProfilePage() {
 				void navigate("/dashboard/brief");
 			}
 		}
-	}
-
-	if (loading) {
-		return <Text variant="body">Loading profile...</Text>;
-	}
-
-	if (loadError) {
-		return (
-			<Text variant="error" role="alert">
-				{loadError}
-			</Text>
-		);
 	}
 
 	return (
@@ -91,7 +82,11 @@ export function ProfilePage() {
 								<Button type="submit" variant="secondary" className="w-full" disabled={!canSubmit}>
 									{submitting ? "Saving..." : "Save"}
 								</Button>
-								<Link to="/" variant="primary" className="w-full text-center">
+								<Link
+									to={isProfileComplete ? "/dashboard/brief" : "/"}
+									variant="primary"
+									className="w-full text-center"
+								>
 									Back
 								</Link>
 							</div>
@@ -114,20 +109,36 @@ export function ProfilePage() {
 									Pick between one and four interests
 								</Text>
 							</div>
-							<div className="flex flex-wrap justify-center gap-2">
-								{interestOptions.map((opt) => {
-									const isSelected = topicIds.includes(opt.value);
-									return (
-										<FilterChip
-											key={opt.value}
-											options={opt}
-											selected={isSelected}
-											disabled={!isSelected && topicIds.length >= MAX_INTERESTS}
-											onToggle={toggleTopic}
-										/>
-									);
-								})}
-							</div>
+
+							{loading && <Text variant="body">Loading interests...</Text>}
+
+							{!loading && loadError && (
+								<div className="flex flex-col items-center gap-2">
+									<Text variant="error" role="alert">
+										{loadError}
+									</Text>
+									<Button type="button" variant="secondary" onClick={() => void reload()}>
+										Retry
+									</Button>
+								</div>
+							)}
+
+							{!loading && !loadError && (
+								<div className="flex flex-wrap justify-center gap-2">
+									{interestOptions.map((opt) => {
+										const isSelected = topicIds.includes(opt.value);
+										return (
+											<FilterChip
+												key={opt.value}
+												options={opt}
+												selected={isSelected}
+												disabled={!isSelected && topicIds.length >= MAX_INTERESTS}
+												onToggle={toggleTopic}
+											/>
+										);
+									})}
+								</div>
+							)}
 						</div>
 					</Form>
 				</Division>
