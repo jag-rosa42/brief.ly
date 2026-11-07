@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from src.api.routers.briefing.router import router as briefing_router
 from src.api.routers.health.router import router as health_router
 
 # ---------------------------------------------------------------------------
@@ -29,3 +30,4 @@ root_routers.include_router(health_router)
 #   service: GET /briefing
 # ---------------------------------------------------------------------------
 api_routers = APIRouter()
+api_routers.include_router(briefing_router)
