@@ -63,7 +63,7 @@ def article(topic_id: str, article_id: UUID) -> Article:
     return Article(
         article_id=article_id,
         title=f"Article about {topic_id}",
-        source="TechDaily",
+        publisher_name="TechDaily",
         url="https://example.com/article",
         summary=None,
         read_time_minutes=0,
