@@ -22,7 +22,7 @@ const tabs: (TabItem & { value: DashboardTab })[] = [
 export function DashboardPage({ tab: activeTab }: { tab: DashboardTab }) {
 	const navigate = useNavigate();
 	const logout = useLogout();
-	const { profile, loading, error, reload } = useProfile();
+	const { isProfileComplete, loading, error, reload } = useProfile();
 
 	if (loading) {
 		return (
@@ -43,7 +43,7 @@ export function DashboardPage({ tab: activeTab }: { tab: DashboardTab }) {
 			</Division>
 		);
 	}
-	const isProfileComplete = profile !== null;
+
 	if (!isProfileComplete && activeTab !== "profile") {
 		return <Navigate to="/dashboard/profile" replace />;
 	}

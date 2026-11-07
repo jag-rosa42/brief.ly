@@ -7,6 +7,7 @@ import { AppRouter } from "@/app/router";
 import { deleteSavedArticle, getSavedArticles } from "@/features/saved-articles/api";
 import type { SavedArticle } from "@/features/saved-articles/types";
 import { SavedArticles } from "@/pages/SavedArticlesPage";
+import { ProfileProvider } from "@/app/ProfileContext";
 
 // Each test decides what the API answers.
 vi.mock("@/features/saved-articles/api", () => ({
@@ -169,9 +170,7 @@ test("does not show the page to a logged out user", () => {
 		account: null,
 		isLoggedIn: false,
 		isLoading: false,
-		profileComplete: false,
 		signup: vi.fn(),
-		completeProfile: vi.fn(),
 		login: vi.fn(),
 		logout: vi.fn(),
 	};
@@ -179,7 +178,9 @@ test("does not show the page to a logged out user", () => {
 	render(
 		<MemoryRouter initialEntries={["/dashboard/saved"]}>
 			<AuthContext value={loggedOut}>
-				<AppRouter />
+				<ProfileProvider>
+					<AppRouter />
+				</ProfileProvider>
 			</AuthContext>
 		</MemoryRouter>,
 	);

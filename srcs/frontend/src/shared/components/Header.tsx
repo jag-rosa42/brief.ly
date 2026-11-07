@@ -1,4 +1,5 @@
 import { useAuth } from "@/app/useAuth";
+import { useProfile } from "@/app/useProfile";
 import { Link } from "@/shared/components/Link";
 import { Button } from "@/shared/components/Button";
 import { Logo } from "@/shared/components/Logo";
@@ -6,18 +7,19 @@ import { useLogout } from "@/app/useLogout";
 
 export function Header() {
 	const { isLoggedIn } = useAuth();
+	const { loading } = useProfile();
 
 	return (
 		<header className="flex justify-between items-center px-6 py-4">
 			<Logo />
-			{isLoggedIn ? <NavbarLogged /> : <NavbarUnlogged />}
+			{!loading && (isLoggedIn ? <NavbarLogged /> : <NavbarUnlogged />)}
 		</header>
 	);
 }
 
 export function NavbarLogged() {
-	const { profileComplete } = useAuth();
 	const logout = useLogout();
+	const { isProfileComplete, error } = useProfile();
 
 	return (
 		<div className="flex gap-4">
@@ -30,9 +32,14 @@ export function NavbarLogged() {
 			>
 				Log out
 			</Button>
-			<Link to={profileComplete ? "/dashboard/brief" : "/dashboard/profile"} variant="secondary">
-				{profileComplete ? "Morning Briefing" : "Profile"}
-			</Link>
+			{!error && (
+				<Link
+					to={isProfileComplete ? "/dashboard/brief" : "/dashboard/profile"}
+					variant="secondary"
+				>
+					{isProfileComplete ? "Morning Briefing" : "Profile"}
+				</Link>
+			)}
 		</div>
 	);
 }

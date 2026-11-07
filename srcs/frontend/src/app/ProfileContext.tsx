@@ -65,9 +65,10 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
 	}, [authLoading, isLoggedIn]);
 
 	const loading = authLoading || (isLoggedIn && !loaded);
+	const isProfileComplete = profile !== null;
 
 	return (
-		<ProfileContext value={{ profile, setProfile, loading, error, reload }}>
+		<ProfileContext value={{ profile, isProfileComplete, setProfile, loading, error, reload }}>
 			{children}
 		</ProfileContext>
 	);
