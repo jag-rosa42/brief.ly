@@ -1,10 +1,11 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, expect, test, vi } from "vitest";
 import { getBriefing } from "@/features/briefing/api";
 import type { Briefing, BriefingArticle } from "@/features/briefing/types";
 import { deleteSavedArticle, saveArticle } from "@/features/saved-articles/api";
 import { ApiError } from "@/shared/components/api/client";
+import { NotificationProvider } from "@/app/NotificationContext";
 import { BriefPage } from "@/pages/BriefPage";
 
 // Each test decides what the API answers.
@@ -64,10 +65,12 @@ function briefing(overrides: Partial<Briefing> = {}): Briefing {
 function renderPage() {
 	render(
 		<MemoryRouter initialEntries={["/dashboard/brief"]}>
-			<Routes>
-				<Route path="/dashboard/brief" element={<BriefPage />} />
-				<Route path="/dashboard/profile" element={<p>Profile form</p>} />
-			</Routes>
+			<NotificationProvider>
+				<Routes>
+					<Route path="/dashboard/brief" element={<BriefPage />} />
+					<Route path="/dashboard/profile" element={<p>Profile form</p>} />
+				</Routes>
+			</NotificationProvider>
 		</MemoryRouter>,
 	);
 }
@@ -162,13 +165,16 @@ test("saves an article", async () => {
 	vi.mocked(saveArticle).mockResolvedValue({ ...FIRST, saved_at: "2026-11-07T08:00:00Z" });
 
 	renderPage();
-	fireEvent.click(await screen.findByRole("button", { name: "Save for later" }));
+	fireEvent.click(await screen.findByRole("button", { name: "Save" }));
 
 	expect(await screen.findByRole("button", { name: "Saved" })).toHaveAttribute(
 		"aria-pressed",
 		"true",
 	);
 	expect(saveArticle).toHaveBeenCalledWith(FIRST.article_id);
+	expect(screen.getByRole("status")).toHaveTextContent(
+		"The article has been added to your saved articles.",
+	);
 });
 
 test("removes an article already saved", async () => {
@@ -186,13 +192,39 @@ test("removes an article already saved", async () => {
 	renderPage();
 	fireEvent.click(await screen.findByRole("button", { name: "Saved" }));
 
-	expect(await screen.findByRole("button", { name: "Save for later" })).toHaveAttribute(
+	expect(await screen.findByRole("button", { name: "Save" })).toHaveAttribute(
 		"aria-pressed",
 		"false",
 	);
 	expect(deleteSavedArticle).toHaveBeenCalledWith(FIRST.article_id);
 	// Already saved: clicking removes it, it is never saved twice.
 	expect(saveArticle).not.toHaveBeenCalled();
+	expect(screen.getByRole("status")).toHaveTextContent(
+		"The article has been removed from your saved articles.",
+	);
+});
+
+test("keeps the article saved when the removal fails", async () => {
+	vi.mocked(getBriefing).mockResolvedValue(
+		briefing({
+			profile: {
+				name: "Kate",
+				topic_ids: ["technologies"],
+				saved_article_ids: [FIRST.article_id],
+			},
+		}),
+	);
+	vi.mocked(deleteSavedArticle).mockRejectedValue(
+		new ApiError(503, "SERVICE_UNAVAILABLE", "Service unavailable"),
+	);
+
+	renderPage();
+	fireEvent.click(await screen.findByRole("button", { name: "Saved" }));
+
+	expect(await screen.findByRole("alert")).toHaveTextContent(
+		"The article could not be removed, please try again.",
+	);
+	expect(screen.getByRole("button", { name: "Saved" })).toHaveAttribute("aria-pressed", "true");
 });
 
 test.each([
@@ -210,14 +242,14 @@ test.each([
 	vi.mocked(saveArticle).mockRejectedValue(error);
 
 	renderPage();
-	fireEvent.click(await screen.findByRole("button", { name: "Save for later" }));
+	fireEvent.click(await screen.findByRole("button", { name: "Save" }));
 
-	await waitFor(() => expect(saveArticle).toHaveBeenCalledOnce());
-	// The page waits for the answer: on an error, nothing changes.
-	expect(screen.getByRole("button", { name: "Save for later" })).toHaveAttribute(
-		"aria-pressed",
-		"false",
+	// Wait for the error, otherwise the checks below would run before the answer.
+	expect(await screen.findByRole("alert")).toHaveTextContent(
+		"The article could not be saved, please try again.",
 	);
+	// The page waits for the answer: on an error, nothing changes.
+	expect(screen.getByRole("button", { name: "Save" })).toHaveAttribute("aria-pressed", "false");
 	expect(screen.queryByRole("button", { name: "Saved" })).not.toBeInTheDocument();
 });
 
@@ -232,7 +264,7 @@ test("sends one request when the button is clicked twice quickly", async () => {
 	);
 
 	renderPage();
-	const button = await screen.findByRole("button", { name: "Save for later" });
+	const button = await screen.findByRole("button", { name: "Save" });
 	fireEvent.click(button);
 	fireEvent.click(button);
 	answer();
