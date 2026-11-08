@@ -6,7 +6,7 @@ import { Dropdown } from "@/shared/components/Dropdown";
 import { Input } from "@/shared/components/Input";
 import { Text } from "@/shared/components/Text";
 import { Division } from "@/shared/components/Division";
-import type { SavedArticle } from "@/features/saved-articles/types";
+import { toArticle } from "@/shared/utils/article";
 import { Spinner } from "@/shared/components/Spinner";
 import { useSavedArticlesList } from "@/features/saved-articles/hooks/useSavedArticlesList";
 
@@ -25,18 +25,6 @@ function buildOptions(values: string[], allLabel: string) {
 		{ value: "all", label: allLabel },
 		...uniqueValues.map((value) => ({ value, label: value })),
 	];
-}
-
-function toArticle(article: SavedArticle): Article {
-	return {
-		id: article.article_id,
-		title: article.title,
-		summary: article.summary ?? "",
-		url: article.url,
-		source: article.publisher_name,
-		category: article.topic_id,
-		readingTime: article.read_time_minutes,
-	};
 }
 
 interface FilterValues {

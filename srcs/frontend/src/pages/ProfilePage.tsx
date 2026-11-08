@@ -11,6 +11,7 @@ import { Button } from "@/shared/components/Button";
 import { FilterChip } from "@/shared/components/FilterChip";
 import type { FilterChipOption } from "@/shared/components/FilterChip";
 import { useProfile } from "@/app/useProfile";
+import { topicLabel } from "@/shared/utils/article";
 
 const MAX_INTERESTS = 4;
 
@@ -37,7 +38,7 @@ export function ProfilePage() {
 	// Transformation des topics du backend en options pour FilterChip
 	const interestOptions: FilterChipOption[] = topics.map((topic) => ({
 		value: topic.id,
-		label: topic.id.charAt(0).toUpperCase() + topic.id.slice(1),
+		label: topicLabel(topic.id),
 	}));
 
 	async function handleSave(e: React.SubmitEvent<HTMLFormElement>) {
