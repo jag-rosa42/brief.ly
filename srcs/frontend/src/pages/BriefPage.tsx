@@ -7,9 +7,10 @@ import { ArticleCard } from "@/shared/components/ArticleCard";
 import { ArticleModal, type Article } from "@/shared/components/ArticleModal";
 import { Spinner } from "@/shared/components/Spinner";
 import { useBriefing } from "@/features/briefing/hooks/useBriefing";
-import type { BriefingArticle, TopicCluster } from "@/features/briefing/types";
+import type { TopicCluster } from "@/features/briefing/types";
+import { toArticle, topicLabel } from "@/shared/utils/article";
 
-interface PreferencePanelProps {
+interface TopicPanelProps {
 	cluster: TopicCluster;
 	isSaved: (id: string) => boolean;
 	onToggleSave: (id: string) => void;
@@ -21,25 +22,8 @@ interface DashboardHeaderProps {
 	today: Date;
 }
 
-interface PreferencesSectionProps {
+interface TopicSectionProps {
 	tabs: TabItem[];
-}
-
-// Topic ids are lowercase words ("technologies"): shown with a capital letter.
-function topicLabel(topicId: string): string {
-	return topicId.charAt(0).toUpperCase() + topicId.slice(1);
-}
-
-function toArticle(article: BriefingArticle): Article {
-	return {
-		id: article.article_id,
-		title: article.title,
-		summary: article.summary ?? "",
-		url: article.url,
-		source: article.publisher_name,
-		category: topicLabel(article.topic_id),
-		readingTime: article.read_time_minutes,
-	};
 }
 
 function formatDate(date: Date): string {
@@ -73,7 +57,7 @@ function DashboardHeader({ firstName, today }: DashboardHeaderProps) {
 	);
 }
 
-function PreferencePanel({ cluster, isSaved, onToggleSave, onReadMore }: PreferencePanelProps) {
+function TopicPanel({ cluster, isSaved, onToggleSave, onReadMore }: TopicPanelProps) {
 	const articles = cluster.articles.map(toArticle);
 
 	let stories;
@@ -122,7 +106,7 @@ function PreferencePanel({ cluster, isSaved, onToggleSave, onReadMore }: Prefere
 	);
 }
 
-function PreferencesSection({ tabs }: PreferencesSectionProps) {
+function TopicSection({ tabs }: TopicSectionProps) {
 	let content;
 	if (tabs.length > 0) {
 		content = <Tabs tabs={tabs} variant="pill" />;
@@ -170,7 +154,7 @@ export function BriefPage() {
 		value: cluster.topic_id,
 		label: topicLabel(cluster.topic_id),
 		content: (
-			<PreferencePanel
+			<TopicPanel
 				cluster={cluster}
 				isSaved={isSaved}
 				onToggleSave={(id) => {
@@ -182,9 +166,9 @@ export function BriefPage() {
 	}));
 
 	return (
-		<Division variant="dashboardpage" className="max-w-6x1 gap-8">
+		<Division variant="dashboardpage" className="max-w-6xl gap-8">
 			<DashboardHeader firstName={data.profile.name} today={today} />
-			<PreferencesSection tabs={tabs} />
+			<TopicSection tabs={tabs} />
 			<ArticleModal article={selectedArticle} onClose={() => setSelectedArticle(null)} />
 		</Division>
 	);
