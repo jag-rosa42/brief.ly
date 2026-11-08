@@ -42,12 +42,13 @@ export function ArticleCard({
 			<div className="mt-auto flex items-center gap-2 border-t border-secondary/30 pt-4">
 				<Button
 					type="button"
-					variant="secondary"
+					variant={isSaved ? "secondary" : "primary"}
 					onClick={onToggleSave}
 					aria-pressed={isSaved}
-					className="relative z-10"
+					// Same border and width in both states: the button keeps its shape.
+					className="relative z-10 min-w-24 border-1 border-primary hover:border-primary-dark"
 				>
-					{isSaved ? "Saved" : "Save for later"}
+					{isSaved ? "Saved" : "Save"}
 				</Button>
 				<Button
 					type="button"

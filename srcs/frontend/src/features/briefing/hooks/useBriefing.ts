@@ -3,6 +3,7 @@ import { getBriefing } from "@/features/briefing/api";
 import type { Briefing } from "@/features/briefing/types";
 import { ApiError } from "@/shared/components/api/client";
 import { deleteSavedArticle, saveArticle } from "@/features/saved-articles/api";
+import { useNotify } from "@/app/useNotify";
 
 export function useBriefing() {
 	const [data, setData] = useState<Briefing | null>(null);
@@ -12,6 +13,7 @@ export function useBriefing() {
 	const [error, setError] = useState<string | null>(null);
 	// No profile yet: the page sends the user to the profile form.
 	const [profileMissing, setProfileMissing] = useState(false);
+	const { notify } = useNotify();
 
 	useEffect(() => {
 		let active = true;
@@ -45,6 +47,10 @@ export function useBriefing() {
 		};
 	}, []);
 
+	function isSaved(articleId: string) {
+		return savedIds.has(articleId);
+	}
+
 	async function toggleSave(articleId: string) {
 		if (pendingIds.current.has(articleId)) return;
 
@@ -63,15 +69,15 @@ export function useBriefing() {
 				else next.add(articleId);
 				return next;
 			});
+			if (wasSaved) notify("The article has been removed from your saved articles.", "success");
+			else notify("The article has been added to your saved articles.", "success");
 		} catch {
-			// TODO: notify the user that the article could not be saved or removed.
+			if (wasSaved) notify("The article could not be removed, please try again.", "error");
+			else notify("The article could not be saved, please try again.", "error");
 		} finally {
 			pendingIds.current.delete(articleId);
 		}
 	}
 
-	function isSaved(articleId: string) {
-		return savedIds.has(articleId);
-	}
 	return { data, isLoading, error, profileMissing, isSaved, toggleSave };
 }
