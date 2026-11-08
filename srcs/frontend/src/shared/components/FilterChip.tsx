@@ -26,6 +26,7 @@ export function FilterChip({
 			variant="chip"
 			onClick={() => onToggle(options.value)}
 			selected={selected}
+			aria-pressed={selected}
 			disabled={disabled}
 			className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition-colors
 				${selected ? "border-primary bg-primary text-white" : "border bg-white text-accent hover:border-primary"}
