@@ -1,6 +1,6 @@
 # Transcendence — API Contract
 
-Last updated: 2026-11-05
+Last updated: 2026-11-09
 
 The contract is split into one file per service. The `plan/` folder holds short summaries of what we are changing and why. Each one links to the contract files that have the details.
 
@@ -32,7 +32,7 @@ Endpoints per service, by status (see each file for the details):
 
 | Service | Done | Partial | To do |
 | --- | --- | --- | --- |
-| Identity | 5 (+ `/health`) | 0 | 5 |
+| Identity | 6 (+ `/health`) | 0 | 4 |
 | Personalization | 0 (+ `/health`) | 0 | 15 |
 | Morning Briefing | 0 (+ `/health`) | 0 | 3 |
 | Content Management | 0 (+ `/health`) | 6 | 1 |
