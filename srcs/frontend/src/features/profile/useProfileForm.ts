@@ -9,6 +9,7 @@ import {
 } from "@/features/profile/api";
 import { mapProfileError, validate, type FormErrors } from "@/features/profile/validation";
 import { useProfile } from "@/app/useProfile";
+import { useNotify } from "@/app/useNotify";
 
 export function useProfileForm() {
 	// Le profil vient du contexte (chargé par ProfileProvider).
@@ -23,7 +24,7 @@ export function useProfileForm() {
 	const [submitting, setSubmitting] = useState(false);
 	const [attempted, setAttempted] = useState(false);
 	const [serverErrors, setServerErrors] = useState<FormErrors>({});
-	const [success, setSuccess] = useState(false);
+	const { notify } = useNotify();
 
 	const reload = useCallback(async () => {
 		setLoading(true);
@@ -62,7 +63,6 @@ export function useProfileForm() {
 	}, []);
 
 	const touch = () => {
-		setSuccess(false);
 		setServerErrors({});
 	};
 
@@ -110,9 +110,6 @@ export function useProfileForm() {
 	if (serverErrors.topics) {
 		errors.topics = serverErrors.topics;
 	}
-	if (serverErrors.form) {
-		errors.form = serverErrors.form;
-	}
 
 	const submit = async (): Promise<Profile | null> => {
 		if (submitting) return null;
@@ -122,17 +119,20 @@ export function useProfileForm() {
 
 		setSubmitting(true);
 		setServerErrors({});
-		setSuccess(false);
 		try {
+			const isCreate = profile === null;
 			const saved = await upsertProfile(payload);
 			setProfile(saved);
 			setName(saved.name);
 			setTopicIds(saved.topic_ids);
-			setSuccess(true);
+			if (isCreate) notify("Your profile has been created.", "success");
+			else notify("Your profile has been updated.", "success");
 			return saved;
 		} catch (e) {
 			if (e instanceof ApiError && e.status === 401) return null;
-			setServerErrors(mapProfileError(e));
+			const apiErrors = mapProfileError(e);
+			setServerErrors(apiErrors);
+			if (apiErrors.form) notify(apiErrors.form, "error");
 			return null;
 		} finally {
 			setSubmitting(false);
@@ -150,7 +150,6 @@ export function useProfileForm() {
 		loadError,
 		reload,
 		submitting,
-		success,
 		errors,
 		submit,
 		canSubmit: !submitting && !loading && !loadError && !isEmptyUpdate,

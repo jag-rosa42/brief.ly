@@ -28,7 +28,6 @@ export function ProfilePage() {
 		loadError,
 		reload,
 		submitting,
-		success,
 		errors,
 		submit,
 		canSubmit,
@@ -74,12 +73,6 @@ export function ProfilePage() {
 										{errors.topics}
 									</Text>
 								)}
-								{errors.form && (
-									<Text variant="error" role="alert">
-										{errors.form}
-									</Text>
-								)}
-								{success && <Text variant="success">Profile saved</Text>}
 								<Button type="submit" variant="secondary" className="w-full" disabled={!canSubmit}>
 									{submitting ? "Saving..." : "Save"}
 								</Button>

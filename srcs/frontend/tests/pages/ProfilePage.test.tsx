@@ -5,6 +5,7 @@ import { ProfileContext, type ProfileContextValue } from "@/app/ProfileContextDe
 import { getTopics, upsertProfile, type Profile } from "@/features/profile/api";
 import { ApiError } from "@/shared/components/api/client";
 import { ProfilePage } from "@/pages/ProfilePage";
+import { NotificationProvider } from "@/app/NotificationContext";
 
 // Each test decides what the API answers. buildPayload stays the real one:
 // it is what decides which fields the PUT sends.
@@ -51,13 +52,15 @@ function renderPage(profile: Profile | null) {
 
 	render(
 		<MemoryRouter initialEntries={["/dashboard/profile"]}>
-			<ProfileContext value={context}>
-				<Routes>
-					<Route path="/dashboard/profile" element={<ProfilePage />} />
-					<Route path="/dashboard/brief" element={<p>Brief page</p>} />
-					<Route path="/" element={<p>Landing page</p>} />
-				</Routes>
-			</ProfileContext>
+			<NotificationProvider>
+				<ProfileContext value={context}>
+					<Routes>
+						<Route path="/dashboard/profile" element={<ProfilePage />} />
+						<Route path="/dashboard/brief" element={<p>Brief page</p>} />
+						<Route path="/" element={<p>Landing page</p>} />
+					</Routes>
+				</ProfileContext>
+			</NotificationProvider>
 		</MemoryRouter>,
 	);
 
@@ -100,6 +103,7 @@ test("creates the profile with both fields, then opens the brief", async () => {
 	expect(upsertProfile).toHaveBeenCalledWith({ name: "Kate", topic_ids: ["business"] });
 	// The shared profile is updated: the header and the dashboard see it at once.
 	expect(context.setProfile).toHaveBeenCalledWith(saved);
+	expect(screen.getByText("Your profile has been created.")).toBeInTheDocument();
 });
 
 test("only sends the fields that changed", async () => {
@@ -112,7 +116,7 @@ test("only sends the fields that changed", async () => {
 	});
 	fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
-	expect(await screen.findByText("Profile saved")).toBeInTheDocument();
+	expect(await screen.findByText("Your profile has been updated.")).toBeInTheDocument();
 	expect(upsertProfile).toHaveBeenCalledWith({ name: "Katherine" });
 	// An update stays on the page.
 	expect(screen.queryByText("Brief page")).not.toBeInTheDocument();
@@ -149,7 +153,7 @@ test("accepts a name longer than 14 characters", async () => {
 	});
 	fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
-	expect(await screen.findByText("Profile saved")).toBeInTheDocument();
+	expect(await screen.findByText("Your profile has been updated.")).toBeInTheDocument();
 });
 
 test("lets the user pick four interests at most", async () => {
@@ -179,6 +183,8 @@ test("shows a validation error from the API under its field", async () => {
 
 	expect(await screen.findByText("Unknown topic: business")).toBeInTheDocument();
 	expect(screen.getByLabelText(NAME_FIELD)).toHaveValue("Kate");
+	// The field error is the only alert: no error notification on top of it.
+	expect(screen.getAllByRole("alert")).toHaveLength(1);
 });
 
 test("keeps the values and shows a clear message when the server cannot be reached", async () => {
