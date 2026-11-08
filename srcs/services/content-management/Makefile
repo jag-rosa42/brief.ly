@@ -29,31 +29,9 @@ test-tmp: check-env
 
 ##################################### RULES ####################################
 
-.PHONY: check-news-api-secret ingest logs test
+.PHONY: ingest logs test
 
-check-news-api-secret:
-	@if [ ! -e "$(NEWS_API_SECRET)" ]; then \
-		$(call print,$(RED_COLOR),[SECRETS] Missing NewsAPI key file: $(NEWS_API_SECRET).); \
-		exit 1; \
-	elif [ ! -f "$(NEWS_API_SECRET)" ]; then \
-		$(call print,$(RED_COLOR),[SECRETS] NewsAPI key path is not a regular file: $(NEWS_API_SECRET).); \
-		exit 1; \
-	elif [ ! -r "$(NEWS_API_SECRET)" ]; then \
-		$(call print,$(RED_COLOR),[SECRETS] NewsAPI key file is not readable: $(NEWS_API_SECRET).); \
-		exit 1; \
-	elif [ ! -s "$(NEWS_API_SECRET)" ]; then \
-		$(call print,$(RED_COLOR),[SECRETS] NewsAPI key file is empty: $(NEWS_API_SECRET).); \
-		exit 1; \
-	fi
-
-ingest: check-news-api-secret
-	@if ! command -v curl >/dev/null 2>&1; then \
-		$(call print,$(RED_COLOR),Error: curl is required to trigger ingestion.); \
-		exit 1; \
-	fi
+ingest: check-env
 	@$(call print,$(CYAN_COLOR),[CONTENT MANAGEMENT] Ingesting articles...)
-	@curl --fail-with-body --silent --show-error --connect-timeout 5 \
-		--request POST \
-		--header "Accept: application/json" \
-		"$(CONTENT_MANAGEMENT_URL)/internal/v1/ingestion-runs"
-	@printf "\n"
+	@python3 scripts/trigger_ingestion.py --url "$(CONTENT_MANAGEMENT_URL)" \
+		--secret-file "$(NEWS_API_SECRET)"

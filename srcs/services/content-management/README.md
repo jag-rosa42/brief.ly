@@ -17,6 +17,16 @@ can start without a configured provider. To create it manually, run:
 install -m 600 /dev/null shared/secrets/news_api_key
 ```
 
-The file is ignored by Git. Add the credential before running `make ingest`,
-which rejects a missing, unreadable, or empty file. Other Content Management
-endpoints and services can run without a NewsAPI credential.
+The file is ignored by Git. Add the credential before triggering ingestion.
+Other Content Management endpoints and services can run without a NewsAPI
+credential.
+
+From the repository root, use `make ingest` when Content Management runs locally
+on port 8083, `make ingest-docker` when it runs in host Docker, or `make ingest-vm`
+when it runs in an already running VM. The VM command synchronizes the project
+before calling the container; it does not start the VM or Content Management.
+
+All three commands use the same HTTP client. It checks the key file where it
+runs, reports HTTP and connection errors, and warns when ingestion succeeds only
+partially. Requests time out after 10 minutes; a timed-out request may continue
+running in Content Management, so check its logs before retrying.
