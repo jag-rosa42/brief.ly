@@ -7,23 +7,23 @@ A topic is never hard-deleted, so a profile can never point at a missing topic. 
 | Kind | Method | Service path | Auth | Success | Status |
 | --- | --- | --- | --- | --- | --- |
 | Internal | POST | `/internal/v1/ingestion-runs` | Service (`ingestion:run`) | 201 | Partial (token check missing) |
-| Internal | GET | `/internal/v1/topics` | Service (`topics:read`) | 200 | Partial (see below) |
+| Internal | GET | `/internal/v1/topics` | Service (`topics:read`) | 200 | Partial (token check missing) |
 | Internal | GET | `/internal/v1/articles?topic_id={topic_id}` | Service (`articles:read`) | 200 | Partial (token check missing) |
 | Internal | GET | `/internal/v1/articles?summary=missing` | Service (`articles:read`) | 200 | Partial (token check missing) |
 | Internal | GET | `/internal/v1/articles/{article_id}` | Service (`articles:read`) | 200 | Partial (token check missing) |
 | Internal | PUT | `/internal/v1/articles/{article_id}/summary` | Service (`summaries:write`) | 200 | Partial (token check missing) |
-| Internal | PUT | `/internal/v1/topics/{topic_id}/summary` | Service (`summaries:write`) | 200 | To do |
+| Internal | PUT | `/internal/v1/topics/{topic_id}/summary` | Service (`summaries:write`) | 200 | Partial (token check missing) |
 | Internal | GET | `/health` | None | 200 | Done |
 
-**`GET /internal/v1/topics` is Partial.** It exists on `main` (`srcs/services/content-management/src/api/routers/topics/router.py`, schema `srcs/services/content-management/src/api/schemas/topic.py`), with two things missing:
-1. The response exposes only `id`; `summary` / `summarized_at` are not exposed yet (ADR-0010).
-2. No token is checked yet (the known gap below; service tokens are not built yet).
+**The topic GET and summary PUT routes are Partial.** The GET returns `id`,
+`summary`, and `summarized_at`; the PUT creates or replaces the latest summary.
+Neither route checks a service token yet (the known gap below).
 
 **`POST /internal/v1/ingestion-runs` is Partial.** It triggers a synchronous ingestion and reports whether it succeeded fully or partially, but does not check a service token yet.
 
 - Only AI Processing's client may get the `summaries:write` scope (Identity's client registry, ADR-0008).
 - Known gap: until service tokens exist (ADR-0008), these routes are unauthenticated and protected only by not being routed and by the `backend` network. Service tokens are built before the Public API.
-- The article GET routes and article summary PUT route exist. The article GET routes apply the rejection rules below. `GET /internal/v1/topics` returns only topic IDs today. The topic summary PUT route is not implemented yet.
+- The article GET routes and article summary PUT route exist. The article GET routes apply the rejection rules below.
 
 The article object, used by every article endpoint:
 
@@ -76,8 +76,11 @@ The topic object:
 Topic summaries use a dedicated `topic_summaries` table, with `topic_id` as
 both primary key and foreign key. As with article summaries, the absence of a
 row means no summary has been generated. Topic summaries share the common
-`text`, `summarized_at`, and `llm_model` fields; article quality metadata is
-specific to article summaries.
+`text`, `summarized_at`, `llm_model`, and `generation_duration_ms` fields;
+article quality metadata is specific to article summaries. The duration is
+measured by AI Processing in non-negative milliseconds. It is required on new
+summary writes but nullable in storage so summaries created before the duration
+was added remain available.
 
 ## Endpoint details
 
@@ -202,13 +205,14 @@ Body:
 ### PUT /internal/v1/topics/{topic_id}/summary
 
 Called by AI Processing's summary command. Replaces the topic's latest summary; older ones are not kept.
+Each successful PUT updates `summarized_at`, even if the text is unchanged.
 
 ```text
 Header: Authorization: Bearer <service token with summaries:write>
 Body:
 {
   "text": str,                 1-2000 chars
-  "llm_model": str             stored for traceability, not returned
+  "llm_model": str,            stored for traceability, not returned
   "generation_duration_ms": int  non-negative duration measured by AI Processing
 }
 

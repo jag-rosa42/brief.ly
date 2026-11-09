@@ -36,7 +36,7 @@ flowchart TD
 | Caller | Callee | Endpoint | Token | Why |
 | --- | --- | --- | --- | --- |
 | Traefik | Identity | `/internal/v1/api-keys/verify` | none (the API key is in the headers) | Turn an API key into a public API token (phantom token pattern) |
-| Personalization | Content Management | `GET /internal/v1/topics` | Service | Validate `topic_ids`, resolve topic names (cached) |
+| Personalization | Content Management | `GET /internal/v1/topics` | Service | Validate `topic_ids` against the cached catalog |
 | Personalization | Content Management | `GET /internal/v1/articles/{article_id}` | Service | Check the article exists and is not rejected, then snapshot it with its summary on save |
 | Morning Briefing | Personalization | `GET /internal/v1/me/profile` | User (forwarded: access token or public API token) | Interests and saved articles |
 | Morning Briefing | Content Management | `GET /internal/v1/topics`, `GET /internal/v1/articles?topic_id=` | Service | All topics and their non-rejected articles, with their summaries |
@@ -109,7 +109,7 @@ Related name to look up: the **Content Enricher** pattern in *Enterprise Integra
 ### Advantages
 
 - **The dashboard keeps working when AI Processing is down**: nothing calls AI Processing during a request.
-- **Each summary is computed once** and read by every service from the same place.
+- **Summaries are computed by AI Processing and stored in one place** for every reader. A later run may replace the latest topic summary.
 - **Fewer calls per dashboard load**: articles arrive with their summaries, so a dashboard load makes at most 6 internal calls (1 profile, 1 topic list, 1 article list per interest, max 4) instead of about 50 (one summary call per article and per topic to AI Processing).
 - **AI Processing can change how it summarizes** (another LLM, RAG over its embeddings) without changing this contract: Content Management only ever receives a `PUT .../summary`.
 - **Simpler dependency graph**: Content Management still calls nobody; Morning Briefing and Personalization no longer depend on AI Processing.
