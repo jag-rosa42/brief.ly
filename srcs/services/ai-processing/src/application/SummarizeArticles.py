@@ -1,8 +1,14 @@
+import logging
+from time import perf_counter
+
 from src.application.models.article import Article
 from src.application.ports.ai_summarizer import ArticleSummarizerPort
 from src.application.ports.content_management import ArticleContentManagementPort
+from src.domain.value_objects.article_assessment import ArticleAssessment
 
 # The command entry point creates the HTTP clients and passes them to this use case.
+logger = logging.getLogger(__name__)
+GENERATION_FAILURE_COMMENT = "Article summary generation failed"
 
 
 class SummarizeArticles:
@@ -29,7 +35,21 @@ class SummarizeArticles:
                 return
 
             for article in articles:
-                assessment = self.ai_summarizer.ai_summarize_article(article)
+                started_at = perf_counter()
+                try:
+                    assessment = self.ai_summarizer.ai_summarize_article(article)
+                except Exception:
+                    logger.exception(
+                        "Article summary generation failed for %s", article.id
+                    )
+                    assessment = ArticleAssessment(
+                        rejected=True,
+                        quality_comment=GENERATION_FAILURE_COMMENT,
+                        summary=None,
+                        generation_duration_ms=max(
+                            0, round((perf_counter() - started_at) * 1000)
+                        ),
+                    )
                 self.content_management.save_article_assessment(
                     article.id, assessment, self.llm_model
                 )

@@ -177,3 +177,78 @@ def test_failed_article_phase_prevents_topic_phase() -> None:
 
     with pytest.raises(RuntimeError, match="article write failed"):
         SummarizeArticlesAndTopics(Articles(), Topics()).execute()
+
+
+@pytest.mark.parametrize(
+    "failure", [RuntimeError("Ollama unavailable"), ValueError("invalid summary")]
+)
+def test_first_generation_failure_saves_article_summary_and_continues(
+    failure: Exception,
+) -> None:
+    class ContentManagement:
+        def __init__(self) -> None:
+            self.writes: list[tuple[str, str]] = []
+
+        def list_topics(self) -> list[str]:
+            return ["science", "technology"]
+
+        def list_topic_article_summaries(
+            self, topic_id: str, limit: int
+        ) -> list[TopicArticleSummary]:
+            return [article_summary(1), article_summary(2)]
+
+        def save_topic_summary(
+            self, topic_id: str, summary: str, llm_model: str, generation_duration_ms: int
+        ) -> None:
+            self.writes.append((topic_id, summary))
+
+    class Summarizer:
+        def ai_summarize_topic(self, topic_id: str, summaries: list[str]) -> str:
+            if topic_id == "science":
+                raise failure
+            return "Combined summary"
+
+    content_management = ContentManagement()
+    SummarizeTopics(content_management, Summarizer(), DEFAULT_MODEL).execute()
+
+    assert content_management.writes == [
+        ("science", "summary-1"),
+        ("technology", "Combined summary"),
+    ]
+
+
+def test_later_generation_failure_saves_completed_group_and_continues() -> None:
+    class ContentManagement:
+        def __init__(self) -> None:
+            self.writes: list[tuple[str, str]] = []
+
+        def list_topics(self) -> list[str]:
+            return ["science", "technology"]
+
+        def list_topic_article_summaries(
+            self, topic_id: str, limit: int
+        ) -> list[TopicArticleSummary]:
+            return [article_summary(number) for number in range(1, 9)]
+
+        def save_topic_summary(
+            self, topic_id: str, summary: str, llm_model: str, generation_duration_ms: int
+        ) -> None:
+            self.writes.append((topic_id, summary))
+
+    class Summarizer:
+        def ai_summarize_topic(self, topic_id: str, summaries: list[str]) -> str:
+            if topic_id == "science" and summaries[0] == "summary-5":
+                raise RuntimeError("Ollama unavailable")
+            return " + ".join(summaries)
+
+    content_management = ContentManagement()
+    SummarizeTopics(content_management, Summarizer(), DEFAULT_MODEL).execute()
+
+    assert content_management.writes == [
+        ("science", "summary-1 + summary-2 + summary-3 + summary-4"),
+        (
+            "technology",
+            "summary-1 + summary-2 + summary-3 + summary-4 + "
+            "summary-5 + summary-6 + summary-7 + summary-8",
+        ),
+    ]

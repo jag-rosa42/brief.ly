@@ -1,3 +1,4 @@
+import logging
 from itertools import batched
 from time import perf_counter
 
@@ -8,6 +9,7 @@ from src.domain.value_objects.summary import Summary
 TOPIC_ARTICLE_LIMIT = 25  # Content Management's maximum page size.
 TOPIC_SUMMARY_GROUP_SIZE = 4
 EMPTY_TOPIC_SUMMARY = "Nothing special happened today, come back later"
+logger = logging.getLogger(__name__)
 
 
 class SummarizeTopics:
@@ -42,11 +44,19 @@ class SummarizeTopics:
             )
 
     def _combine(self, topic_id: str, summaries: list[str]) -> str:
+        latest_summary = summaries[0]
         while len(summaries) > 1:
-            summaries = [
-                self._summarize_group(topic_id, group)
-                for group in batched(summaries, TOPIC_SUMMARY_GROUP_SIZE, strict=False)
-            ]
+            combined: list[str] = []
+            for group in batched(summaries, TOPIC_SUMMARY_GROUP_SIZE, strict=False):
+                try:
+                    summary = self._summarize_group(topic_id, group)
+                except Exception:
+                    logger.exception("Topic summary generation failed for %s", topic_id)
+                    return latest_summary
+                combined.append(summary)
+                if len(group) > 1:
+                    latest_summary = summary
+            summaries = combined
         return summaries[0]
 
     def _summarize_group(self, topic_id: str, group: tuple[str, ...]) -> str:

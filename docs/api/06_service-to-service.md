@@ -76,10 +76,11 @@ Related name to look up: the **Content Enricher** pattern in *Enterprise Integra
    AI Processing ──article content and language──▶ LLM ──▶ summary
    AI Processing ──PUT /internal/v1/articles/{id}/summary──▶ Content Management   stores it
    AI Processing ──PUT /internal/v1/topics/{id}/summary────▶ Content Management   stores it
-   repeat the article loop until the GET returns an empty list or AI Processing
-   reaches 3 consecutive failures to add a summary; a successful write resets
-   the global failure counter
-   (this failure definition is provisional and may change during development)
+   repeat the article loop until the GET returns an empty list; a failed
+   article generation writes a rejected assessment and processing continues
+   a failed topic group uses the latest successful topic summary (or the first
+   article summary if no group succeeded) and processing continues
+   Content Management read or write failures stop the worker
    for a rejected article, AI Processing writes text=null and rejected=true;
    Content Management returns summary=null and read_time_minutes=0
    the rejected article retains its summary row for deduplication and is not
