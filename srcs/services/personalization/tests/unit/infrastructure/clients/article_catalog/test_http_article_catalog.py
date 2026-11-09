@@ -4,6 +4,8 @@ from uuid import UUID
 
 import httpx2 as httpx
 import pytest
+from shared_auth import DownstreamError
+from shared_errors import InfrastructureError
 
 from src.application.exceptions import ArticleCatalogUnavailableError
 from src.domain.entities.article import Article
@@ -11,6 +13,8 @@ from src.infrastructure.clients.article_catalog.http_article_catalog import (
     ARTICLES_PATH,
     HttpArticleCatalog,
 )
+from src.infrastructure.clients.token_provider import TokenProvider
+from tests.fakes import FakeTokenProvider
 
 BASE_URL = "http://content-management"
 ARTICLE_ID = UUID("6f1c1b2e-1d2a-4c3b-9a8e-111111111111")
@@ -31,10 +35,15 @@ ARTICLE_JSON: dict[str, Any] = {
 }
 
 
-def _catalog(handler: Callable[[httpx.Request], httpx.Response]) -> HttpArticleCatalog:
+def _catalog(
+    handler: Callable[[httpx.Request], httpx.Response],
+    token_provider: TokenProvider | None = None,
+) -> HttpArticleCatalog:
     """Build a catalog whose HTTP calls are answered by `handler` instead of CM."""
     client = httpx.Client(transport=httpx.MockTransport(handler), base_url=BASE_URL)
-    return HttpArticleCatalog(BASE_URL, client=client)
+    return HttpArticleCatalog(
+        BASE_URL, token_provider or FakeTokenProvider(), client=client
+    )
 
 
 def test_find_by_id_returns_the_article() -> None:
@@ -119,3 +128,38 @@ def test_find_by_id_raises_when_the_article_id_is_not_a_uuid() -> None:
 
     with pytest.raises(ArticleCatalogUnavailableError):
         _catalog(handler).find_by_id(ARTICLE_ID)
+
+
+def test_find_by_id_sends_the_service_token() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json=ARTICLE_JSON)
+
+    _catalog(handler, FakeTokenProvider(token="abc")).find_by_id(ARTICLE_ID)
+
+    assert requests[0].headers["Authorization"] == "Bearer abc"
+
+
+@pytest.mark.parametrize(
+    "token_error",
+    [
+        InfrastructureError("Identity is down"),
+        DownstreamError(service="identity", status_code=401, code="INVALID_CLIENT"),
+    ],
+    ids=["identity-unreachable", "identity-refuses"],
+)
+def test_find_by_id_raises_without_calling_content_management_when_no_token(
+    token_error: Exception,
+) -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json=ARTICLE_JSON)
+
+    with pytest.raises(ArticleCatalogUnavailableError):
+        _catalog(handler, FakeTokenProvider(error=token_error)).find_by_id(ARTICLE_ID)
+
+    assert requests == []

@@ -6,6 +6,7 @@ from fastapi import Depends
 from src.api.dependencies.database import UnitOfWorkDep
 from src.api.dependencies.profile import ProfileRepositoryDep
 from src.api.dependencies.saved_article import SavedArticleRepositoryDep
+from src.api.dependencies.service_token import get_content_management_token_provider
 from src.application.port.article_catalog import ArticleCatalog
 from src.application.use_cases.save_article import SaveArticle
 from src.infrastructure.clients.article_catalog.http_article_catalog import (
@@ -16,7 +17,10 @@ from src.infrastructure.config.app import app_settings
 
 @lru_cache  # built once, on first use, then always the same object
 def get_article_catalog() -> ArticleCatalog:
-    return HttpArticleCatalog(app_settings.CONTENT_MANAGEMENT_URL)
+    return HttpArticleCatalog(
+        app_settings.CONTENT_MANAGEMENT_URL,
+        get_content_management_token_provider(),
+    )
 
 
 ArticleCatalogDep = Annotated[ArticleCatalog, Depends(get_article_catalog)]
