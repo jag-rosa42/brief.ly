@@ -29,6 +29,11 @@ ingestion deduplication. When collecting articles for a topic summary, AI
 Processing uses `GET /internal/v1/articles?topic_id=...`; that list excludes
 rejected articles while `GET /internal/v1/topics` still returns every topic.
 
+For each topic, AI Processing sends `text`, `llm_model`, and the non-negative
+`generation_duration_ms` measured during generation to
+`PUT /internal/v1/topics/{topic_id}/summary`. Content Management stores the
+latest summary and returns its text and `summarized_at` in the topic object.
+
 For this guard, the current working definition of a failure is an attempt for an
 article that ends without its summary being successfully stored in Content
 Management. This definition is provisional and may be refined during development.
