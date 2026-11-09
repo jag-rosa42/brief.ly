@@ -15,9 +15,11 @@ The health route is registered at the application root, without an `/api` prefix
 
 The article loop uses `ARTICLE_BATCH_SIZE` (default 25) as the request limit and
 uses no cursor. It fetches the next batch only after writing an assessment for
-every article in the current batch. An empty response ends the article phase;
-the first provider, validation, or write failure stops the worker. The topic
-phase starts only after the article phase finishes successfully.
+every article in the current batch. An empty response ends the article phase.
+If summary generation fails, the worker stores a rejected assessment with a
+null summary and continues with the next article. Content Management read or
+write failures still stop the worker. The topic phase starts after the article
+phase finishes.
 Each article response includes the stored `content` and `language`; AI
 Processing uses the language when generating the summary. For a rejected
 article, AI Processing sends `text: null` and `rejected: true` to the article
@@ -48,6 +50,9 @@ it PUTs `Nothing special happened today, come back later` with
 `generation_duration_ms: 0`, without calling the LLM. The selected 25 articles
 are determined by Content Management's current query, which has no defined
 ordering.
+If generation fails for one group, the worker PUTs the latest successfully
+generated summary for that topic and continues with the next topic. If the
+first group fails, it uses the first article summary as a fallback.
 
 Its pgvector database is provisioned for future working data such as embeddings;
 the current worker does not use it or store summaries locally.

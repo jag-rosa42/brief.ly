@@ -5,8 +5,9 @@ Ollama, and writes them back to Content Management. Its HTTP API exposes only
 `/health`. The worker sends each article's summary, rejection flag, and quality
 comment through one `PUT`, then builds each topic summary from up to 25 eligible
 articles returned by Content Management. The article phase finishes before the
-topic phase. It skips topics with no eligible articles. Content Management still
-needs the topic summary write route for a live run that reaches a non-empty topic.
+topic phase. Topics with no eligible articles receive an empty-topic summary.
+Content Management still needs the topic summary write route for a live run
+that reaches a non-empty topic.
 The API contract and service ownership are in
 [`docs/api/04_content-management.md`](../../../docs/api/04_content-management.md).
 
@@ -39,11 +40,14 @@ running the command on the host, override `CONTENT_MANAGEMENT_BASE_URL` and
 `OLLAMA_BASE_URL` with addresses reachable from the host, such as
 `http://localhost:8083` and `http://localhost:11434`.
 An empty missing-article response ends the article phase and starts the topic
-phase. A provider, validation, or write failure stops the worker immediately;
-there is no retry counter. On another run, articles with a stored assessment
-are skipped, including rejected articles. Topic summaries are recomputed for
-every non-empty topic on each successful run. It does not log article text or
-tokens.
+phase. If article summary generation fails, the worker saves a rejected
+assessment and continues. If a topic group fails, it saves the latest
+successfully generated summary for that topic and continues; when the first
+group fails, it uses the first article summary. Content Management read or write
+failures still stop the worker. There is no retry counter. On another run,
+articles with a stored assessment are skipped, including rejected articles.
+Topic summaries are recomputed on each run. The worker does not log article text
+or tokens.
 
 ## Test the local Ollama API
 
