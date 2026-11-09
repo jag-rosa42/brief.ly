@@ -1,12 +1,13 @@
 from uuid import UUID
 
-from sqlalchemy import Result, Select, select
+from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
 from src.domain.entities.account import Account
 from src.domain.value_objects.email import Email
 from src.domain.value_objects.password_hash import PasswordHash
 from src.infrastructure.database.models.account import Account as AccountModel
+from src.infrastructure.database.repositories.query import one_or_none
 
 
 class SqlAlchemyAccountRepository:
@@ -21,21 +22,13 @@ class SqlAlchemyAccountRepository:
         statement: Select[tuple[AccountModel]] = select(AccountModel).where(
             AccountModel.email == email.value
         )
-        result: Result[tuple[AccountModel]] = self._session.execute(statement)
-        account_model: AccountModel | None = result.scalar_one_or_none()
-        if account_model is None:
-            return None
-        return self._to_domain(account_model)
+        return one_or_none(self._session, statement, self._to_domain)
 
     def find_by_id(self, account_id: UUID) -> Account | None:
         statement: Select[tuple[AccountModel]] = select(AccountModel).where(
             AccountModel.id == account_id
         )
-        result: Result[tuple[AccountModel]] = self._session.execute(statement)
-        account_model: AccountModel | None = result.scalar_one_or_none()
-        if account_model is None:
-            return None
-        return self._to_domain(account_model)
+        return one_or_none(self._session, statement, self._to_domain)
 
     @staticmethod
     def _to_domain(model: AccountModel) -> Account:
