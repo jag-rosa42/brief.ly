@@ -52,6 +52,7 @@ class FakeAccountRepository:
         self._accounts_by_email: dict[str, Account] = {}
         self._accounts_by_id: dict[UUID, Account] = {}
         self._failure_to_raise_on_save: Exception | None = None
+        self.locked_ids: list[UUID] = []
 
     def save(self, account: Account) -> None:
         if self._failure_to_raise_on_save is not None:
@@ -64,6 +65,12 @@ class FakeAccountRepository:
 
     def find_by_id(self, account_id: UUID) -> Account | None:
         return self._accounts_by_id.get(account_id)
+
+    def find_by_id_for_update(self, account_id: UUID) -> Account | None:
+        # No real lock in memory: record the call so tests can check that
+        # the use case asked for one.
+        self.locked_ids.append(account_id)
+        return self.find_by_id(account_id)
 
     # Helper to simulate an infrastructure failure
     def make_save_raise(self, exception: Exception) -> None:

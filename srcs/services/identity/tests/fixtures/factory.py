@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from src.domain.entities.account import Account
+from src.domain.entities.api_key import API_KEY_LIFETIME, ApiKey, ApiKeyScope
 from src.domain.entities.refresh_token import RefreshToken
 from src.domain.value_objects.email import Email
 from src.domain.value_objects.password_hash import PasswordHash
@@ -68,4 +69,41 @@ def build_refresh_token(
         created_at=created_at or now,
         revoked_at=revoked_at,
         replaced_by=replaced_by,
+    )
+
+
+# ---------------------------------------------------------------------------
+# API Key
+# ---------------------------------------------------------------------------
+
+
+def build_api_key(
+    *,
+    account_id: UUID | None = None,
+    api_key_id: UUID | None = None,
+    name: str = "my script",
+    prefix: str = "tr_test",
+    key_hash: str | None = None,
+    scopes: frozenset[ApiKeyScope] = frozenset({ApiKeyScope.READ}),
+    created_at: datetime | None = None,
+    expires_at: datetime | None = None,
+    revoked_at: datetime | None = None,
+) -> ApiKey:
+    """Build an ApiKey for tests.
+
+    Like build_refresh_token: account_id defaults to a throwaway UUID;
+    repository tests that hit the real foreign key must pass a persisted
+    account's ID.
+    """
+    now = created_at or datetime.now(UTC)
+    return ApiKey(
+        id=api_key_id or uuid4(),
+        account_id=account_id or uuid4(),
+        name=name,
+        prefix=prefix,
+        key_hash=key_hash or f"hash-{uuid4()}",
+        scopes=scopes,
+        created_at=now,
+        expires_at=expires_at or now + API_KEY_LIFETIME,
+        revoked_at=revoked_at,
     )
