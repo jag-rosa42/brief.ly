@@ -209,6 +209,7 @@ Body:
 {
   "text": str,                 1-2000 chars
   "llm_model": str             stored for traceability, not returned
+  "generation_duration_ms": int  non-negative duration measured by AI Processing
 }
 
 200 OK                <topic>, with summary and summarized_at set

@@ -25,6 +25,10 @@ ARTICLE_SUMMARY: str = app.url_path_for(
 HEALTH: str = app.url_path_for("health_check")
 INGESTION_RUNS: str = app.url_path_for("create_ingestion_run")
 TOPICS: str = app.url_path_for("list_topics")
+TOPIC_SUMMARY: str = app.url_path_for(
+    "update_topic_summary",
+    topic_id="{topic_id}",
+)
 
 
 def article_detail(article_id: UUID | str) -> str:
@@ -33,3 +37,7 @@ def article_detail(article_id: UUID | str) -> str:
 
 def article_summary(article_id: UUID) -> str:
     return app.url_path_for("update_article_summary", article_id=str(article_id))
+
+
+def topic_summary(topic_id: str) -> str:
+    return app.url_path_for("update_topic_summary", topic_id=topic_id)
