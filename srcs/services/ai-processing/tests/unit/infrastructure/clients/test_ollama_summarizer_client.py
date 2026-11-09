@@ -115,6 +115,70 @@ def test_summarize_article_can_report_rejection() -> None:
 
 
 @pytest.mark.parametrize(
+    "summary",
+    [
+        "RJ Mitte's",
+        "New York Knicks guard Tyler Kolek apologized. After his remarks about her",
+    ],
+)
+def test_summarize_article_rejects_unfinished_summary(summary: str) -> None:
+    assessment = json.dumps(
+        {"rejected": False, "quality_comment": "Complete article", "summary": summary}
+    )
+    with httpx.Client(
+        base_url="http://ollama:11434",
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(200, content=ollama_line(assessment))
+        ),
+    ) as http_client:
+        client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
+        with pytest.raises(ValueError, match="unfinished article summary"):
+            client.ai_summarize_article(ARTICLE)
+
+
+def test_summarize_article_logs_and_rejects_length_stop() -> None:
+    assessment = json.dumps(
+        {
+            "rejected": False,
+            "quality_comment": "Complete article",
+            "summary": "A new library opened.",
+        }
+    )
+    content = (
+        json.dumps(
+            {
+                "message": {"content": assessment},
+                "done": True,
+                "done_reason": "length",
+                "eval_count": 64,
+            }
+        )
+        + "\n"
+    ).encode()
+    with httpx.Client(
+        base_url="http://ollama:11434",
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(200, content=content)
+        ),
+    ) as http_client:
+        client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
+        with (
+            patch(
+                "src.infrastructure.clients.OllamaSummarizerClient.logger.info"
+            ) as log_completion,
+            pytest.raises(ValueError, match="length"),
+        ):
+            client.ai_summarize_article(ARTICLE)
+
+    log_completion.assert_called_once_with(
+        "Ollama %s completed: done_reason=%s eval_count=%s",
+        "decision",
+        "length",
+        64,
+    )
+
+
+@pytest.mark.parametrize(
     "response_content",
     [
         ollama_line("partial", done=False),

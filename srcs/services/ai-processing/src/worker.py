@@ -1,3 +1,5 @@
+import logging
+
 from httpx2 import Client
 
 from src.application.summarize_articles_and_topics import SummarizeArticlesAndTopics
@@ -31,6 +33,7 @@ def run_worker(
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO)
     settings = WorkerSettings()
     with (
         Client(base_url=settings.CONTENT_MANAGEMENT_BASE_URL) as content_http_client,
