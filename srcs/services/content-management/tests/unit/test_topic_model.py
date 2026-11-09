@@ -1,4 +1,4 @@
-from sqlalchemy import String, Table, inspect
+from sqlalchemy import BigInteger, String, Table, inspect
 
 from src.infrastructure.database.models import TopicModel, TopicSummaryModel
 
@@ -22,11 +22,18 @@ def test_topic_summary_model_declares_the_common_persistence_contract():
         "text",
         "summarized_at",
         "llm_model",
+        "generation_duration_ms",
     )
     assert tuple(table.primary_key.columns.keys()) == ("topic_id",)
     assert isinstance(table.columns["text"].type, String)
     assert table.columns["text"].type.length == 2000
-    assert all(not column.nullable for column in table.columns)
+    assert isinstance(table.columns["generation_duration_ms"].type, BigInteger)
+    assert table.columns["generation_duration_ms"].nullable
+    assert all(
+        not column.nullable
+        for column in table.columns
+        if column.name != "generation_duration_ms"
+    )
     foreign_key = next(iter(table.foreign_keys))
     assert foreign_key.target_fullname == "topics.id"
     assert foreign_key.ondelete == "CASCADE"

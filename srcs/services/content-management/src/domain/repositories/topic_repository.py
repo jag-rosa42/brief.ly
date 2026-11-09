@@ -1,9 +1,13 @@
 from typing import Protocol
 
-from src.domain.entities import Topic
+from src.domain.entities import Topic, TopicSummary
 
 
 class TopicRepository(Protocol):
     def exists(self, topic_id: str) -> bool: ...
 
     def list_all(self) -> list[Topic]: ...
+
+    def get_by_id(self, topic_id: str) -> Topic | None: ...
+
+    def update_summary(self, topic_id: str, summary: TopicSummary) -> Topic | None: ...

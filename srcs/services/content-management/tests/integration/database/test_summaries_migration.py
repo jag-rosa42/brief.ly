@@ -53,9 +53,21 @@ def test_migration_extracts_topic_summaries_to_a_dedicated_table(db_session: Ses
     columns = {
         column["name"]: column for column in inspector.get_columns("topic_summaries")
     }
-    assert set(columns) == {"topic_id", "text", "summarized_at", "llm_model"}
+    assert set(columns) == {
+        "topic_id",
+        "text",
+        "summarized_at",
+        "llm_model",
+        "generation_duration_ms",
+    }
     assert isinstance(columns["text"]["type"], String)
     assert columns["text"]["type"].length == 2000
     assert isinstance(columns["summarized_at"]["type"], DateTime)
     assert columns["summarized_at"]["type"].timezone
-    assert all(not column["nullable"] for column in columns.values())
+    assert isinstance(columns["generation_duration_ms"]["type"], BigInteger)
+    assert columns["generation_duration_ms"]["nullable"]
+    assert all(
+        not column["nullable"]
+        for name, column in columns.items()
+        if name != "generation_duration_ms"
+    )
