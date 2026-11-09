@@ -5,7 +5,7 @@ import httpx2 as httpx
 import pytest
 from shared_errors import InfrastructureError
 
-from src.application.models.article_assessment import ArticleAssessment
+from src.domain.value_objects.article_assessment import ArticleAssessment
 from src.infrastructure.clients.ContentManagementClient import ContentManagementClient
 from tests.model import DEFAULT_MODEL
 

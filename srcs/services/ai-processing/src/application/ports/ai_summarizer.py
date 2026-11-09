@@ -1,7 +1,7 @@
 from typing import Protocol
 
 from src.application.models.article import Article
-from src.application.models.article_assessment import ArticleAssessment
+from src.domain.value_objects.article_assessment import ArticleAssessment
 
 
 class ArticleSummarizerPort(Protocol):

@@ -3,8 +3,8 @@ from uuid import UUID
 import pytest
 
 from src.application.models.article import Article
-from src.application.models.article_assessment import ArticleAssessment
 from src.application.SummarizeArticles import SummarizeArticles
+from src.domain.value_objects.article_assessment import ArticleAssessment
 from tests.model import DEFAULT_MODEL
 
 
@@ -53,16 +53,12 @@ def test_processes_all_batches_and_stops_on_empty_result() -> None:
     assert content_management.saved == [
         (
             first.id,
-            ArticleAssessment(
-                False, "Complete article", f"Summary of {first.id}", 1234
-            ),
+            ArticleAssessment(False, "Complete article", f"Summary of {first.id}", 1234),
             DEFAULT_MODEL,
         ),
         (
             second.id,
-            ArticleAssessment(
-                False, "Complete article", f"Summary of {second.id}", 1234
-            ),
+            ArticleAssessment(False, "Complete article", f"Summary of {second.id}", 1234),
             DEFAULT_MODEL,
         ),
     ]
@@ -86,9 +82,7 @@ def test_failed_write_stops_before_fetching_another_batch() -> None:
 
     class Summarizer:
         def ai_summarize_article(self, article: Article) -> ArticleAssessment:
-            return ArticleAssessment(
-                False, "Complete article", "Summary", 1234
-            )
+            return ArticleAssessment(False, "Complete article", "Summary", 1234)
 
     content_management = ContentManagement()
     with pytest.raises(RuntimeError, match="write failed"):
@@ -118,9 +112,7 @@ def test_rejected_article_is_recorded_without_a_summary() -> None:
 
     class Summarizer:
         def ai_summarize_article(self, article: Article) -> ArticleAssessment:
-            return ArticleAssessment(
-                True, "Article is incomplete", None, 1234
-            )
+            return ArticleAssessment(True, "Article is incomplete", None, 1234)
 
     content_management = ContentManagement()
     SummarizeArticles(

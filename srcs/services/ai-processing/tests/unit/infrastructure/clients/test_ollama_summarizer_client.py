@@ -1,4 +1,5 @@
 import json
+from http import HTTPStatus
 from unittest.mock import patch
 from uuid import UUID
 
@@ -7,7 +8,11 @@ import pytest
 from shared_errors import InfrastructureError
 
 from src.application.models.article import Article
-from src.infrastructure.clients.OllamaSummarizerClient import OllamaSummarizerClient
+from src.infrastructure.clients.OllamaSummarizerClient import (
+    OllamaArticleAssessment,
+    OllamaSummarizerClient,
+    OllamaTopicSummary,
+)
 from tests.model import DEFAULT_MODEL
 
 ARTICLE = Article(
@@ -40,6 +45,7 @@ def test_summarize_article_joins_streamed_json_chunks() -> None:
         assert body["stream"] is True
         assert body["options"]["temperature"] == 0
         schema = body["format"]
+        assert schema == OllamaArticleAssessment.model_json_schema()
         assert schema["type"] == "object"
         assert set(schema["required"]) == {
             "rejected",
@@ -137,6 +143,16 @@ def test_summarize_article_rejects_incomplete_or_empty_stream(
             {"rejected": True, "quality_comment": "Incomplete", "summary": "Summary"}
         ),
         json.dumps({"rejected": "yes", "quality_comment": "Incomplete", "summary": None}),
+        json.dumps({"rejected": False, "quality_comment": "Valid", "summary": " "}),
+        json.dumps({"rejected": True, "quality_comment": "x" * 501, "summary": None}),
+        json.dumps(
+            {
+                "rejected": True,
+                "quality_comment": "Incomplete",
+                "summary": None,
+                "extra": 1,
+            }
+        ),
     ],
 )
 def test_summarize_article_rejects_invalid_assessment(assessment: str) -> None:
@@ -148,6 +164,28 @@ def test_summarize_article_rejects_invalid_assessment(assessment: str) -> None:
     ) as http_client:
         client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
         with pytest.raises(ValueError):
+            client.ai_summarize_article(ARTICLE)
+
+
+@pytest.mark.parametrize(
+    ("response_content", "error_message"),
+    [
+        (b'{"message":null,"done":true}\n', "incomplete or empty"),
+        (b'{"message":{"content":123},"done":true}\n', "content"),
+        (b'{"message":false,"done":true}\n', "message"),
+    ],
+)
+def test_summarize_article_rejects_invalid_stream_chunk(
+    response_content: bytes, error_message: str
+) -> None:
+    with httpx.Client(
+        base_url="http://ollama:11434",
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(200, content=response_content)
+        ),
+    ) as http_client:
+        client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
+        with pytest.raises(ValueError, match=error_message):
             client.ai_summarize_article(ARTICLE)
 
 
@@ -175,10 +213,18 @@ def test_summarize_article_reports_ollama_timeout() -> None:
             client.ai_summarize_article(ARTICLE)
 
 
-def test_summarize_topic_reports_unavailable_ollama() -> None:
+@pytest.mark.parametrize(
+    "status_code",
+    [
+        HTTPStatus.BAD_GATEWAY,
+        HTTPStatus.SERVICE_UNAVAILABLE,
+        HTTPStatus.GATEWAY_TIMEOUT,
+    ],
+)
+def test_summarize_topic_reports_unavailable_ollama(status_code: HTTPStatus) -> None:
     with httpx.Client(
         base_url="http://ollama:11434",
-        transport=httpx.MockTransport(lambda request: httpx.Response(503)),
+        transport=httpx.MockTransport(lambda request: httpx.Response(status_code)),
     ) as http_client:
         client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
         with pytest.raises(InfrastructureError, match="Ollama is unavailable"):
@@ -193,14 +239,7 @@ def test_summarize_topic_uses_stored_summaries_and_validates_result() -> None:
         assert body["stream"] is True
         assert body["model"] == DEFAULT_MODEL
         assert body["options"]["temperature"] == 0
-        assert body["format"] == {
-            "type": "object",
-            "properties": {
-                "summary": {"type": "string", "minLength": 1, "maxLength": 2000}
-            },
-            "required": ["summary"],
-            "additionalProperties": False,
-        }
+        assert body["format"] == OllamaTopicSummary.model_json_schema()
         system_prompt = body["messages"][0]["content"]
         assert "earlier groups of articles" in system_prompt
         assert "keep unrelated events distinct" in system_prompt

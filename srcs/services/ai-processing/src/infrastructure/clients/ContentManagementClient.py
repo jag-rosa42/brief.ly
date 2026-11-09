@@ -5,10 +5,10 @@ import httpx2 as httpx
 from shared_errors import InfrastructureError
 
 from src.application.models.article import Article
-from src.application.models.article_assessment import ArticleAssessment
 from src.application.models.topic_article_summary import (
     TopicArticleSummary,
 )
+from src.domain.value_objects.article_assessment import ArticleAssessment
 
 
 class ContentManagementClient:
