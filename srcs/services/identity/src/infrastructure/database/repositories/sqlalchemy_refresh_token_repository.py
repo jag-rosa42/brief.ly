@@ -10,6 +10,7 @@ from src.domain.entities.refresh_token import RefreshToken
 from src.infrastructure.database.models.refresh_token import (
     RefreshToken as RefreshTokenModel,
 )
+from src.infrastructure.database.repositories.query import one_or_none
 
 
 class SqlAlchemyRefreshTokenRepository:
@@ -50,14 +51,10 @@ class SqlAlchemyRefreshTokenRepository:
         statement: Select[tuple[RefreshTokenModel]] = select(RefreshTokenModel).where(
             RefreshTokenModel.id == refresh_token_id
         )
-        result: Result[tuple[RefreshTokenModel]] = self._session.execute(statement)
-        refresh_token_model: RefreshTokenModel | None = result.scalar_one_or_none()
-        if refresh_token_model is None:
-            return None
-        return self._to_domain(refresh_token_model)
+        return one_or_none(self._session, statement, self._to_domain)
 
     def find_by_id_for_update(self, refresh_token_id: UUID) -> RefreshToken | None:
-        """Load a refresh token and bock its row until the transaction ends.
+        """Load a refresh token and lock its row until the transaction ends.
 
         Use SELECT ... FOR UPDATE:
         A concurrent transaction locking the same row blocks until this one commits
@@ -75,11 +72,7 @@ class SqlAlchemyRefreshTokenRepository:
             .execution_options(populate_existing=True)
         )
 
-        result: Result[tuple[RefreshTokenModel]] = self._session.execute(statement)
-        refresh_token_model: RefreshTokenModel | None = result.scalar_one_or_none()
-        if refresh_token_model is None:
-            return None
-        return self._to_domain(refresh_token_model)
+        return one_or_none(self._session, statement, self._to_domain)
 
     def revoke_all_for_account(self, account_id: UUID, now: datetime) -> None:
         statement: Update = (
