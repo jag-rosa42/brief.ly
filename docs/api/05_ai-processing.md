@@ -43,8 +43,9 @@ from Content Management. Every returned article must have a non-empty stored
 summary; otherwise the worker stops without writing that topic. It combines
 the summaries in groups of two to four until one remains (a leftover single
 summary passes through unchanged) and sends it in the
-`text` field of the topic summary PUT. It skips topics with no articles because
-the topic summary PUT contract requires non-null text. The selected 25 articles
+`text` field of the topic summary PUT. For a topic with no returned articles,
+it PUTs `Nothing special happened today, come back later` with
+`generation_duration_ms: 0`, without calling the LLM. The selected 25 articles
 are determined by Content Management's current query, which has no defined
 ordering.
 

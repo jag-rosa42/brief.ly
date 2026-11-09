@@ -74,10 +74,14 @@ def test_worker_wires_get_summarize_put_and_repeats() -> None:
 
         if request.url.path == "/internal/v1/topics/local-news/summary":
             calls.append("topic_put")
-            assert json.loads(request.content) == {
+            topic_summary = json.loads(request.content)
+            assert topic_summary == {
                 "text": "Local venues opened.",
                 "llm_model": DEFAULT_MODEL,
+                "generation_duration_ms": topic_summary["generation_duration_ms"],
             }
+            assert isinstance(topic_summary["generation_duration_ms"], int)
+            assert topic_summary["generation_duration_ms"] >= 0
             return httpx.Response(200)
 
         calls.append("put")

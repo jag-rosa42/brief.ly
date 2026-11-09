@@ -180,6 +180,7 @@ def test_topic_read_uses_existing_response_and_write_uses_contract_body() -> Non
         assert json.loads(request.content) == {
             "text": "Combined topic summary",
             "llm_model": DEFAULT_MODEL,
+            "generation_duration_ms": 123,
         }
         return httpx.Response(200)
 
@@ -189,7 +190,9 @@ def test_topic_read_uses_existing_response_and_write_uses_contract_body() -> Non
         client = ContentManagementClient(http_client)
         assert client.list_topics() == ["technology"]
         articles = client.list_topic_article_summaries("technology", 25)
-        client.save_topic_summary("technology", "Combined topic summary", DEFAULT_MODEL)
+        client.save_topic_summary(
+            "technology", "Combined topic summary", DEFAULT_MODEL, 123
+        )
 
     assert [(item.article_id, item.summary) for item in articles] == [
         (article_id, "Stored summary")

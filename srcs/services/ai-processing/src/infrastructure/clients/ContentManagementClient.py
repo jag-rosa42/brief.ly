@@ -106,9 +106,19 @@ class ContentManagementClient:
             raise ValueError("Content Management returned an invalid article summary")
         return summaries
 
-    def save_topic_summary(self, topic_id: str, summary: str, llm_model: str) -> None:
+    def save_topic_summary(
+        self,
+        topic_id: str,
+        summary: str,
+        llm_model: str,
+        generation_duration_ms: int,
+    ) -> None:
         self._request(
             "PUT",
             f"/internal/v1/topics/{quote(topic_id, safe='')}/summary",
-            json={"text": summary, "llm_model": llm_model},
+            json={
+                "text": summary,
+                "llm_model": llm_model,
+                "generation_duration_ms": generation_duration_ms,
+            },
         )

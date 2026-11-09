@@ -1,4 +1,5 @@
 from itertools import batched
+from time import perf_counter
 
 from src.application.ports.ai_summarizer import TopicSummarizerPort
 from src.application.ports.content_management import TopicContentManagementPort
@@ -6,6 +7,7 @@ from src.domain.value_objects.summary import Summary
 
 TOPIC_ARTICLE_LIMIT = 25  # Content Management's maximum page size.
 TOPIC_SUMMARY_GROUP_SIZE = 4
+EMPTY_TOPIC_SUMMARY = "Nothing special happened today, come back later"
 
 
 class SummarizeTopics:
@@ -27,10 +29,16 @@ class SummarizeTopics:
         for topic_id in sorted(topics):
             summaries = self._load_summaries(topic_id)
             if not summaries:
+                self.content_management.save_topic_summary(
+                    topic_id, EMPTY_TOPIC_SUMMARY, self.llm_model, 0
+                )
                 continue
 
+            started_at = perf_counter()
+            summary = self._combine(topic_id, summaries)
+            generation_duration_ms = max(0, round((perf_counter() - started_at) * 1000))
             self.content_management.save_topic_summary(
-                topic_id, self._combine(topic_id, summaries), self.llm_model
+                topic_id, summary, self.llm_model, generation_duration_ms
             )
 
     def _combine(self, topic_id: str, summaries: list[str]) -> str:
