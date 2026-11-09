@@ -1,9 +1,12 @@
 from uuid import UUID
 
 import httpx2 as httpx
+from shared_auth import DownstreamError
+from shared_errors import InfrastructureError
 
 from src.application.exceptions import ArticleCatalogUnavailableError
 from src.domain.entities.article import Article
+from src.infrastructure.clients.token_provider import TokenProvider
 
 # Contract: docs/api/04_content-management.md, GET /internal/v1/articles?topic_id=
 # returns {"items": [<article>]}, or 404 TOPIC_NOT_FOUND for an unknown topic.
@@ -13,17 +16,22 @@ TIMEOUT_SECONDS = 2.0
 
 
 class HttpArticleCatalog:
-    def __init__(self, base_url: str, client: httpx.Client | None = None) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        token_provider: TokenProvider,
+        client: httpx.Client | None = None,
+    ) -> None:
+        self._token_provider = token_provider
         # `client` is a parameter so tests can pass a fake one.
         self._client = client or httpx.Client(base_url=base_url, timeout=TIMEOUT_SECONDS)
 
     def list_by_topic(self, topic_id: str) -> list[Article]:
         try:
-            # TODO(service-token): CM will require a service token on /internal/*.
-            # When shared_auth's service-token provider exists, add the header here:
-            #   headers={"Authorization": f"Bearer {token_provider.get_token()}"}
-            # The provider caches the token and renews it before it expires.
-            response = self._client.get(ARTICLES_PATH, params={"topic_id": topic_id})
+            headers = {"Authorization": f"Bearer {self._token_provider.get_token()}"}
+            response = self._client.get(
+                ARTICLES_PATH, params={"topic_id": topic_id}, headers=headers
+            )
             if response.status_code == httpx.codes.NOT_FOUND:
                 return []
             response.raise_for_status()
@@ -39,7 +47,14 @@ class HttpArticleCatalog:
                 )
                 for item in response.json()["items"]
             ]
-        except (httpx.HTTPError, ValueError, KeyError, TypeError) as error:
+        except (
+            httpx.HTTPError,
+            ValueError,
+            KeyError,
+            TypeError,
+            InfrastructureError,  # Identity unreachable: no token
+            DownstreamError,  # Identity refused our credentials
+        ) as error:
             raise ArticleCatalogUnavailableError() from error
 
         return articles

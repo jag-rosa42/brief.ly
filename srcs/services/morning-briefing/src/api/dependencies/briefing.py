@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import Depends
 from shared_auth import DownstreamClient
 
+from src.api.dependencies.service_token import get_content_management_token_provider
 from src.application.port.article_catalog import ArticleCatalog
 from src.application.port.profile_reader import ProfileReader
 from src.application.port.topic_catalog import TopicCatalog
@@ -34,7 +35,10 @@ ProfileReaderDep = Annotated[ProfileReader, Depends(get_profile_reader)]
 
 @lru_cache
 def get_topic_catalog() -> TopicCatalog:
-    return HttpTopicCatalog(app_settings.CONTENT_MANAGEMENT_URL)
+    return HttpTopicCatalog(
+        app_settings.CONTENT_MANAGEMENT_URL,
+        get_content_management_token_provider(),
+    )
 
 
 TopicCatalogDep = Annotated[TopicCatalog, Depends(get_topic_catalog)]
@@ -42,7 +46,10 @@ TopicCatalogDep = Annotated[TopicCatalog, Depends(get_topic_catalog)]
 
 @lru_cache
 def get_article_catalog() -> ArticleCatalog:
-    return HttpArticleCatalog(app_settings.CONTENT_MANAGEMENT_URL)
+    return HttpArticleCatalog(
+        app_settings.CONTENT_MANAGEMENT_URL,
+        get_content_management_token_provider(),
+    )
 
 
 ArticleCatalogDep = Annotated[ArticleCatalog, Depends(get_article_catalog)]
