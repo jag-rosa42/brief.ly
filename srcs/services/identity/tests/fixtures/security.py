@@ -35,6 +35,23 @@ def password_hasher() -> FakePasswordHasher:
 
 
 # ---------------------------------------------------------------------------
+# Token Hasher
+# ---------------------------------------------------------------------------
+class FakeTokenHasher:
+    """Readable hashes, so a failing test shows what was hashed."""
+
+    PREFIX = "hashed::"
+
+    def hash(self, token: str) -> str:
+        return f"{self.PREFIX}{token}"
+
+
+@pytest.fixture
+def token_hasher() -> FakeTokenHasher:
+    return FakeTokenHasher()
+
+
+# ---------------------------------------------------------------------------
 # Fake Token Service
 # ---------------------------------------------------------------------------
 
@@ -80,7 +97,6 @@ class FakeTokenService:
         return CreatedRefreshToken(
             id=token_id,
             token=token,
-            token_hash=self.hash_token(token),
             expires_at=expires_at,
         )
 
@@ -91,9 +107,6 @@ class FakeTokenService:
         if claims.expires_at <= datetime.now(UTC):
             raise TokenExpiredError()
         return claims
-
-    def hash_token(self, token: str) -> str:
-        return f"hashed-token::{token}"
 
     def expire_refresh_token(self, token: str) -> None:
         """Test helper: the token service now considers this refresh token expired."""

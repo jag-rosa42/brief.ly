@@ -20,7 +20,6 @@ class RefreshTokenClaims:
 class CreatedRefreshToken:
     id: UUID
     token: str
-    token_hash: str
     expires_at: datetime
 
 

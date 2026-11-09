@@ -1,5 +1,6 @@
 from src.application.port.token.service import TokenService
 from src.application.port.token.types import RefreshTokenClaims
+from src.application.port.token_hasher import TokenHasher
 from src.domain.entities.refresh_token import RefreshToken
 from src.domain.exception import InvalidTokenError
 from src.domain.repositories.refresh_token_repository import RefreshTokenRepository
@@ -43,9 +44,11 @@ class RefreshTokenValidator:
         self,
         refresh_token_repository: RefreshTokenRepository,
         token_service: TokenService,
+        token_hasher: TokenHasher,
     ) -> None:
         self._refresh_token_repository: RefreshTokenRepository = refresh_token_repository
         self._token_service: TokenService = token_service
+        self._token_hasher: TokenHasher = token_hasher
 
     def get_valid_refresh_token(
         self,
@@ -98,7 +101,7 @@ class RefreshTokenValidator:
         # Hash the presented token and compare it with the stored hash.
         if (
             stored_token is None
-            or stored_token.token_hash != self._token_service.hash_token(refresh_token)
+            or stored_token.token_hash != self._token_hasher.hash(refresh_token)
         ):
             raise InvalidTokenError()
         return stored_token

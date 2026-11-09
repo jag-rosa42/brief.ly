@@ -1,4 +1,3 @@
-import hashlib
 import logging
 from datetime import UTC, datetime, timedelta
 from typing import Any, ClassVar
@@ -83,7 +82,6 @@ class JWTTokenService:
         return CreatedRefreshToken(
             id=refresh_token.id,
             token=refresh_token.token,
-            token_hash=self.hash_token(refresh_token.token),
             expires_at=refresh_token.expires_at,
         )
 
@@ -125,10 +123,6 @@ class JWTTokenService:
             token=created_token.token,
             expires_in=int(lifetime.total_seconds()),
         )
-
-    @staticmethod
-    def hash_token(token: str) -> str:
-        return hashlib.sha256(token.encode()).hexdigest()
 
     def _create_token(
         self,
