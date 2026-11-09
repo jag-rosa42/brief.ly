@@ -25,10 +25,15 @@ _container_secrets = Path("/run/secrets")
 
 if _container_secrets.exists():
     SECRETS_DIR = _container_secrets
+    # Compose mounts every secret flat in /run/secrets, client secrets included.
+    CLIENT_SECRETS_DIR = _container_secrets
 else:
     # The repository root holds shared/secrets.
     ROOT_DIR = _find_parent_containing("compose.yaml")
     SECRETS_DIR = ROOT_DIR / "shared" / "secrets"
+    # `make secrets` writes the service client secrets in their own
+    # subdirectory (CLIENT_SECRET_DIR in shared/mk/secrets.mk).
+    CLIENT_SECRETS_DIR = SECRETS_DIR / "services"
 
 
 class ServiceSettings(BaseSettings):

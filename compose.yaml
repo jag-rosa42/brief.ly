@@ -363,6 +363,7 @@ services:
       POSTGRES_DEFAULT_DB_NAME: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
       CONTENT_MANAGEMENT_URL: ${CONTENT_MANAGEMENT_INTERNAL_URL:?Variable not set}
       PERSONALIZATION_URL: ${PERSONALIZATION_INTERNAL_URL:?Variable not set}
+      IDENTITY_URL: ${IDENTITY_INTERNAL_URL:?Variable not set}
     depends_on:
       pgsql:
         condition: service_healthy
@@ -371,6 +372,7 @@ services:
     secrets:
       - jwt_public_key
       - postgres_password
+      - morning_briefing_client_secret
     networks:
       - edge
       - backend
