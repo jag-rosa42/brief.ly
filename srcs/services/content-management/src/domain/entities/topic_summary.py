@@ -7,3 +7,4 @@ class TopicSummary:
     text: str
     summarized_at: datetime
     llm_model: str
+    generation_duration_ms: int | None = None

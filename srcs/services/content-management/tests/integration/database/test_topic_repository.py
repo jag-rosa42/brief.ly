@@ -58,3 +58,31 @@ def test_exists_reports_whether_a_topic_is_persisted(db_session: Session):
 
     assert repository.exists("science")
     assert not repository.exists("unknown")
+
+
+@pytest.mark.integration
+def test_update_summary_creates_and_replaces_the_same_row(db_session: Session):
+    repository = SqlAlchemyTopicRepository(db_session)
+    first = TopicSummary(
+        text="First summary",
+        summarized_at=datetime(2026, 11, 3, 9, tzinfo=UTC),
+        llm_model="model-a",
+        generation_duration_ms=500,
+    )
+    second = TopicSummary(
+        text="Updated summary",
+        summarized_at=datetime(2026, 11, 3, 10, tzinfo=UTC),
+        llm_model="model-b",
+        generation_duration_ms=750,
+    )
+
+    assert repository.update_summary("science", first) == Topic("science", first)
+    db_session.flush()
+    assert repository.update_summary("science", second) == Topic("science", second)
+    db_session.flush()
+    db_session.expire_all()
+
+    assert repository.get_by_id("science") == Topic("science", second)
+    assert db_session.query(TopicSummaryModel).filter_by(topic_id="science").count() == 1
+    assert repository.update_summary("unknown", second) is None
+    assert repository.get_by_id("unknown") is None
