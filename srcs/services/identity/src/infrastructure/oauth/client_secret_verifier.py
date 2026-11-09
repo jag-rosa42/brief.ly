@@ -11,11 +11,12 @@ _DUMMY_SECRET: bytes = b"no-secret-configured-for-this-client"
 
 
 class SecretFileClientSecretVerifier:
-    """The ClientSecretVerifier adapter: one secret file per client.
+    """Implements the ClientSecretVerifier port with one secret file per client.
 
-    The file is `<secrets_dir>/<client_id with _>_client_secret`, a Compose
-    secret (/run/secrets in a container, shared/secrets locally). It is read
-    on every request: a request for a token happens about once every five
+    The file is named `<secrets_dir>/<client_id with _>_client_secret` and lived:
+    - in a container at /run/secrets,
+    - locally at shared/secrets/services.
+    It is read on every request: a request for a token happens about once every five
     minutes per client, and a new secret works without a restart.
     """
 

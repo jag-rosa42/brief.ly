@@ -53,7 +53,7 @@ The Public API follows the **phantom token pattern** (ADR-0009): the outside pro
 | Access | The browser, in memory | `transcendence:api` | account id | — | 15 min | Frontend routes, and Internal routes when forwarded |
 | Refresh | The browser, HttpOnly cookie | `transcendence:identity` | account id | — | 7 days | `/api/identity/auth/refresh` and `/logout` only |
 | Public API | Nobody outside: created by Identity for one request, placed by the gateway | `transcendence:public-api` | key owner's account id | `read` and/or `write` | ~60 s | Public routes, and Internal routes when forwarded |
-| Service | A service, cached | `transcendence:<target-service>` | `service:<name>` | route-specific | ~5 min | Internal routes (not implemented yet) |
+| Service | A service, cached | `transcendence:<target-service>` | `service:<name>` | route-specific | 5 min | Internal routes (issued by Identity's `POST /internal/v1/oauth/token`; no route checks them yet) |
 
 How each route says what it accepts, in the tables below:
 
@@ -66,6 +66,7 @@ How each route says what it accepts, in the tables below:
 | User (forwarded) | The token the calling service received from the user (access token or public API token), forwarded unchanged |
 | Service (`<scope>`) | A service token with that scope |
 | Gateway | Called only by Traefik's ForwardAuth middleware |
+| Client credentials | `Authorization: Basic <client_id:client_secret>`: a backend service asking Identity for a service token |
 
 ### CSRF guard on cookie routes
 
@@ -109,8 +110,8 @@ Some answers are produced by Traefik itself, not by a service, and **do not** us
 | 200 OK | Read or update succeeded | |
 | 201 Created | Resource created | |
 | 204 No Content | Success with no body (logout, delete) | |
-| 400 Bad Request | Path with forbidden percent-encoding (gateway) | none (Traefik body) |
-| 401 Unauthorized | Credential missing, invalid, expired or revoked | `INVALID_TOKEN`, `TOKEN_EXPIRED`, `TOKEN_REVOKED`, `INVALID_CREDENTIALS`, `INVALID_API_KEY` |
+| 400 Bad Request | Path with forbidden percent-encoding (gateway); service token request refused (Identity) | none (Traefik body); `UNSUPPORTED_GRANT_TYPE`, `INVALID_SCOPE` |
+| 401 Unauthorized | Credential missing, invalid, expired or revoked | `INVALID_TOKEN`, `TOKEN_EXPIRED`, `TOKEN_REVOKED`, `INVALID_CREDENTIALS`, `INVALID_API_KEY`, `INVALID_CLIENT` |
 | 403 Forbidden | Authenticated, but not allowed | `INSUFFICIENT_SCOPE`, `CSRF_CHECK_FAILED` |
 | 404 Not Found | Resource does not exist, or path not routed (gateway) | `*_NOT_FOUND` |
 | 409 Conflict | Request conflicts with current state (duplicate, limit reached) | |

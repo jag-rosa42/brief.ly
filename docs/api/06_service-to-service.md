@@ -42,7 +42,7 @@ flowchart TD
 | Morning Briefing | Content Management | `GET /internal/v1/topics`, `GET /internal/v1/articles?topic_id=` | Service | All topics and their non-rejected articles, with their summaries |
 | AI Processing | Content Management | `GET /internal/v1/articles?summary=missing`, `GET /internal/v1/topics`, `GET /internal/v1/articles?topic_id=` | Service | Articles without summary rows, then all topics using their non-rejected articles |
 | AI Processing | Content Management | `PUT /internal/v1/articles/{article_id}/summary`, `PUT /internal/v1/topics/{topic_id}/summary` | Service (`summaries:write`) | Store the summaries |
-| Any service | Identity | `POST /internal/v1/oauth/token` | Client id + secret | Get a service token (not implemented yet) |
+| Any service | Identity | `POST /internal/v1/oauth/token` | Client id + secret (HTTP Basic) | Get a service token; which client may ask for which audience and scopes: `srcs/services/identity/src/infrastructure/oauth/service_clients.py` |
 
 **Which token for which call.** A service forwards the user's token only to a service that holds **that user's** data (Morning Briefing → Personalization). For data that belongs to no user (Content Management), it uses its own service token, even while it is handling a user's request. So Content Management only ever sees service tokens, and a user's token can only expire on the first call of a chain.
 

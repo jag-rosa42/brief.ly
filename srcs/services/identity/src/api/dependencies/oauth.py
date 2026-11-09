@@ -12,7 +12,7 @@ from src.application.port.service_client.secret_verifier import ClientSecretVeri
 from src.application.port.service_client.token_creator import ServiceTokenCreator
 from src.application.use_cases.oauth.create_service_token import CreateServiceToken
 from src.domain.exception import InvalidClientError
-from src.infrastructure.config.base import SECRETS_DIR
+from src.infrastructure.config.base import CLIENT_SECRETS_DIR
 from src.infrastructure.oauth.client_secret_verifier import SecretFileClientSecretVerifier
 from src.infrastructure.oauth.service_clients import InMemoryServiceClientRegistry
 from src.infrastructure.security.token.token_service import JWTTokenService
@@ -65,7 +65,7 @@ ClientCredentialsDep = Annotated[ClientCredentials, Depends(get_client_credentia
 # Service Client Registry
 # ---------------------------------------------------------------------------
 @lru_cache  # the registry never changes while the service runs: build it once
-def get_service_client_registry() -> InMemoryServiceClientRegistry:
+def get_service_client_registry() -> ServiceClientRegistry:
     return InMemoryServiceClientRegistry()
 
 
@@ -80,7 +80,7 @@ ServiceClientRegistryDep = Annotated[
 # ---------------------------------------------------------------------------
 def get_client_secret_verifier() -> ClientSecretVerifier:
     return SecretFileClientSecretVerifier(
-        secrets_dir=SECRETS_DIR,
+        secrets_dir=CLIENT_SECRETS_DIR,
         known_client_ids=get_service_client_registry().client_ids(),
     )
 
