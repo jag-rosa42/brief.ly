@@ -45,9 +45,15 @@ function DashboardHeader({ firstName, today }: DashboardHeaderProps) {
 				<Text variant="subheading">{formatDate(today)}</Text>
 			</Division>
 
-			<Division variant="dashboardcard" className="md:col-span-2">
-				<Text variant="title" className="font-serif">
-					Good morning {firstName}!
+			{/* min-w-0: a grid item can shrink below its content, so a long name can't widen the card. */}
+			<Division variant="dashboardcard" className="min-w-0 md:col-span-2">
+				{/* Only the name shrinks and ends with "…"; the full name shows on hover. */}
+				<Text variant="title" className="flex font-serif">
+					<span className="shrink-0 whitespace-pre">{"Good morning "}</span>
+					<span className="min-w-0 truncate pb-1" title={firstName}>
+						{firstName}
+					</span>
+					<span className="shrink-0">!</span>
 				</Text>
 				<Text variant="lead" className="italic text-accent/80">
 					"The best way to predict the future is to invent it." - Alan Kay

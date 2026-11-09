@@ -89,7 +89,8 @@ test("greets the user by the name of their profile", async () => {
 
 	renderPage();
 
-	expect(await screen.findByText("Good morning Kate!")).toBeInTheDocument();
+	// The name is in its own span (to truncate a long one): read the whole heading.
+	expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent("Good morning Kate!");
 });
 
 test("shows one tab per interest, in the profile's order", async () => {
