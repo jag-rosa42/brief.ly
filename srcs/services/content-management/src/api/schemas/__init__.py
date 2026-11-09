@@ -3,11 +3,12 @@ from .article import (
     ArticleResponse,
     UpdateArticleSummaryRequest,
 )
-from .topic import TopicResponse
+from .topic import TopicResponse, UpdateTopicSummaryRequest
 
 __all__ = [
     "ArticleListResponse",
     "ArticleResponse",
     "TopicResponse",
     "UpdateArticleSummaryRequest",
+    "UpdateTopicSummaryRequest",
 ]

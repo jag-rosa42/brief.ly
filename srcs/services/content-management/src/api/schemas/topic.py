@@ -1,9 +1,23 @@
 from datetime import datetime
-from typing import Self
+from typing import Annotated, Self
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from src.domain.entities import Topic
+
+
+class UpdateTopicSummaryRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    text: Annotated[
+        str,
+        StringConstraints(strip_whitespace=True, min_length=1, max_length=2000),
+    ]
+    llm_model: Annotated[
+        str,
+        StringConstraints(strip_whitespace=True, min_length=1),
+    ]
+    generation_duration_ms: Annotated[int, Field(ge=0)]
 
 
 class TopicResponse(BaseModel):

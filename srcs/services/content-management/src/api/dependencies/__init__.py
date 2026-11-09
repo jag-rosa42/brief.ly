@@ -11,7 +11,7 @@ from .repositories import (
     SourceRepositoryDep,
     TopicRepositoryDep,
 )
-from .topic import ListTopicsDep
+from .topic import ListTopicsDep, UpdateTopicSummaryDep
 
 __all__: list[str] = [
     "ArticleDiscovererDep",
@@ -27,4 +27,5 @@ __all__: list[str] = [
     "TopicRepositoryDep",
     "UnitOfWorkDep",
     "UpdateArticleSummaryDep",
+    "UpdateTopicSummaryDep",
 ]
