@@ -14,7 +14,7 @@ from src.application.use_cases.session.refresh_token_validator import (
 )
 from src.domain.entities.refresh_token import RefreshToken
 from src.domain.exception import DomainError
-from tests.fixtures.security import FakeTokenService
+from tests.fixtures.security import FakeTokenHasher, FakeTokenService
 from tests.fixtures.unit_of_work import FakeUnitOfWork
 
 
@@ -133,8 +133,9 @@ class FakeRefreshAccountSession:
 def create_account_session(
     refresh_token_repository: FakeRefreshTokenRepository,
     token_service: FakeTokenService,
+    token_hasher: FakeTokenHasher,
 ) -> CreateAccountSession:
-    return CreateAccountSession(refresh_token_repository, token_service)
+    return CreateAccountSession(refresh_token_repository, token_service, token_hasher)
 
 
 # ---------------------------------------------------------------------------
@@ -144,8 +145,9 @@ def create_account_session(
 def refresh_token_validator(
     refresh_token_repository: FakeRefreshTokenRepository,
     token_service: FakeTokenService,
+    token_hasher: FakeTokenHasher,
 ) -> RefreshTokenValidator:
-    return RefreshTokenValidator(refresh_token_repository, token_service)
+    return RefreshTokenValidator(refresh_token_repository, token_service, token_hasher)
 
 
 # ---------------------------------------------------------------------------

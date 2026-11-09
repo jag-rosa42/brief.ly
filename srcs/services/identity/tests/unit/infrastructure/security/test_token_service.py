@@ -1,4 +1,3 @@
-import hashlib
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
@@ -366,21 +365,6 @@ class TestJWTTokenService:
         assert payload["type"] == TokenType.REFRESH
         assert payload["jti"] == str(created_refresh_token.id)
         assert int(created_refresh_token.expires_at.timestamp()) == payload["exp"]
-
-    def test_created_refresh_token_hash_is_encoded_with_sha256(
-        self,
-        account_id: UUID,
-        jwt_token_service: JWTTokenService,
-    ) -> None:
-        created_refresh_token: CreatedRefreshToken = (
-            jwt_token_service.create_refresh_token(account_id)
-        )
-        token: str = created_refresh_token.token
-
-        assert (
-            created_refresh_token.token_hash == hashlib.sha256(token.encode()).hexdigest()
-        )
-        assert created_refresh_token.token_hash != token
 
     def test_verify_refresh_token(
         self,

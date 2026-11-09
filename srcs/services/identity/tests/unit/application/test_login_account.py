@@ -1,6 +1,5 @@
 import pytest
 
-from src.application.port.token.service import TokenService
 from src.application.use_cases.auth.login_account import LoginAccount
 from src.application.use_cases.session.account_session import AccountSession
 from src.domain.entities.account import Account
@@ -8,6 +7,7 @@ from src.domain.entities.refresh_token import RefreshToken
 from src.domain.exception import InvalidCredentialsError
 from tests.fixtures.accounts import FakeAccountRepository
 from tests.fixtures.factory import DEFAULT_ACCOUNT_PASSWORD
+from tests.fixtures.security import FakeTokenHasher
 from tests.fixtures.sessions import FakeRefreshTokenRepository
 from tests.fixtures.unit_of_work import FakeUnitOfWork
 
@@ -57,7 +57,7 @@ class TestLoginAccount:
         account_repository: FakeAccountRepository,
         refresh_token_repository: FakeRefreshTokenRepository,
         uow: FakeUnitOfWork,
-        token_service: TokenService,
+        token_hasher: FakeTokenHasher,
         account: Account,
     ) -> None:
         account_repository.save(account)
@@ -71,7 +71,7 @@ class TestLoginAccount:
 
         assert stored is not None
         assert stored.account_id == account.id
-        assert stored.token_hash == token_service.hash_token(session.refresh_token)
+        assert stored.token_hash == token_hasher.hash(session.refresh_token)
         assert uow.committed is True
 
     def test_does_not_create_session_for_invalid_password(

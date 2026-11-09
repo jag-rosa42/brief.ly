@@ -2,7 +2,7 @@ from src.application.use_cases.session.account_session import AccountSession
 from src.application.use_cases.session.create_account_session import CreateAccountSession
 from src.domain.entities.account import Account
 from src.domain.entities.refresh_token import RefreshToken
-from tests.fixtures.security import FakeTokenService
+from tests.fixtures.security import FakeTokenHasher, FakeTokenService
 from tests.fixtures.sessions import FakeRefreshTokenRepository
 from tests.fixtures.unit_of_work import FakeUnitOfWork
 
@@ -33,7 +33,7 @@ class TestCreateAccountSession:
         self,
         create_account_session: CreateAccountSession,
         refresh_token_repository: FakeRefreshTokenRepository,
-        token_service: FakeTokenService,
+        token_hasher: FakeTokenHasher,
         account: Account,
     ):
         session: AccountSession = create_account_session.execute(account.id)
@@ -41,7 +41,7 @@ class TestCreateAccountSession:
         stored: RefreshToken = refresh_token_repository.get(session.refresh_token_id)
 
         assert stored.account_id == account.id
-        assert stored.token_hash == token_service.hash_token(session.refresh_token)
+        assert stored.token_hash == token_hasher.hash(session.refresh_token)
         assert stored.account_id != session.refresh_token
         assert stored.is_revoked() is False
         assert stored.replaced_by is None

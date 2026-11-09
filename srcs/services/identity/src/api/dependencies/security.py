@@ -10,6 +10,7 @@ from src.api.dependencies.database import SessionDep, UnitOfWorkDep
 from src.api.errors.exceptions import CsrfCheckFailedError
 from src.application.port.password_hasher import PasswordHasher
 from src.application.port.token.service import TokenService
+from src.application.port.token_hasher import TokenHasher
 from src.application.use_cases.session.create_account_session import CreateAccountSession
 from src.application.use_cases.session.refresh_account_session import (
     RefreshAccountSession,
@@ -25,6 +26,7 @@ from src.infrastructure.database.repositories.sqlalchemy_refresh_token_repositor
 )
 from src.infrastructure.security.password_hasher import PwdlibPasswordHasher
 from src.infrastructure.security.token.token_service import JWTTokenService
+from src.infrastructure.security.token_hasher import Sha256TokenHasher
 
 
 # ---------------------------------------------------------------------------
@@ -35,6 +37,16 @@ def get_password_hasher() -> PasswordHasher:
 
 
 PasswordHasherDep = Annotated[PasswordHasher, Depends(get_password_hasher)]
+
+
+# ---------------------------------------------------------------------------
+# Token Hasher
+# ---------------------------------------------------------------------------
+def get_token_hasher() -> TokenHasher:
+    return Sha256TokenHasher()
+
+
+TokenHasherDep = Annotated[TokenHasher, Depends(get_token_hasher)]
 
 
 # ---------------------------------------------------------------------------
@@ -164,8 +176,9 @@ RefreshTokenRepositoryDep = Annotated[
 def get_refresh_token_validator(
     refresh_token_repository: RefreshTokenRepositoryDep,
     token_service: TokenServiceDep,
+    token_hasher: TokenHasherDep,
 ) -> RefreshTokenValidator:
-    return RefreshTokenValidator(refresh_token_repository, token_service)
+    return RefreshTokenValidator(refresh_token_repository, token_service, token_hasher)
 
 
 RefreshTokenValidatorDep = Annotated[
@@ -179,8 +192,9 @@ RefreshTokenValidatorDep = Annotated[
 def get_create_account_session(
     refresh_token_repository: RefreshTokenRepositoryDep,
     token_service: TokenServiceDep,
+    token_hasher: TokenHasherDep,
 ) -> CreateAccountSession:
-    return CreateAccountSession(refresh_token_repository, token_service)
+    return CreateAccountSession(refresh_token_repository, token_service, token_hasher)
 
 
 CreateAccountSessionDep = Annotated[

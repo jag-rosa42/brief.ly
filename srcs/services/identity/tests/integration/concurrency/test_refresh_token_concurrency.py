@@ -39,6 +39,7 @@ from src.infrastructure.database.repositories.sqlalchemy_refresh_token_repositor
 )
 from src.infrastructure.database.unit_of_work import SqlAlchemyUnitOfWork
 from src.infrastructure.security.token.token_service import JWTTokenService
+from src.infrastructure.security.token_hasher import Sha256TokenHasher
 from tests.fixtures.factory import DEFAULT_ACCOUNT_PASSWORD, build_account
 
 
@@ -70,6 +71,7 @@ def committed_session(engine: Engine, committed_account: Account) -> AccountSess
         account_session = CreateAccountSession(
             SqlAlchemyRefreshTokenRepository(session),
             JWTTokenService(),
+            Sha256TokenHasher(),
         ).execute(committed_account.id)
         session.commit()
     return account_session
@@ -77,12 +79,13 @@ def committed_session(engine: Engine, committed_account: Account) -> AccountSess
 
 def _build_refresh_account_session(session: Session) -> RefreshAccountSession:
     token_service = JWTTokenService()
+    token_hasher = Sha256TokenHasher()
     repository = SqlAlchemyRefreshTokenRepository(session)
     return RefreshAccountSession(
         SqlAlchemyUnitOfWork(session),
-        RefreshTokenValidator(repository, token_service),
+        RefreshTokenValidator(repository, token_service, token_hasher),
         repository,
-        CreateAccountSession(repository, token_service),
+        CreateAccountSession(repository, token_service, token_hasher),
     )
 
 
