@@ -33,5 +33,5 @@ test-tmp: check-env
 
 ingest: check-env
 	@$(call print,$(CYAN_COLOR),[CONTENT MANAGEMENT] Ingesting articles...)
-	@python3 scripts/trigger_ingestion.py --url "$(CONTENT_MANAGEMENT_URL)" \
+	@uv run python scripts/trigger_ingestion.py --url "$(CONTENT_MANAGEMENT_URL)" \
 		--secret-file "$(NEWS_API_SECRET)"

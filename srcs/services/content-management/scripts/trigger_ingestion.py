@@ -12,11 +12,15 @@ INGESTION_PATH = "/internal/v1/ingestion-runs"
 DEFAULT_TIMEOUT = 600
 
 
+class TriggerError(Exception):
+    """A failure that should be reported to the script caller."""
+
+
 def _error_message(body: bytes) -> str:
     try:
         payload = json.loads(body)
     except UnicodeDecodeError, json.JSONDecodeError:
-        return body.decode("utf-8", errors="replace").strip()
+        return body.decode(encoding="utf-8", errors="replace").strip()
 
     if isinstance(payload, dict):
         error = payload.get("error")
@@ -25,24 +29,22 @@ def _error_message(body: bytes) -> str:
             message = error.get("message")
             if isinstance(code, str) and isinstance(message, str):
                 return f"{code}: {message}"
-    return body.decode("utf-8", errors="replace").strip()
+    return body.decode(encoding="utf-8", errors="replace").strip()
 
 
-def trigger(url: str, secret_file: Path, timeout: float = DEFAULT_TIMEOUT) -> int:
+def _validate_secret_file(secret_file: Path) -> None:
     if not secret_file.is_file():
-        print(f"NewsAPI key file is missing: {secret_file}", file=sys.stderr)
-        return 1
+        raise TriggerError(f"NewsAPI key file is missing: {secret_file}")
     try:
         if not secret_file.read_bytes().strip():
-            print(f"NewsAPI key file is empty: {secret_file}", file=sys.stderr)
-            return 1
+            raise TriggerError(f"NewsAPI key file is empty: {secret_file}")
     except OSError as exc:
-        print(
-            f"Cannot read NewsAPI key file {secret_file}: {exc.strerror}",
-            file=sys.stderr,
-        )
-        return 1
+        raise TriggerError(
+            f"Cannot read NewsAPI key file {secret_file}: {exc.strerror}"
+        ) from exc
 
+
+def _ingestion_endpoint(url: str) -> str:
     try:
         parsed = urlparse(url)
         _ = parsed.port  # Also validate a supplied port.
@@ -55,52 +57,63 @@ def trigger(url: str, secret_file: Path, timeout: float = DEFAULT_TIMEOUT) -> in
         or parsed.query
         or parsed.fragment
     ):
-        print(f"Invalid Content Management URL: {url}", file=sys.stderr)
-        return 1
-    endpoint = url.rstrip("/") + INGESTION_PATH
-    request = Request(endpoint, method="POST", headers={"Accept": "application/json"})
+        raise TriggerError(f"Invalid Content Management URL: {url}")
+    return url.rstrip("/") + INGESTION_PATH
+
+
+def _send_ingestion_request(endpoint: str, timeout: float) -> tuple[int, bytes]:
+    request = Request(url=endpoint, method="POST", headers={"Accept": "application/json"})
     opener = build_opener(ProxyHandler({}))
-
     try:
-        with opener.open(request, timeout=timeout) as response:
-            status_code = response.status
-            body = response.read()
+        with opener.open(fullurl=request, timeout=timeout) as response:
+            return response.status, response.read()
     except HTTPError as exc:
-        print(
-            f"Ingestion failed (HTTP {exc.code}): {_error_message(exc.read())}",
-            file=sys.stderr,
-        )
-        return 1
+        raise TriggerError(
+            f"Ingestion failed (HTTP {exc.code}): {_error_message(body=exc.read())}"
+        ) from exc
     except (OSError, URLError) as exc:
-        print(f"Cannot reach Content Management at {endpoint}: {exc}", file=sys.stderr)
-        return 1
+        raise TriggerError(
+            f"Cannot reach Content Management at {endpoint}: {exc}"
+        ) from exc
 
+
+def _parse_ingestion_result(status_code: int, body: bytes) -> str:
     if status_code != 201:
-        print(
-            f"Unexpected ingestion response (HTTP {status_code}): {_error_message(body)}",
-            file=sys.stderr,
+        raise TriggerError(
+            f"Unexpected ingestion response (HTTP {status_code}): {_error_message(body)}"
         )
-        return 1
     try:
         payload = json.loads(body)
     except UnicodeDecodeError, json.JSONDecodeError:
-        print("Invalid ingestion response: expected JSON.", file=sys.stderr)
-        return 1
+        raise TriggerError("Invalid ingestion response: expected JSON.") from None
     if not isinstance(payload, dict):
-        print("Invalid ingestion response: expected a status object.", file=sys.stderr)
-        return 1
+        raise TriggerError("Invalid ingestion response: expected a status object.")
     status = payload.get("status")
+    if status in ("succeeded", "partial"):
+        return status
+    raise TriggerError(f"Invalid ingestion status: {status!r}")
+
+
+def trigger(url: str, secret_file: Path, timeout: float = DEFAULT_TIMEOUT) -> int:
+    try:
+        _validate_secret_file(secret_file)
+        endpoint: str = _ingestion_endpoint(url)
+        status_code: int
+        body: bytes
+        status_code, body = _send_ingestion_request(endpoint, timeout)
+        status: str = _parse_ingestion_result(status_code, body)
+    except TriggerError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+
     if status == "succeeded":
         print("Ingestion succeeded.")
-        return 0
-    if status == "partial":
+    else:
         print(
             "Ingestion partially succeeded; check Content Management logs for failures.",
             file=sys.stderr,
         )
-        return 0
-    print(f"Invalid ingestion status: {status!r}", file=sys.stderr)
-    return 1
+    return 0
 
 
 def main() -> int:
@@ -110,7 +123,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT)
     args = parser.parse_args()
     if args.timeout <= 0:
-        parser.error("--timeout must be greater than zero")
+        parser.error(message="--timeout must be greater than zero")
     return trigger(args.url, args.secret_file, args.timeout)
 
 

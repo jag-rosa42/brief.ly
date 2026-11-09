@@ -4,6 +4,7 @@
 include .env
 include shared/mk/colors.mk
 include shared/mk/secrets.mk
+include shared/mk/ingest.mk
 
 NAME := Transcendence
 .DEFAULT_GOAL := help
@@ -112,7 +113,8 @@ help:
 	@printf "$(ROSE_COLOR)── 🐳 Dev Docker ─────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) docker                      $(CYAN_COLOR)Run the complete development stack in host Docker$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) docker SERVICE=<name>       $(CYAN_COLOR)Run one Compose service and its dependencies in host Docker$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) frontend-test               $(CYAN_COLOR)Run frontend tests in Docker$(DEFAULT_COLOR)\n\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) frontend-test               $(CYAN_COLOR)Run frontend tests in Docker$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ingest-docker               $(CYAN_COLOR)Trigger ingestion through content-management in the docker$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── 🚀 Production ─────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) prod                        $(CYAN_COLOR)Build and run the production stack inside the VM$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) secrets                     $(CYAN_COLOR)Create missing secrets$(DEFAULT_COLOR)\n\n"
@@ -242,31 +244,6 @@ run: check-service vm-databases
 	@$(call print,$(CYAN_COLOR),[SERVICE] Running $(SERVICE) locally with VM databases...)
 	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) ensure-databases -s
 	@$(MAKE) -C $(SERVICES_DIR)/$(SERVICE) run -s
-
-ingest:
-	@$(MAKE) -C $(SERVICES_DIR)/content-management $@ -s
-
-# Content Management has no published host port in Compose. Run the same HTTP
-# client inside its container, where both the service and its secret are present.
-ingest-docker:
-	@if ! $(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) exec -T content-management true >/dev/null 2>&1; then \
-		printf '[CONTENT MANAGEMENT] Container is not running. Start it with make docker SERVICE=content-management (or make vm SERVICE=content-management).\n' >&2; \
-		exit 1; \
-	fi
-	@$(call print,$(CYAN_COLOR),[CONTENT MANAGEMENT] Ingesting articles in Docker...)
-	@$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) exec -T content-management python scripts/trigger_ingestion.py \
-		--url http://127.0.0.1:8000 --secret-file /run/secrets/news_api_key
-
-# Do not start a VM just to trigger ingestion. Synchronize the client only after
-# verifying that the caller already has a running guest.
-ingest-vm:
-	@if ! $(VM_SSH) true >/dev/null 2>&1; then \
-		printf '[VM] VM is not running or SSH is unavailable. Start it with make vm SERVICE=content-management.\n' >&2; \
-		exit 1; \
-	fi
-	@$(MAKE) --no-print-directory vm-sync
-	@$(call print,$(CYAN_COLOR),[VM] Triggering Content Management ingestion in the guest...)
-	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && $(VM_REMOTE_ENV) make ingest-docker SECRETS_MODE=validate'
 
 #service testing
 test: check-service vm-databases
@@ -516,7 +493,7 @@ fclean-vm: launch-vm
 .PHONY: clean fclean logs down reset-db secrets check-service check-compose-service \
 		vm-databases \
 		frontend frontend-install frontend-build frontend-test \
-		dev dev-databases docker vm sync run ingest ingest-docker ingest-vm migration upgrade downgrade \
+		dev dev-databases docker vm sync run migration upgrade downgrade \
 		test lint typecheck shell list-services status clear-cache reinstall \
 		up build ps logs init-env create-vm launch-vm stop-vm debug-create-vm \
 		connect-vm vm-wait vm-sync prod prod-docker fclean-vm $(addsuffix -vm,$(VM_DOCKER_TARGETS))
