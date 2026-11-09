@@ -30,6 +30,23 @@ class SqlAlchemyAccountRepository:
         )
         return one_or_none(self._session, statement, self._to_domain)
 
+    def find_by_id_for_update(self, account_id: UUID) -> Account | None:
+        """Load an account and lock its row until the transaction ends.
+
+        Use SELECT ... FOR UPDATE, like the refresh tokens: a concurrent
+        transaction locking the same account waits until this one commits or
+        rolls back.
+        populate_existing ensures the returned model contains the latest database values,
+        even if it is already loaded in the session.
+        """
+        statement: Select[tuple[AccountModel]] = (
+            select(AccountModel)
+            .where(AccountModel.id == account_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        return one_or_none(self._session, statement, self._to_domain)
+
     @staticmethod
     def _to_domain(model: AccountModel) -> Account:
         return Account(
