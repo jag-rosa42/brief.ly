@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Iterator
 from contextlib import contextmanager
 from http import HTTPStatus
@@ -12,6 +13,10 @@ from src.application.models.article import Article
 from src.application.summarize_topics import TOPIC_SUMMARY_GROUP_SIZE
 from src.domain.value_objects.article_assessment import ArticleAssessment
 from src.domain.value_objects.summary import Summary
+
+logger = logging.getLogger(__name__)
+SENTENCE_TERMINATORS = (".", "!", "?", "…", "。", "\uff01", "\uff1f")
+TRAILING_CLOSERS = '"”\u2019)]'
 
 # Keep prompt limits and local validation in sync with the API contract.
 TOPIC_MIN_INPUT_SUMMARIES = 2
@@ -45,7 +50,10 @@ ARTICLE_SYSTEM_PROMPT = (
     f"quality_comment (1 to {ArticleAssessment.MAX_QUALITY_COMMENT_LENGTH} characters) "
     "to state why it "
     "is usable. An accepted article must have a non-null, "
-    "non-empty summary. Do not add facts. If rejected, set "
+    "non-empty summary. Do not add facts. "
+    "Before returning, check that an accepted summary ends with a complete "
+    "sentence; rewrite it if it stops mid-sentence. "
+    "If rejected, set "
     "rejected to true, name the failed condition in "
     f"quality_comment (1 to {ArticleAssessment.MAX_QUALITY_COMMENT_LENGTH} characters), "
     "and set summary "
@@ -100,6 +108,8 @@ class OllamaChatChunk(BaseModel):
 
     message: OllamaChatMessage | None = None
     done: bool = False
+    done_reason: str | None = None
+    eval_count: int | None = None
     error: str | None = None
 
 
@@ -134,6 +144,10 @@ class OllamaSummarizerClient:
             answer_name="decision",
             provider_error_name="summary",
         )
+        if not decision.rejected and not (decision.summary or "").rstrip(
+            TRAILING_CLOSERS
+        ).endswith(SENTENCE_TERMINATORS):
+            raise ValueError("Ollama returned an unfinished article summary")
 
         return ArticleAssessment(
             rejected=decision.rejected,
@@ -208,6 +222,8 @@ class OllamaSummarizerClient:
     ) -> str:
         content_chunks: list[str] = []
         finished = False
+        done_reason: str | None = None
+        eval_count: int | None = None
         with self._stream_chat(body) as response:
             for line in response.iter_lines():
                 if not line:
@@ -221,9 +237,20 @@ class OllamaSummarizerClient:
                     content_chunks.append(chunk.message.content)
                 if chunk.done:
                     finished = True
+                    done_reason = chunk.done_reason
+                    eval_count = chunk.eval_count
                     break
 
         answer_text = "".join(content_chunks).strip()
+        if finished:
+            logger.info(
+                "Ollama %s completed: done_reason=%s eval_count=%s",
+                answer_name,
+                done_reason,
+                eval_count,
+            )
+        if done_reason not in (None, "stop"):
+            raise ValueError(f"Ollama stopped generating a {answer_name}: {done_reason}")
         if not finished or not answer_text:
             raise ValueError(f"Ollama returned an incomplete or empty {answer_name}")
         return answer_text

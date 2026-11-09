@@ -47,7 +47,9 @@ group fails, it uses the first article summary. Content Management read or write
 failures still stop the worker. There is no retry counter. On another run,
 articles with a stored assessment are skipped, including rejected articles.
 Topic summaries are recomputed on each run. The worker does not log article text
-or tokens.
+or tokens. It logs Ollama's completion reason and generated-token count. A
+non-stop completion or an accepted summary without sentence-ending punctuation
+counts as a generation failure, so the article is stored as rejected.
 
 ## Test the local Ollama API
 
