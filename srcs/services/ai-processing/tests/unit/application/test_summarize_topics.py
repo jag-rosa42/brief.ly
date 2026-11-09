@@ -7,7 +7,7 @@ from src.application.models.topic_article_summary import (
     TopicArticleSummary,
 )
 from src.application.summarize_articles_and_topics import SummarizeArticlesAndTopics
-from src.application.summarize_topics import SummarizeTopics
+from src.application.summarize_topics import EMPTY_TOPIC_SUMMARY, SummarizeTopics
 from tests.model import DEFAULT_MODEL
 
 
@@ -15,11 +15,16 @@ def article_summary(number: int) -> TopicArticleSummary:
     return TopicArticleSummary(UUID(int=number), f"summary-{number}")
 
 
-def test_reads_one_list_and_combines_summaries_in_bounded_groups() -> None:
+def test_reads_one_list_and_combines_summaries_in_bounded_groups(monkeypatch) -> None:
+    times = iter((10.0, 10.1234))
+    monkeypatch.setattr(
+        "src.application.summarize_topics.perf_counter", lambda: next(times)
+    )
+
     class ContentManagement:
         def __init__(self) -> None:
             self.reads: list[tuple[str, int]] = []
-            self.writes: list[tuple[str, str, str]] = []
+            self.writes: list[tuple[str, str, str, int]] = []
 
         def list_topics(self) -> list[str]:
             return ["technology", "science"]
@@ -32,8 +37,10 @@ def test_reads_one_list_and_combines_summaries_in_bounded_groups() -> None:
                 return []
             return [article_summary(number) for number in (5, 2, 1, 4, 3)]
 
-        def save_topic_summary(self, topic_id: str, summary: str, llm_model: str) -> None:
-            self.writes.append((topic_id, summary, llm_model))
+        def save_topic_summary(
+            self, topic_id: str, summary: str, llm_model: str, generation_duration_ms: int
+        ) -> None:
+            self.writes.append((topic_id, summary, llm_model, generation_duration_ms))
 
     class Summarizer:
         def __init__(self) -> None:
@@ -57,10 +64,12 @@ def test_reads_one_list_and_combines_summaries_in_bounded_groups() -> None:
         ("technology", ["[summary-1|summary-2|summary-3|summary-4]", "summary-5"]),
     ]
     assert content_management.writes == [
+        ("science", EMPTY_TOPIC_SUMMARY, DEFAULT_MODEL, 0),
         (
             "technology",
             "[[summary-1|summary-2|summary-3|summary-4]|summary-5]",
             DEFAULT_MODEL,
+            123,
         ),
     ]
 
@@ -80,7 +89,9 @@ def test_duplicate_article_stops_before_topic_write() -> None:
             self.calls += 1
             return [article_summary(1), article_summary(1)]
 
-        def save_topic_summary(self, topic_id: str, summary: str, llm_model: str) -> None:
+        def save_topic_summary(
+            self, topic_id: str, summary: str, llm_model: str, generation_duration_ms: int
+        ) -> None:
             self.written = True
 
     class Summarizer:
@@ -110,7 +121,9 @@ def test_topic_with_25_articles_uses_one_read() -> None:
             assert limit == 25
             return [article_summary(number) for number in range(1, 26)]
 
-        def save_topic_summary(self, topic_id: str, summary: str, llm_model: str) -> None:
+        def save_topic_summary(
+            self, topic_id: str, summary: str, llm_model: str, generation_duration_ms: int
+        ) -> None:
             self.written = summary
 
     class Summarizer:
@@ -138,7 +151,9 @@ def test_missing_article_summary_stops_before_topic_write() -> None:
         ) -> list[TopicArticleSummary]:
             return [TopicArticleSummary(UUID(int=1), None)]
 
-        def save_topic_summary(self, topic_id: str, summary: str, llm_model: str) -> None:
+        def save_topic_summary(
+            self, topic_id: str, summary: str, llm_model: str, generation_duration_ms: int
+        ) -> None:
             self.written = True
 
     class Summarizer:

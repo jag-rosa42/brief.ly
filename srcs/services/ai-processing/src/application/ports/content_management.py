@@ -21,4 +21,10 @@ class TopicContentManagementPort(Protocol):
         self, topic_id: str, limit: int
     ) -> list[TopicArticleSummary]: ...
 
-    def save_topic_summary(self, topic_id: str, summary: str, llm_model: str) -> None: ...
+    def save_topic_summary(
+        self,
+        topic_id: str,
+        summary: str,
+        llm_model: str,
+        generation_duration_ms: int,
+    ) -> None: ...
