@@ -1,10 +1,13 @@
 from dataclasses import dataclass
 from datetime import datetime
+from typing import override
 from uuid import UUID
+
+from src.domain.entities.revocable import RevocableMixin
 
 
 @dataclass
-class RefreshToken:
+class RefreshToken(RevocableMixin):
     id: UUID  # the JWT's `jti`
     account_id: UUID  # the JWT's `sub`
     token_hash: str  # SHA-256 hash of the raw refresh token
@@ -13,21 +16,19 @@ class RefreshToken:
     revoked_at: datetime | None = None
     replaced_by: UUID | None = None
 
-    def is_revoked(self) -> bool:
-        return self.revoked_at is not None
-
-    def is_expired(self, now: datetime) -> bool:
-        return now >= self.expires_at
-
+    @override
     def revoke(
         self,
         now: datetime,
         replaced_by: UUID | None = None,
     ) -> None:
         if self.is_revoked():
+            # Keep the first revocation: don't overwrite replaced_by. The
+            # parent's revoke() checks too, but returning here is what
+            # protects replaced_by, which the parent doesn't know about.
             return
 
-        self.revoked_at: datetime = now
+        super().revoke(now)
         self.replaced_by: UUID | None = replaced_by
 
     def was_rotated(self) -> bool:

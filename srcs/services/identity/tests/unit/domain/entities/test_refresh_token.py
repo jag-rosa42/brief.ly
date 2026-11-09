@@ -71,7 +71,6 @@ class TestRefreshToken:
 
         assert token.was_rotated() is True
 
-
     def test_was_rotated_is_false_when_revoked_without_replacement(self) -> None:
         token = build_refresh_token()
 
@@ -80,6 +79,14 @@ class TestRefreshToken:
         assert token.is_revoked() is True
         assert token.was_rotated() is False
 
-
     def test_was_rotated_is_false_for_an_active_token(self) -> None:
         assert build_refresh_token().was_rotated() is False
+
+    def test_is_active_until_revoked(self) -> None:
+        # Given by RevocableMixin, like for API keys.
+        token = build_refresh_token()
+        now = datetime.now(UTC)
+
+        assert token.is_active(now) is True
+        token.revoke(now)
+        assert token.is_active(now) is False
