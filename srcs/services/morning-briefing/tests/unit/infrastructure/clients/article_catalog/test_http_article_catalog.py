@@ -4,7 +4,7 @@ from uuid import UUID
 
 import httpx2 as httpx
 import pytest
-from shared_auth import DownstreamError
+from shared_auth import DownstreamClient, DownstreamError
 from shared_errors import InfrastructureError
 
 from src.application.exceptions import ArticleCatalogUnavailableError
@@ -13,8 +13,8 @@ from src.infrastructure.clients.article_catalog.http_article_catalog import (
     ARTICLES_PATH,
     HttpArticleCatalog,
 )
-from src.infrastructure.clients.token_provider import TokenProvider
-from tests.fakes import FakeTokenProvider
+from src.infrastructure.clients.service_token_provider import ServiceTokenProvider
+from tests.fakes import FakeServiceTokenProvider
 
 BASE_URL = "http://content-management"
 ARTICLE_ID = UUID("6f1c1b2e-1d2a-4c3b-9a8e-111111111111")
@@ -37,13 +37,13 @@ ARTICLE_JSON: dict[str, Any] = {
 
 def _catalog(
     handler: Callable[[httpx.Request], httpx.Response],
-    token_provider: TokenProvider | None = None,
+    token_provider: ServiceTokenProvider | None = None,
 ) -> HttpArticleCatalog:
     """Build a catalog whose HTTP calls are answered by `handler` instead of CM."""
-    client = httpx.Client(transport=httpx.MockTransport(handler), base_url=BASE_URL)
-    return HttpArticleCatalog(
-        BASE_URL, token_provider or FakeTokenProvider(), client=client
+    client = DownstreamClient(
+        "content-management", BASE_URL, transport=httpx.MockTransport(handler)
     )
+    return HttpArticleCatalog(client, token_provider or FakeServiceTokenProvider())
 
 
 def test_list_by_topic_returns_the_articles() -> None:
@@ -118,7 +118,7 @@ def test_list_by_topic_sends_the_service_token() -> None:
         requests.append(request)
         return httpx.Response(200, json={"items": [ARTICLE_JSON]})
 
-    _catalog(handler, FakeTokenProvider(token="abc")).list_by_topic("technology")
+    _catalog(handler, FakeServiceTokenProvider(token="abc")).list_by_topic("technology")
 
     assert requests[0].headers["Authorization"] == "Bearer abc"
 
@@ -141,8 +141,19 @@ def test_list_by_topic_raises_without_calling_content_management_when_no_token(
         return httpx.Response(200, json={"items": [ARTICLE_JSON]})
 
     with pytest.raises(ArticleCatalogUnavailableError):
-        _catalog(handler, FakeTokenProvider(error=token_error)).list_by_topic(
+        _catalog(handler, FakeServiceTokenProvider(error=token_error)).list_by_topic(
             "technology"
         )
 
     assert requests == []
+
+
+def test_list_by_topic_raises_when_our_service_token_expired() -> None:
+    """Content Management's 401 TOKEN_EXPIRED is about our service token: it
+    becomes "unavailable", never the user's TOKEN_EXPIRED."""
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(401, json={"error": {"code": "TOKEN_EXPIRED"}})
+
+    with pytest.raises(ArticleCatalogUnavailableError):
+        _catalog(handler).list_by_topic("technology")
