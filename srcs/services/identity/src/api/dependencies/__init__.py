@@ -4,6 +4,11 @@ from src.api.dependencies.account import (
     LogoutAccountDep,
     RegisterAccountDep,
 )
+from src.api.dependencies.api_key import (
+    ApiKeyGeneratorDep,
+    ApiKeyRepositoryDep,
+    CreateApiKeyDep,
+)
 from src.api.dependencies.database import SessionDep, UnitOfWorkDep
 from src.api.dependencies.security import (
     AccessTokenDep,
@@ -21,7 +26,10 @@ from src.api.dependencies.security import (
 __all__: list[str] = [
     "AccessTokenDep",
     "AntiCsrfGuard",
+    "ApiKeyGeneratorDep",
+    "ApiKeyRepositoryDep",
     "CreateAccountSessionDep",
+    "CreateApiKeyDep",
     "CurrentAccountDep",
     "LoginAccountDep",
     "LogoutAccountDep",

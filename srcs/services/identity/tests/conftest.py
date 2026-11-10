@@ -22,6 +22,9 @@ pytest_plugins: list[str] = [
     # Service clients (client credentials)
     "tests.fixtures.oauth",
 
+    # API keys depend on accounts and the unit of work
+    "tests.fixtures.api_keys",
+
     # Infrastructure fixtures
     "tests.fixtures.database",
     "tests.fixtures.http",

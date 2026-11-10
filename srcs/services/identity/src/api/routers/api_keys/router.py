@@ -1,0 +1,54 @@
+from fastapi import APIRouter, Response, status
+from shared_errors import ErrorResponse
+
+from src.api.dependencies import CurrentAccountDep
+from src.api.dependencies.api_key import (
+    CreateApiKeyDep,
+)
+from src.api.schemas.api_key import (
+    CreateApiKeyRequest,
+    CreatedApiKeyResponse,
+)
+from src.application.use_cases.api_keys.create_api_key import CreatedApiKey
+
+router = APIRouter(
+    prefix="/api-keys",
+    tags=["api-keys"],
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {
+            "model": ErrorResponse,
+            "description": "INVALID_TOKEN or TOKEN_EXPIRED",
+        },
+    },
+)
+
+
+@router.post(
+    path="",
+    status_code=status.HTTP_201_CREATED,
+    response_model=CreatedApiKeyResponse,
+    responses={
+        status.HTTP_409_CONFLICT: {
+            "model": ErrorResponse,
+            "description": "API_KEY_LIMIT_REACHED (already 5 active keys)",
+        },
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "model": ErrorResponse,
+            "description": "VALIDATION_ERROR",
+        },
+    },
+)
+def create_api_key(
+    body: CreateApiKeyRequest,
+    current_account: CurrentAccountDep,
+    create_api_key: CreateApiKeyDep,
+    response: Response,
+) -> CreatedApiKeyResponse:
+    created: CreatedApiKey = create_api_key.execute(
+        account_id=current_account.id,
+        name=body.name,
+        scopes=frozenset(body.scopes),
+    )
+    # The body holds a secret, shown once: no cache may keep a copy.
+    response.headers["Cache-Control"] = "no-store"
+    return CreatedApiKeyResponse.from_created(created)
