@@ -60,6 +60,10 @@ entrypoints:
   ping:
     address: ":8082"
 
+  # Prometheus scrapes this port on the edge network; Compose does not publish it.
+  metrics:
+    address: ":9092"
+
 # =============================================================================
 # HEALTH CHECK
 # =============================================================================
@@ -114,3 +118,6 @@ accessLog:
 # =============================================================================
 # METRICS (Prometheus)
 # =============================================================================
+metrics:
+  prometheus:
+    entryPoint: metrics
