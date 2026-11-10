@@ -21,8 +21,18 @@ router = APIRouter(
     status_code=status.HTTP_200_OK,
     response_model=ServiceTokenResponse,
     responses={
-        status.HTTP_400_BAD_REQUEST: {"model": ErrorResponse},
-        status.HTTP_401_UNAUTHORIZED: {"model": ErrorResponse},
+        status.HTTP_400_BAD_REQUEST: {
+            "model": ErrorResponse,
+            "description": "UNSUPPORTED_GRANT_TYPE or INVALID_SCOPE",
+        },
+        status.HTTP_401_UNAUTHORIZED: {
+            "model": ErrorResponse,
+            "description": "INVALID_CLIENT",
+        },
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "model": ErrorResponse,
+            "description": "VALIDATION_ERROR (grant_type or audience missing)",
+        },
     },
 )
 def create_token(
