@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { Division } from "@/shared/components/Division";
 import { Text } from "@/shared/components/Text";
@@ -9,7 +9,7 @@ import { Spinner } from "@/shared/components/Spinner";
 import { useBriefing } from "@/features/briefing/hooks/useBriefing";
 import type { TopicCluster } from "@/features/briefing/types";
 import { toArticle, topicLabel } from "@/shared/utils/article";
-
+import { Button } from "@/shared/components/Button";
 interface TopicPanelProps {
 	cluster: TopicCluster;
 	isSaved: (id: string) => boolean;
@@ -64,20 +64,28 @@ function DashboardHeader({ firstName, today }: DashboardHeaderProps) {
 }
 
 function TopicPanel({ cluster, isSaved, onToggleSave, onReadMore }: TopicPanelProps) {
+	const scrollRef = useRef<HTMLDivElement>(null);
 	const articles = cluster.articles.map(toArticle);
 
+	function scrollByCard(direction: 1 | -1) {
+		scrollRef.current?.scrollBy({ left: direction * 344, behavior: "smooth" });
+	}
 	let stories;
 	if (articles.length > 0) {
 		stories = (
-			<div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+			<div
+				ref={scrollRef}
+				className="flex gap-6 overflow-x-auto snap-x snap-mandatory px-1 pt-1 pb-4"
+			>
 				{articles.map((article) => (
-					<ArticleCard
-						key={article.id}
-						article={article}
-						isSaved={isSaved(article.id)}
-						onReadMore={() => onReadMore(article)}
-						onToggleSave={() => onToggleSave(article.id)}
-					/>
+					<div key={article.id} className="flex w-80 shrink-0 snap-start">
+						<ArticleCard
+							article={article}
+							isSaved={isSaved(article.id)}
+							onReadMore={() => onReadMore(article)}
+							onToggleSave={() => onToggleSave(article.id)}
+						/>
+					</div>
 				))}
 			</div>
 		);
@@ -99,11 +107,33 @@ function TopicPanel({ cluster, isSaved, onToggleSave, onReadMore }: TopicPanelPr
 			</Division>
 
 			<section className="flex flex-col gap-4">
-				<div>
-					<Text variant="subheading">Stories to know</Text>
-					<Text variant="body" className="text-info">
-						Curated from your trusted sources
-					</Text>
+				<div className="flex items-end justify-between gap-4">
+					<div>
+						<Text variant="subheading">Stories to know</Text>
+						<Text variant="body" className="text-info">
+							Curated from your trusted sources
+						</Text>
+					</div>
+					{articles.length > 0 && (
+						<div className="flex gap-2">
+							<Button
+								type="button"
+								variant="primary"
+								aria-label="Previous stories"
+								onClick={() => scrollByCard(-1)}
+							>
+								←
+							</Button>
+							<Button
+								type="button"
+								variant="primary"
+								aria-label="Next stories"
+								onClick={() => scrollByCard(1)}
+							>
+								→
+							</Button>
+						</div>
+					)}
 				</div>
 
 				{stories}

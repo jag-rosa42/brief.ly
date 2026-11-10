@@ -25,7 +25,7 @@ export function ArticleCard({
 	return (
 		<Division
 			variant="dashboardcard"
-			className={`relative flex w-full cursor-pointer shadow-sm transition hover:-translate-y-0.5 hover:shadow-soft-hover ${className ?? ""}`}
+			className={`relative flex h-full w-full cursor-pointer shadow-sm transition hover:-translate-y-0.5 hover:shadow-soft-hover ${className ?? ""}`}
 		>
 			<div className="flex items-center justify-between gap-2">
 				<Text variant="label" className="text-accent">
@@ -35,7 +35,9 @@ export function ArticleCard({
 					{readingTime} min read
 				</Text>
 			</div>
-			<Text variant="subheading">{article.title}</Text>
+			<Text variant="subheading" className="line-clamp-4 min-h-[7rem]" title={article.title}>
+				{article.title}
+			</Text>
 
 			<Text variant="body" className="line-clamp-3 text-accent/80">
 				{article.summary}

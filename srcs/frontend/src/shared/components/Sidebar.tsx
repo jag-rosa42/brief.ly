@@ -12,7 +12,7 @@ interface SidebarProps {
 
 export function Sidebar({ tabs, activeTab, onSelectTab, onDisconnect }: SidebarProps) {
 	return (
-		<aside className="flex flex-col gap-8 h-screen sticky top-0 overflow-y-auto shrink-0 px-6 py-4 border-r border-secondary">
+		<aside className="flex flex-col gap-8 h-screen sticky top-0 overflow-y-auto shrink-0 w-56 px-6 py-4 border-r border-secondary">
 			<Logo />
 			<Tabs tabs={tabs} variant="side" activeValue={activeTab} onTabChange={onSelectTab} />
 
