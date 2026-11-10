@@ -4,6 +4,7 @@ from shared_errors import register_shared_exception_handlers
 
 from src.api.routers import root_routers
 from src.infrastructure.config.app import app_settings
+from src.infrastructure.metrics.http import configure_http_metrics
 
 
 def create_app() -> FastAPI:
@@ -21,6 +22,8 @@ def create_app() -> FastAPI:
     app.include_router(root_routers)
 
     register_shared_exception_handlers(app)
+
+    configure_http_metrics(app)
 
     return app
 
