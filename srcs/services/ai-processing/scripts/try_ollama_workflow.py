@@ -6,10 +6,12 @@ From the ai-processing container in the VM:
 
 import argparse
 import json
+from contextlib import closing
 from dataclasses import dataclass
 from uuid import UUID
 
 import httpx2 as httpx
+from shared_auth import DownstreamClient
 
 from src.infrastructure.config.worker import WorkerSettings
 from src.worker import run_worker
@@ -18,6 +20,15 @@ ARTICLE_ID = UUID("123e4567-e89b-12d3-a456-426614174030")
 TOPIC_ID = "technology"
 DEFAULT_OLLAMA_URL = "http://10.0.2.2:11434"
 DEFAULT_MODEL = WorkerSettings().OLLAMA_MODEL
+
+
+class StaticTokenProvider:
+    """A fixed service token: Content Management is faked here, so no Identity."""
+
+    def get_token(self) -> str:
+        return "service-token"
+
+
 ARTICLE_SOURCE_URL = "https://openai.com/index/gpt-4o-and-more-tools-to-chatgpt-free/"
 ARTICLE_ADDITIONAL_SOURCE_URL = "https://openai.com/index/hello-gpt-4o/"
 ARTICLE = {
@@ -127,13 +138,16 @@ def run_one_article(ollama_url: str, model: str) -> FakeContentManagement:
     )
     fake = FakeContentManagement()
     with (
-        httpx.Client(
-            base_url=settings.CONTENT_MANAGEMENT_BASE_URL,
-            transport=httpx.MockTransport(fake.respond),
+        closing(
+            DownstreamClient(
+                "content-management",
+                settings.CONTENT_MANAGEMENT_BASE_URL,
+                transport=httpx.MockTransport(fake.respond),
+            )
         ) as content_client,
         httpx.Client(base_url=settings.OLLAMA_BASE_URL) as ollama_client,
     ):
-        run_worker(settings, content_client, ollama_client)
+        run_worker(settings, content_client, ollama_client, StaticTokenProvider())
 
     return fake
 
