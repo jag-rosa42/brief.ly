@@ -6,6 +6,8 @@ How the services call each other, which token each call uses, and how summaries 
 
 The browser and third-party programs only ever talk to Traefik. Traefik reaches Identity, Personalization, Morning Briefing, AI Processing (its two digest routes only, ADR-0011) and the frontend (`edge` network). Services call each other directly (`backend` network). Content Management is only on `backend`.
 
+Monitoring (dotted lines) is its own Compose project (`compose.monitoring.yaml`) on the same networks. Prometheus scrapes the gateway, the five services, Pushgateway and Blackbox Exporter every 15 s (`srcs/monitoring/prometheus.yml`). The AI worker pushes its last-run metrics to Pushgateway, since it exits before a scrape. Blackbox probes the gateway over HTTPS and each service's `/health`. Grafana reads Prometheus. It is not routed by the gateway: it is reachable from the host only, on `127.0.0.1:3000`. None of this uses a token.
+
 ```mermaid
 flowchart TD
   FE["Browser<br/>React app"] -- "/api/&lt;service&gt;/..." --> GW
@@ -34,6 +36,23 @@ flowchart TD
   AI -- "reads articles, writes summaries (service token)" --> CM
   AI -- "digest: profile (forwarded token)" --> PE
   AI -- "digest: topic summaries (service token)" --> CM
+
+  subgraph monitoring ["monitoring project: edge and backend networks"]
+    GF["Grafana<br/>dashboards, alerts"]
+    PR["Prometheus<br/>scrapes every 15 s"]
+    PG["Pushgateway<br/>worker last run"]
+    BB["Blackbox Exporter<br/>HTTPS and /health probes"]
+  end
+
+  OP["Team member<br/>host 127.0.0.1:3000"] --> GF
+  GF -- "PromQL" --> PR
+  PR -. "/metrics :9092" .-> GW
+  PR -. "/metrics" .-> edge
+  PR -. "/metrics" .-> CM
+  PR -.-> PG
+  PR -.-> BB
+  AI -. "push after each run" .-> PG
+  BB -. "probe https://gateway:8443" .-> GW
 ```
 
 | Caller | Callee | Endpoint | Token | Why |

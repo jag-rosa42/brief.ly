@@ -5,6 +5,11 @@ loss of its VM. The initial target is one backup per day, at most 24 hours of
 data loss (RPO), and restoration within 4 hours (RTO). The RTO is a target
 until a timed restore drill demonstrates it.
 
+In short: `make backup` (or `make backup-schedule`) on the host while the full
+stack runs, keep the backup password and the secrets in a second place, and
+`make backup-restore BACKUP_SET=<set>` to rebuild the VM from a set (see the
+[recovery runbook](#recovery-runbook-recreate-the-configured-vm)).
+
 ## Backup location and retention
 
 - The protected environment is the project VM. Backups must be stored on its
@@ -12,12 +17,22 @@ until a timed restore drill demonstrates it.
   `BACKUP_HOST_DIR` in the host's root `.env`. This is a host path, not a path
   inside the guest. The completed encrypted backup sets must remain
   accessible after the VM stops.
-- The host `.env` sets `PROJECT_STORAGE_DIR` (the project directory by default)
-  and explicitly derives `VM_DIR` and `BACKUP_HOST_DIR` beneath
-  it. Git and `vm-sync` exclude these directories. Changing the storage root
+- The host `.env` sets `PROJECT_STORAGE_DIR` (`/goinfre/$(USER)/transcendence`
+  in `.env.example`; the backup script falls back to the project directory
+  only when the variable is missing) and derives `VM_DIR` and
+  `BACKUP_HOST_DIR` beneath it. When they are inside the repository, Git
+  (`vm/`, `backups/`) and `vm-sync` exclude them. Changing the storage root
   changes the configured paths but does not move existing disks or backup sets;
-  move or retain them deliberately, then reinstall the backup schedule so its
-  log points to the new backup directory.
+  move or retain them deliberately, then restart `make backup-schedule` so its
+  log goes to the new backup directory.
+- **Same disk as the VM.** By default the backups and the VM disk are both
+  under `PROJECT_STORAGE_DIR`, on the same host disk. This protects against
+  losing or corrupting the VM, not against losing that disk or that computer
+  (a 42 `goinfre` is local to one computer and can be wiped). Copy the
+  completed sets (each `.enc` with its `.json`) to another place after each
+  important backup, for example a USB drive or another computer, or point
+  `BACKUP_HOST_DIR` at a different disk. The copies stay encrypted; the
+  password is needed to restore them.
 - **Retention:** keep one completed backup set from each of the latest 7 days,
   4 weeks, and 3 months with successful runs. A set can satisfy more than one
   period. Each set must contain the database dumps, cluster globals, and a
@@ -66,8 +81,11 @@ so the backup password stays on the host. The script also reads
 It connects to the VM through the existing SSH port,
 dumps every non-template database and cluster globals from `pgsql` and
 `pgvector`, then stops Prometheus briefly while copying its TSDB. It restarts
-Prometheus even if copying fails. If Prometheus has not yet been integrated,
-`make backup` fails without publishing a completed set. The backup set is an
+Prometheus even if copying fails. The VM must be running with the **full
+stack**, monitoring included (`make vm-full-stack`, `make all`, or
+`make monitoring-up-vm`): without a `prometheus` container, `make backup`
+fails without publishing a completed set. `make vm-app` stops monitoring, so
+backups fail after it. The backup set is an
 encrypted `.enc` file with a small authentication `.json` sidecar; both are
 needed to verify and restore it. `make backup-extract` verifies and decrypts a
 chosen set into a **new** host directory with private permissions. It refuses
@@ -97,7 +115,18 @@ been tested.
 Run `make backup-schedule` on the **host**. This starts a foreground Python
 scheduler that runs `make backup` immediately and then every five minutes.
 Use `make backup-schedule BACKUP_INTERVAL=600` for a different interval in
-seconds. No cron installation is needed. Keep the process running in a terminal
+seconds. No cron installation is needed.
+
+Five minutes suits a demonstration, not daily use: every run stores a full set
+(all databases and the whole Prometheus history), stops Prometheus for a
+moment, and nothing deletes old sets automatically, so the backup directory
+grows by 288 sets a day. The 24-hour RPO only needs one run a day:
+
+```sh
+make backup-schedule BACKUP_INTERVAL=86400   # once a day
+make backup-prune                             # check the report, then:
+make backup-prune APPLY=1
+``` Keep the process running in a terminal
 or a persistent terminal session such as tmux. It does not start automatically
 after reboot, and cannot run while the host is asleep or powered off.
 
@@ -109,9 +138,9 @@ missed intervals instead of overlapping. A host file lock prevents a second
 scheduler using the same backup directory. Ctrl+C or SIGTERM stops the scheduler
 after any active backup finishes. No automatic pruning is performed.
 
-If you installed the previous cron schedule, remove its line ending with
-`# ft_transcendance backup` using `crontab -e` once before starting this script.
-Leave unrelated cron entries intact; the new scheduler never uses crontab.
+An earlier version installed a cron entry. If your crontab still has a line
+ending with `# ft_transcendance backup`, remove it with `crontab -e` before
+starting the scheduler; leave other entries alone.
 
 Every `make backup` run atomically writes `BACKUP_HOST_DIR/backup-status.json`
 with the last run time, outcome, last success time, and completed set name. The
@@ -142,12 +171,12 @@ Archive verification checks integrity; periodically test restoring a set too.
 | --- | --- | --- |
 | `pgsql` (PostgreSQL 18) | All non-template databases, currently `identity_db`, `personalization_db`, `content_management_db`, and `morning_briefing_db`; cluster globals/roles and permissions | Compare the database list from the running `pgsql` instance with the backup manifest. Include any database added later, rather than relying only on this list. |
 | `pgvector` (PostgreSQL 18 with pgvector) | All non-template databases, currently `ai_processing_db`; cluster globals/roles and permissions | Compare the database list from the running `pgvector` instance with the backup manifest. The restore target must have compatible pgvector support. |
-| Prometheus history (after integration) | The retained time-series data in Prometheus's `prometheus_data` volume | Create a consistent TSDB snapshot, transfer it to the host, and include it in the same encrypted backup set as the databases. Verify a restored Prometheus can query data from before the backup. Never copy the live data directory while Prometheus is writing. |
-| Versioned deployment files | The Git commit containing `compose.yaml`, its overrides, Makefiles, VM provisioning, gateway configuration, database migrations, and (after integration) Grafana and Prometheus provisioning | Record the deployed commit with each backup or restore drill. Recover these files from Git at that revision. |
+| Prometheus history | The retained time-series data in Prometheus's `prometheus_data` volume | Create a consistent TSDB snapshot, transfer it to the host, and include it in the same encrypted backup set as the databases. Verify a restored Prometheus can query data from before the backup. Never copy the live data directory while Prometheus is writing. |
+| Versioned deployment files | The Git commit containing `compose.yaml`, its overrides, Makefiles, VM provisioning, gateway configuration, database migrations, `compose.monitoring.yaml`, and the Grafana and Prometheus provisioning in `srcs/monitoring/` | Record the deployed commit with each backup or restore drill. Recover these files from Git at that revision. |
 | Unversioned configuration | Root `.env` and the five `srcs/services/*/.env` files, plus the host's VM SSH access details | Keep a protected operator copy outside Git and the VM. The `.env.example` files document names and defaults but may not reproduce actual deployed settings. |
 | Application secrets | `shared/secrets/postgres_password`, `jwt_private_key`, `jwt_public_key`, `news_api_key`, `certs/localhost.pem`, `certs/localhost-key.pem`, `services/personalization_client_secret`, `services/morning_briefing_client_secret`, and `services/ai_processing_client_secret` | Keep a protected operator copy outside Git and the VM. Check that each file needed by Compose exists before starting the restored stack; never put its contents in a backup log or manifest. |
-| Monitoring access (after integration) | Grafana administrator password secret and configured administrator username | Restore or rotate these to regain team access to the provisioned Grafana view. Local Grafana users are not preserved. |
-| Backup access | Encryption password and host access to `BACKUP_HOST_DIR` | Keep independent protected copies outside Git and the VM. Without the password, the encrypted backup sets cannot be recovered. |
+| Monitoring access | `shared/secrets/grafana_admin_password` and `GRAFANA_ADMIN_USER` from the root `.env` | Restore or rotate these to regain team access to the provisioned Grafana view. Local Grafana users are not preserved. |
+| Backup access | Encryption password (`BACKUP_PASSWORD_FILE`, `shared/secrets/backup_password` by default) and host access to `BACKUP_HOST_DIR` | Keep independent protected copies outside Git and the VM. Without the password, the encrypted backup sets cannot be recovered. |
 
 The PostgreSQL password must match the restored roles and application
 configuration. Rotating the JWT key invalidates existing tokens; rotating
@@ -156,21 +185,24 @@ For a fresh VM, the development TLS certificate can be recreated; a deployed
 certificate needs its own renewal or replacement procedure.
 
 **Monitoring decision:** the provisioned Grafana dashboards, alerts, and data
-sources in Git are sufficient for recovery after the monitoring branch is
-integrated. Mutable Grafana data, including UI-only changes and local users,
-is outside this recovery contract. Make dashboard and alert changes in
-provisioning files so they can be recreated. Prometheus history **is** in
-scope: restore the retained TSDB data into the monitoring project before
-starting Prometheus. The source branch currently limits its retained history
-to 15 days or 2 GB, whichever applies first; a backup cannot recover data
-already deleted by that policy. Recheck these limits after integration.
+sources in Git (`srcs/monitoring/grafana/provisioning/`) are enough to recover
+Grafana. Mutable Grafana data, including UI-only changes and local users, is
+outside this recovery contract and is not backed up. Make dashboard and alert
+changes in provisioning files so they can be recreated. Prometheus history
+**is** in scope: the restore loads the retained TSDB data into the monitoring
+project before Prometheus starts. `compose.monitoring.yaml` keeps 15 days or
+2 GB of history, whichever comes first; a backup cannot recover data already
+deleted by that policy.
 
-## Contract check before backup automation
+## Restore drill
 
-Confirm the host destination, retention, and complete data inventory. Then
-perform a backup and restore drill for both PostgreSQL instances and the
-Prometheus TSDB. Record the backup age, elapsed restore time, and oldest
-queryable restored metric, then compare them with the RPO and RTO above.
+A backup is only proven by a restore. Before relying on the schedule, and
+again after any change to the databases, the monitoring project or the
+backup scripts: confirm the host destination, retention, and data inventory,
+then back up and restore both PostgreSQL instances and the Prometheus TSDB
+with the runbook below. Record the backup age, elapsed restore time, and
+oldest queryable restored metric, then compare them with the RPO and RTO
+above.
 
 ## Recovery runbook: recreate the configured VM
 
@@ -222,10 +254,12 @@ Do not rerun it after a partial restore without choosing to recreate the VM
 again. If cloud-init reports recoverable errors, confirm `docker version`
 works in the guest before retrying.
 
-For a production port-forwarding layout, pass `VM_NETWORK_MODE=prod` to the
-command; otherwise it uses the configured Make value (dev by default). QEMU
-fixes forwarded ports when the VM starts, so changing modes later requires a
-restart.
+The command always starts the **development** stack (`make docker` in the
+guest), with the dev port forwarding (`VM_NETWORK_MODE=dev` by default). To
+serve the production images afterwards, run `make prod` from the host: it
+restarts the VM with production forwarding and starts the production stack on
+the same restored database volumes. QEMU fixes forwarded ports when the VM
+starts, so changing modes always requires that restart.
 
 ### 3. Check the recovered application
 
@@ -237,14 +271,28 @@ separate from the application project:
 make connect-vm
 ```
 
-Inside that same guest, compare the restored database lists, roles, schemas,
-and representative records with the backup manifest. For the 2026-11-12 drill
-set, these return one marker from each PostgreSQL instance:
+The session opens in your home directory; go to the project first
+(`VM_REMOTE_DIR`, `~/ft_transcendance` by default):
 
 ```sh
-docker exec -u postgres pgsql psql -U transcendence -d restore_drill_20261112 -Atqc 'SELECT instance, marker FROM restore_marker'
-docker exec -u postgres pgvector psql -U transcendence -d restore_drill_20261112 -Atqc 'SELECT instance, marker FROM restore_marker'
+cd ~/ft_transcendance
 ```
+
+Inside that same guest, compare the restored database lists, roles, schemas,
+and representative records with the backup manifest (`manifest.json` in the
+set, readable with `make backup-extract` on the host). For example, list the
+databases of each instance and count a few rows:
+
+```sh
+docker exec -u postgres pgsql psql -U transcendence -d postgres -Atqc 'SELECT datname FROM pg_database WHERE NOT datistemplate'
+docker exec -u postgres pgvector psql -U transcendence -d postgres -Atqc 'SELECT datname FROM pg_database WHERE NOT datistemplate'
+docker exec -u postgres pgsql psql -U transcendence -d identity_db -Atqc 'SELECT count(*) FROM accounts'
+docker exec -u postgres pgsql psql -U transcendence -d content_management_db -Atqc 'SELECT count(*) FROM normalized_articles'
+```
+
+For a drill, add a marker before the backup and check it here (see the
+2026-11-12 drill record below, which used a `restore_drill_20261112`
+database in each instance).
 
 Check a historical Prometheus sample using a UTC time **before** the backup;
 Prometheus stays internal. Check the five backend `/health` endpoints from
@@ -262,8 +310,14 @@ curl --silent --show-error --cacert shared/secrets/certs/localhost.pem --output 
 exit
 ```
 
+The `--cacert` check works with the self-signed certificate the project
+generates. With an mkcert certificate, pass mkcert's root CA instead
+(`mkcert -CAROOT` on the host gives its folder).
+
 Run representative authenticated identity, content, personalization, morning
-briefing, and AI requests as applicable. Record expected rows and response
+briefing, and AI requests as applicable: for example, log in at
+`https://localhost:8443` with an account from before the backup, then check
+its profile, saved articles and Brief page. Record expected rows and response
 codes. The gateway request and health checks alone do not prove all user flows.
 
 ### 4. Record the outcome and retry if needed
@@ -276,23 +330,3 @@ If verification fails, keep the encrypted set and investigate the failure;
 choose another verified set if needed, then run `make backup-restore` again to
 recreate a fresh guest. Do not route real traffic until the recovered
 application and data are accepted.
-
-### Drill record: 2026-11-12 (in progress)
-
-- The host created and verified
-  `backup-20261112T102237Z-10e7b837` at 10:22:37 UTC. A dedicated
-  `restore_drill_20261112` database held one non-sensitive marker row in
-  **each** source PostgreSQL instance before backup.
-- The restore VM was recreated with a separate disk and SSH port 2223. Both
-  restored instances returned the expected marker (`pgsql` and `pgvector`),
-  and `content_management_db.sources` contained seven rows. The restore
-  command also loaded the Prometheus snapshot into its own stopped container.
-- An earlier drill with `backup-20261112T063324Z-318b2c0c` returned 15
-  historical Prometheus `up` series at 06:30 UTC, five backend health 200s,
-  HTTPS gateway 200, and a live gateway probe value of 1. That earlier set
-  lacked pgvector application rows, which prompted the two marker databases.
-- **Still to check for the new set:** historical Prometheus query, Grafana
-  access, application requests, and a measured restore duration. No incident
-  data-loss or RTO result is claimed from this drill. The source marker
-  databases remain in place for inspection; remove them only as a separate,
-  deliberate cleanup step.
