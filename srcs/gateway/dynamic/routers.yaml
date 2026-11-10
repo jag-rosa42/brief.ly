@@ -1,7 +1,7 @@
 # ==============================================================================
 # The routing table
 # ------------------------------------------------------------------------------
-# Two kinds of routers live here:
+# Three kinds of routers live here:
 #
 # 1. Services: an allowlist. A request reaches a service only if its router
 #    lists the resource (docs/api/<service>.md, "Caller path" column), not the
@@ -9,10 +9,23 @@
 #    /api/identity/internal/... would reach Identity as /internal/... once the
 #    prefix is stripped. So a service's /internal, /health, /metrics, /docs and
 #    /openapi.json are never reachable from outside. Any other /api or /public
-#    path matches no router and gets Traefik's own 404. /public/v1 routers
-#    come with the Public API (ADR-0009, Phase 7).
+#    path matches no router and gets Traefik's own 404.
 #
-# 2. Frontend: a catch-all, on purpose. The SPA's routes are client-side
+# 2. Public API (ADR-0009): an allowlist too, under /public/v1, one router per
+#    service. The path is NOT stripped: services serve /public/v1/... as is.
+#    Every request goes through the same chain, in this order:
+#      a. public-rate-limit-ip:  too many requests from one IP  -> 429
+#      b. public-rate-limit-key: too many requests with one key -> 429
+#      c. public-forward-auth:
+#           Traefik asks Identity whether the X-API-Key is valid.
+#           - yes: Identity answers 200 with a 60 s token in Authorization,
+#             which Traefik puts in the forwarded request (the "phantom
+#             token");
+#           - no:  Identity's 401 goes back to the program.
+#    The documentation (/public/v1/docs and /public/v1/openapi/...) has its
+#    own routers: per-IP limit only, no key needed.
+#
+# 3. Frontend: a catch-all, on purpose. The SPA's routes are client-side
 #    (React Router), its assets have hashed names, and Vite serves its own
 #    paths in development, so they can't be listed. Everything outside /api
 #    and /public goes to the frontend container (nginx in production, Vite in
@@ -21,7 +34,8 @@
 #    found" page), never a service.
 #
 # Adding a frontend route: add its resource to the service's rule, and to
-# docs/api/<service>.md.
+# docs/api/<service>.md. Adding a public route: the same, in the service's
+# public router (the chain comes with the router).
 # ==============================================================================
 
 http:
@@ -56,6 +70,47 @@ http:
       middlewares: [strip-morning-briefing-prefix]
       service: morning-briefing
 
+    # --------------------------------------------------------------------------
+    # Public API
+    # --------------------------------------------------------------------------
+    personalization-public:
+      entrypoints: [websecure]
+      rule: >-
+        Path(`/public/v1/topics`) ||
+        Path(`/public/v1/me/profile`) ||
+        Path(`/public/v1/me/saved-articles`) ||
+        PathPrefix(`/public/v1/me/saved-articles/`)
+      middlewares: [public-rate-limit-ip, public-rate-limit-key, public-forward-auth]
+      service: personalization
+
+    morning-briefing-public:
+      entrypoints: [websecure]
+      rule: >-
+        Path(`/public/v1/morning-briefing`)
+      middlewares: [public-rate-limit-ip, public-rate-limit-key, public-forward-auth]
+      service: morning-briefing
+
+    # The documentation: readable without a key, so no ForwardAuth.
+    # Personalization hosts the page and its own document; each other service
+    # serves its own document.
+    personalization-public-docs:
+      entrypoints: [websecure]
+      rule: >-
+        Path(`/public/v1/docs`) ||
+        Path(`/public/v1/openapi/personalization.json`)
+      middlewares: [public-rate-limit-ip]
+      service: personalization
+
+    morning-briefing-public-docs:
+      entrypoints: [websecure]
+      rule: >-
+        Path(`/public/v1/openapi/morning-briefing.json`)
+      middlewares: [public-rate-limit-ip]
+      service: morning-briefing
+
+    # --------------------------------------------------------------------------
+    # Frontend
+    # --------------------------------------------------------------------------
     frontend:
       entrypoints: [websecure]
       # Catch-all, not an allowlist: see the header.
@@ -74,6 +129,53 @@ http:
     strip-morning-briefing-prefix:
       stripPrefix:
         prefixes: ["/api/morning-briefing"]
+
+    # --- Public API chain (ADR-0009) -----------------------------------------
+    # Limits are in memory, per gateway: they reset when the gateway restarts
+    # (one gateway, so that's fine; ADR-0009). Just over the limit, Traefik
+    # holds the request a moment (at most 1 / (2 × average): 25 ms for the IP
+    # limit, 100 ms for the key limit); beyond that, it answers 429 itself, in
+    # plain text, with a Retry-After header.
+    #
+    # average = requests per second allowed over time;
+    # burst = how many may arrive at once. Low enough to show a 429
+    #         with a simple loop.
+
+    # a. Per client IP: protects the stack from one noisy machine, keys or not.
+    public-rate-limit-ip:
+      rateLimit:
+        average: 20
+        burst: 40
+        period: 1s
+        # No sourceCriterion: Traefik uses the connection's address. Not the
+        # X-Forwarded-For header, which any client can write: nothing sits in
+        # front of the gateway to set it.
+
+    # b. Per API key: one program can't use the whole budget of the API.
+    # Requests without the header all share one bucket (Traefik groups them
+    # under an empty key); they get 401 from Identity anyway.
+    public-rate-limit-key:
+      rateLimit:
+        average: 5
+        burst: 10
+        period: 1s
+        sourceCriterion:
+          requestHeaderName: X-API-Key
+
+    # c. The phantom token exchange: Traefik calls Identity before forwarding.
+    # Identity's verify route is internal: no router ever exposes it; Traefik
+    # reaches it directly on the edge network, as an authentication server.
+    public-forward-auth:
+      forwardAuth:
+        address: "http://identity:8000/internal/v1/api-keys/verify"
+        # Send Identity only the key: never the program's cookies or other
+        # headers, which Identity doesn't need.
+        authRequestHeaders: ["X-API-Key"]
+        # On 200, copy Identity's Authorization (Bearer <public API token>)
+        # into the forwarded request. Traefik first deletes any Authorization
+        # the program sent, so a program can't bring its own token.
+        authResponseHeaders: ["Authorization"]
+
 
   services:
     identity:
