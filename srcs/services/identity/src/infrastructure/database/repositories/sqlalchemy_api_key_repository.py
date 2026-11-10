@@ -75,13 +75,6 @@ class SqlAlchemyApiKeyRepository:
         models = self._session.execute(statement).scalars().all()
         return [self._to_domain(model) for model in models]
 
-    # def _first_or_none(self, statement: Select[tuple[ApiKeyModel]]) -> ApiKey | None:
-    #     result: Result[tuple[ApiKeyModel]] = self._session.execute(statement)
-    #     api_key_model: ApiKeyModel | None = result.scalar_one_or_none()
-    #     if api_key_model is None:
-    #         return None
-    #     return self._to_domain(api_key_model)
-
     @staticmethod
     def _to_domain(model: ApiKeyModel) -> ApiKey:
         return ApiKey(
