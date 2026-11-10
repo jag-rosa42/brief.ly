@@ -11,6 +11,7 @@ live on `cookie_session_router`, which is protected against CSRF.
 """
 
 from fastapi import APIRouter, Response, status
+from shared_errors import ErrorResponse
 
 from src.api.dependencies import (
     AntiCsrfGuard,
@@ -46,6 +47,16 @@ router = APIRouter(
     path="/register",
     status_code=status.HTTP_201_CREATED,
     response_model=AccessTokenResponse,
+    responses={
+        status.HTTP_409_CONFLICT: {
+            "model": ErrorResponse,
+            "description": "EMAIL_ALREADY_REGISTERED",
+        },
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "model": ErrorResponse,
+            "description": "VALIDATION_ERROR (email format, password length)",
+        },
+    },
 )
 def register(
     body: RegisterRequest,
@@ -63,6 +74,16 @@ def register(
     path="/login",
     status_code=status.HTTP_200_OK,
     response_model=AccessTokenResponse,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {
+            "model": ErrorResponse,
+            "description": "INVALID_CREDENTIALS",
+        },
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "model": ErrorResponse,
+            "description": "VALIDATION_ERROR",
+        },
+    },
 )
 def login(
     body: LoginRequest,
@@ -87,7 +108,15 @@ def login(
 # Router dependencies run before the endpoint's own dependencies:
 # a request without the header is refused (403) before the cookie is even read.
 
-cookie_session_router = APIRouter(dependencies=[AntiCsrfGuard])
+cookie_session_router = APIRouter(
+    dependencies=[AntiCsrfGuard],
+    responses={
+        status.HTTP_403_FORBIDDEN: {
+            "model": ErrorResponse,
+            "description": "CSRF_CHECK_FAILED (X-Transcendence-Client is not web)",
+        },
+    },
+)
 
 
 @cookie_session_router.post(
@@ -110,6 +139,12 @@ def logout(
     path="/refresh",
     status_code=status.HTTP_200_OK,
     response_model=AccessTokenResponse,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {
+            "model": ErrorResponse,
+            "description": "INVALID_TOKEN, TOKEN_EXPIRED or TOKEN_REVOKED",
+        },
+    },
 )
 def refresh(
     refresh_token: RefreshTokenCookieDep,
