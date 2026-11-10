@@ -233,6 +233,14 @@ services:
     container_name: prometheus
     restart: unless-stopped
     profiles: [observability]
+    # Retain at most 15 days or 2 GB of TSDB data, whichever limit applies
+    # first. Plan for at least 3 GB of volume capacity: the WAL and head
+    # chunks can temporarily exceed the limit while old blocks are removed.
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.size=2GB
     volumes:
       - prometheus_data:/prometheus
       - ./srcs/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
