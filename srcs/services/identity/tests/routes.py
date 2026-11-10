@@ -19,3 +19,8 @@ ACCOUNTS_ME: str = app.url_path_for("get_me")
 HEALTH: str = app.url_path_for("health_check")
 OAUTH_TOKEN: str = app.url_path_for("create_token")
 API_KEYS: str = app.url_path_for("create_api_key")
+
+
+def api_key(key_id: object) -> str:
+    """Path of one key: DELETE /api-keys/{key_id}."""
+    return app.url_path_for("revoke_api_key", key_id=str(key_id))

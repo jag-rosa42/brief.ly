@@ -1,4 +1,4 @@
-"""POST and GET /api-keys through the whole stack, without a database.
+"""POST, GET and DELETE /api-keys through the whole stack, without a database.
 
 Real access tokens, checked by the real CurrentAccountDep; real use cases,
 real key generator. Only the repositories and the unit of work are
@@ -8,7 +8,7 @@ in-memory fakes, so these tests don't need PostgreSQL.
 from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -187,3 +187,68 @@ class TestListApiKeys:
 
     def test_returns_401_without_a_token(self, client: TestClient) -> None:
         assert client.get(routes.API_KEYS).status_code == 401
+
+
+class TestRevokeApiKey:
+    def test_returns_204_and_revokes_the_key(
+        self,
+        client: TestClient,
+        auth: dict[str, str],
+        owner: Account,
+        api_key_repository: FakeApiKeyRepository,
+    ) -> None:
+        api_key = build_api_key(account_id=owner.id)
+        api_key_repository.add(api_key)
+
+        response: Response = client.delete(routes.api_key(api_key.id), headers=auth)
+
+        assert response.status_code == 204
+        assert response.content == b""
+        assert api_key_repository.get(api_key.id).is_revoked() is True
+
+    def test_is_idempotent(
+        self,
+        client: TestClient,
+        auth: dict[str, str],
+        owner: Account,
+        api_key_repository: FakeApiKeyRepository,
+    ) -> None:
+        api_key = build_api_key(account_id=owner.id)
+        api_key_repository.add(api_key)
+
+        first: Response = client.delete(routes.api_key(api_key.id), headers=auth)
+        second: Response = client.delete(routes.api_key(api_key.id), headers=auth)
+
+        assert first.status_code == second.status_code == 204
+
+    def test_returns_204_for_an_unknown_key(
+        self, client: TestClient, auth: dict[str, str]
+    ) -> None:
+        response: Response = client.delete(routes.api_key(uuid4()), headers=auth)
+
+        assert response.status_code == 204
+
+    def test_answers_204_but_never_revokes_another_accounts_key(
+        self,
+        client: TestClient,
+        auth: dict[str, str],
+        api_key_repository: FakeApiKeyRepository,
+    ) -> None:
+        someone_elses = build_api_key()
+        api_key_repository.add(someone_elses)
+
+        response: Response = client.delete(routes.api_key(someone_elses.id), headers=auth)
+
+        assert response.status_code == 204
+        assert api_key_repository.get(someone_elses.id).is_revoked() is False
+
+    def test_returns_422_when_the_id_is_not_a_uuid(
+        self, client: TestClient, auth: dict[str, str]
+    ) -> None:
+        response: Response = client.delete(routes.api_key("not-a-uuid"), headers=auth)
+
+        assert response.status_code == 422
+        assert error_code(response) == "VALIDATION_ERROR"
+
+    def test_returns_401_without_a_token(self, client: TestClient) -> None:
+        assert client.delete(routes.api_key(uuid4())).status_code == 401
