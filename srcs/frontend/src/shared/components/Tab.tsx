@@ -41,7 +41,7 @@ export function Tabs({ tabs, variant, className = "", activeValue, onTabChange }
 	const currentContent = tabs[currentIndex]?.content;
 	return (
 		<div className={className}>
-			<div role="tablist" className={getTabStyle(variant)}>
+			<div role="tablist" className={`${getTabStyle(variant)} w-full`}>
 				{tabs.map((tab, index) => {
 					const isActive = currentIndex === index;
 					return (
@@ -50,9 +50,10 @@ export function Tabs({ tabs, variant, className = "", activeValue, onTabChange }
 							type="button"
 							variant={getTabButtonVariant(isActive, variant)}
 							role="tab"
+							aria-selected={isActive}
 							disabled={tab.disabled}
 							onClick={() => handleTabChange(tab, index)}
-							className={getTabButtonStyle(isActive, variant)}
+							className={`${getTabButtonStyle(isActive, variant)} min-w-0 flex-1 truncate`}
 						>
 							{tab.label}
 						</Button>

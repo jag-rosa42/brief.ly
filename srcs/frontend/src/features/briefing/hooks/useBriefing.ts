@@ -5,6 +5,7 @@ import { ApiError } from "@/shared/components/api/client";
 import { deleteSavedArticle, saveArticle } from "@/features/saved-articles/api";
 import { useNotify } from "@/app/useNotify";
 
+
 export function useBriefing() {
 	const [data, setData] = useState<Briefing | null>(null);
 	const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set());

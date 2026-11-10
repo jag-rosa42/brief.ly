@@ -169,12 +169,7 @@ function TopicSection({ tabs }: TopicSectionProps) {
 		);
 	}
 
-	return (
-		<section className="mt-4 flex flex-col gap-4">
-			<Text variant="subheading">Your interests</Text>
-			{content}
-		</section>
-	);
+	return <section className="mt-4 flex flex-col gap-4">{content}</section>;
 }
 
 export function BriefPage() {
