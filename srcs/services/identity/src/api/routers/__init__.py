@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from src.api.routers.accounts.router import router as account_router
+from src.api.routers.api_keys.router import router as api_key_router
 from src.api.routers.auth.router import router as auth_router
 from src.api.routers.health.router import router as health_router
 from src.api.routers.oauth.router import router as oauth_router
@@ -34,6 +35,7 @@ root_routers.include_router(health_router)
 api_routers = APIRouter()
 api_routers.include_router(auth_router)
 api_routers.include_router(account_router)
+api_routers.include_router(api_key_router)
 
 
 # ---------------------------------------------------------------------------

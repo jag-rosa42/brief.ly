@@ -15,6 +15,7 @@ class ErrorCode(StrEnum):
     TOKEN_REVOKED = "TOKEN_REVOKED"
     INVALID_CLIENT = "INVALID_CLIENT"
     INVALID_SCOPE = "INVALID_SCOPE"
+    API_KEY_LIMIT_REACHED = "API_KEY_LIMIT_REACHED"
 
 
 class DomainError(Exception):
@@ -88,3 +89,10 @@ class InvalidScopeError(DomainError):
 
     def __init__(self):
         super().__init__("Requested audience or scope is not allowed for this client")
+
+
+class ApiKeyLimitReachedError(DomainError):
+    code = ErrorCode.API_KEY_LIMIT_REACHED
+
+    def __init__(self):
+        super().__init__("This account already has the maximum number of active API keys")
