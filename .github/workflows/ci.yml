@@ -44,6 +44,7 @@ jobs:
               - 'shared/packages/shared_errors/**'
             ai-processing:
               - 'srcs/services/ai-processing/**'
+              - 'shared/packages/shared_auth/**'
               - 'shared/packages/shared_errors/**'
             content-management:
               - 'srcs/services/content-management/**'
