@@ -10,7 +10,7 @@ from src.domain.entities.profile import Profile
 from src.domain.entities.topic import Topic
 
 
-class FakeTokenProvider:
+class FakeServiceTokenProvider:
     """Stands for shared_auth's ClientCredentialsTokenProvider: no Identity call.
 
     Gives `token`, or raises `error` when one is given (Identity down or

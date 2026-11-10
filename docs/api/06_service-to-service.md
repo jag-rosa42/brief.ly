@@ -46,7 +46,7 @@ flowchart TD
 
 **Which token for which call.** A service forwards the user's token only to a service that holds **that user's** data (Morning Briefing → Personalization). For data that belongs to no user (Content Management), it uses its own service token, even while it is handling a user's request. So Content Management only ever sees service tokens, and a user's token can only expire on the first call of a chain.
 
-**Timeouts.** Every internal call has a timeout, so a slow or stopped service gives a `503` instead of a request that hangs. Personalization's clients for Content Management use 2 s for now. They will move to shared_auth's `DownstreamClient`, which uses 5 s by default, when the service token is wired. Both stay under the frontend's 10 s, so the browser gets the `503` before it gives up.
+**Timeouts.** Every internal call has a timeout, so a slow or stopped service gives a `503` instead of a request that hangs. Morning Briefing and Personalization call other services through shared_auth's `DownstreamClient`, which uses 5 s by default. That stays under the frontend's 10 s, so the browser gets the `503` before it gives up.
 
 ---
 
