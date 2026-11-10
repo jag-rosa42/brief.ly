@@ -62,6 +62,30 @@ Request → FastAPI updates numbers → /metrics shows current numbers
 `/metrics` is for internal monitoring traffic. Traefik must not make it a
 public API route.
 
+## How can I check whether Prometheus is scraping targets?
+
+Run this from the host while the project VM is running:
+
+```bash
+ssh -p "${VM_SSH_PORT:-2222}" "$(id -un)@127.0.0.1" \
+  'docker exec prometheus promtool query instant http://localhost:9090 up'
+```
+
+`docker exec` runs `promtool` inside the Prometheus container, where
+`localhost:9090` is the Prometheus server. `promtool query instant` asks for
+the current value of the PromQL expression `up`. Prometheus creates one `up`
+series for each configured scrape target. For example:
+
+```text
+up{instance="gateway:9092", job="traefik"} => 1
+```
+
+`job` identifies the scrape job, and `instance` is its target address. A value
+of `1` means the latest `/metrics` scrape succeeded; `0` means it failed. A
+missing or unimplemented `/metrics` endpoint can produce `0`. This checks
+whether Prometheus can collect metrics, not whether the whole application is
+healthy.
+
 ## What is FastAPI instrumentation, and how does it record requests?
 
 Instrumentation is code that watches the app while it works. A FastAPI
@@ -145,6 +169,58 @@ older samples.
 
 This is the **chosen design**. We still need to confirm the names and labels
 in the running apps' `/metrics` output before considering implementation done.
+
+## P1.3 questions: AI Processing dependencies and HTTP metrics
+
+### What do `pyproject.toml` and `uv.lock` do?
+
+`pyproject.toml` lists the Python packages AI Processing needs. `uv.lock`
+records the exact resolved versions and their dependencies, so teammates and
+containers install the same set. Add a dependency to `pyproject.toml`, then
+run `uv lock`; do not edit the lock file by hand.
+
+### Why add both Prometheus packages?
+
+`prometheus-fastapi-instrumentator` measures requests to the FastAPI app.
+`prometheus-client` creates metrics and lets the separate summary worker send
+its last-run result to Pushgateway. The instrumentator also uses the client
+internally.
+
+### What are counters, gauges, and histograms?
+
+A **counter** counts events and only increases while its process runs, such as
+`http_requests_total`. A **gauge** holds a value that can rise or fall, such
+as `ai_worker_last_run_success` (`1` or `0`). A **histogram** counts observations
+in buckets and also exports their count and sum. We use it for HTTP request
+durations. The summary worker starts a new process for each run, so it
+publishes last-run gauges instead of a resetting per-run counter.
+
+### Why configure status and unmatched-path grouping?
+
+`should_group_status_codes=False` keeps exact codes such as `200` and `503`
+instead of broad groups such as `2xx` and `5xx`. With
+`should_group_untemplated=True`, a request that matches no route gets the
+fixed `handler="none"` label. This avoids putting arbitrary requested paths
+in metric labels.
+
+### What do `metrics.requests(...)` and `metrics.latency(...)` add?
+
+`metrics.requests(...)` adds the completed-request counter.
+`metrics.latency(...)` adds the duration histogram. The histogram uses
+`should_include_status=False` because our contract gives it only `service`,
+`handler`, and `method` labels. Both functions use the fixed
+`service="ai-processing"` label to identify this API. `/metrics` is excluded
+so Prometheus scrapes do not count as application requests.
+
+### Why does the service label need an adapter?
+
+In the installed instrumentator version, `custom_labels` declares the
+`service` label, but the metric functions then try to read `service` from the
+per-request info object without setting it there. The small adapter in
+`src/infrastructure/metrics/http.py` supplies the fixed value before those
+functions run. Without it, a request raises `AttributeError` instead of
+recording metrics. The label never contains a user ID, article text, or
+request-specific value.
 
 ## What should we read to understand the metric contract?
 

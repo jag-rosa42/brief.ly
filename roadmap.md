@@ -167,18 +167,18 @@ Person 2's data source exists.
 - [x] Add the chosen client to AI Processing's `pyproject.toml` and `uv.lock`.
   Expose ordinary HTTP request metrics from its `src/main.py` app; these
   describe the `/health` API, not the summary worker.
-- [ ] In `src/application/SummarizeArticles.py`, record a generation failure
+- [x] In `src/application/SummarizeArticles.py`, record a generation failure
   in the existing exception path. In `src/application/summarize_topics.py`,
   record a topic group failure in its exception path. Keep
   `logger.exception(...)` and current fallback behavior. A normal content
   rejection is not a generation failure.
-- [ ] Pass a small, testable metrics recorder to the application code. Do not
+- [x] Pass a small, testable metrics recorder to the application code. Do not
   rely on the FastAPI process's in-memory registry: `make summarize` starts a
   separate Python process through `docker compose exec`.
-- [ ] In `src/worker.py`, measure the run and push last-run gauges to
+- [x] In `src/worker.py`, measure the run and push last-run gauges to
   `pushgateway:9091` in a `finally` path, including uncaught failure. Re-raise
   fatal errors after recording. Log a failed metrics push clearly.
-- [ ] Test success, a handled article failure, a handled topic failure, and
+- [x] Test success, a handled article failure, a handled topic failure, and
   fatal failure with the push boundary mocked. Check that labels contain no
   IDs, article text, or exception messages.
 
@@ -188,13 +188,13 @@ not inferred from AI Processing HTTP request metrics.
 
 ### P1.4 — Instrument Content Management ingestion
 
-- [ ] Add `prometheus-fastapi-instrumentator` and `prometheus-client` to
+- [x] Add `prometheus-fastapi-instrumentator` and `prometheus-client` to
   Content Management's `pyproject.toml` and `uv.lock`; Person 2 uses the
   instrumentator dependency for its HTTP metrics without editing these files.
-- [ ] Record the ingestion metrics in the contract from the result of
+- [x] Record the ingestion metrics in the contract from the result of
   `POST /internal/v1/ingestion-runs`. Preserve its current response and
   exception behavior. Do not label metrics with source or article IDs.
-- [ ] Test full success, partial `201`, a failed result, and an unexpected
+- [x] Test full success, partial `201`, a failed result, and an unexpected
   failure. Check that they update the correct outcome, article and failure
   counts, and completion timestamp. A `409` must not count as a completed run.
 
@@ -204,13 +204,13 @@ does not change the ingestion run count.
 
 ### P1.5 — Make startup and retention reproducible
 
-- [ ] Add `observability` to relevant Makefile Compose profile selections
+- [x] Add `observability` to relevant Makefile Compose profile selections
   for `make docker`, `make ps`, `make logs`, `make down`, and corresponding VM
   and production paths. Keep `make docker SERVICE=<name>` useful without
   forcing unrelated service dependencies.
-- [ ] Set a deliberate Prometheus retention period and document its expected
+- [x] Set a deliberate Prometheus retention period and document its expected
   volume use. Verify the configured Grafana password is not committed.
-- [ ] Restart the monitoring stack and verify stored Prometheus data and the
+- [x] Restart the monitoring stack and verify stored Prometheus data and the
   latest worker result remain available as designed.
 
 **Handoff:** give Person 2 the final scrape job names, Traefik metric names,
@@ -229,16 +229,16 @@ for the Compose mounts.
 
 ### P2.1 — Instrument one FastAPI app, then repeat
 
-- [ ] Start with `identity`: add the selected package to `pyproject.toml`
+- [x] Start with `identity`: add the selected package to `pyproject.toml`
   and `uv.lock`, expose internal `/metrics` from the `src/main.py` app
   factory, and record request count and duration histogram.
-- [ ] Use route templates such as `/accounts/{account_id}` rather than raw
+- [x] Use route templates such as `/accounts/{account_id}` rather than raw
   paths. Give unmatched paths one fixed label. Label by service, method, and
   response status. Do not expose `/metrics` through Traefik.
-- [ ] Verify a handled 500 or 503 response changes the relevant status
+- [x] Verify a handled 500 or 503 response changes the relevant status
   series. The existing shared exception handlers log tracebacks; HTTP metrics
   count their returned responses.
-- [ ] Repeat for `content-management`, `personalization`, and
+- [x] Repeat for `content-management`, `personalization`, and
   `morning-briefing`, updating dependency and lock files for
   `personalization` and `morning-briefing`. Person 1 updates Content
   Management's dependency and lock files for both HTTP and ingestion metrics.
