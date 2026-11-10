@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from src.api.routers.accounts.router import router as account_router
+from src.api.routers.api_keys.internal_router import router as api_key_verify_router
 from src.api.routers.api_keys.router import router as api_key_router
 from src.api.routers.auth.router import router as auth_router
 from src.api.routers.health.router import router as health_router
@@ -47,6 +48,8 @@ api_routers.include_router(api_key_router)
 #
 # Example:
 #   personalization: POST http://identity:8000/internal/v1/oauth/token
+#   gateway (ForwardAuth): GET http://identity:8000/internal/v1/api-keys/verify
 # ---------------------------------------------------------------------------
 internal_routers = APIRouter(prefix="/internal/v1")
 internal_routers.include_router(oauth_router)
+internal_routers.include_router(api_key_verify_router)

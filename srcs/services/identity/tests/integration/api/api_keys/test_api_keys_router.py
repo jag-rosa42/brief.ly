@@ -19,7 +19,7 @@ from src.api.dependencies.account import get_account_repository
 from src.api.dependencies.api_key import get_api_key_repository
 from src.api.dependencies.database import get_unit_of_work
 from src.domain.entities.account import Account
-from src.domain.entities.api_key import MAX_ACTIVE_API_KEYS_PER_ACCOUNT
+from src.domain.entities.api_key import MAX_ACTIVE_API_KEYS_PER_ACCOUNT, ApiKeyScope
 from src.infrastructure.security.token.token_service import JWTTokenService
 from src.main import app
 from tests import routes
@@ -146,6 +146,24 @@ class TestCreateApiKey:
 
         assert response.status_code == 401
         assert error_code(response) == "INVALID_TOKEN"
+
+    def test_returns_401_with_a_public_api_token(
+        self,
+        client: TestClient,
+        owner: Account,
+        jwt_token_service: JWTTokenService,
+    ) -> None:
+        # A key must never manage keys (ADR-0009): the token the gateway
+        # makes from a key has another audience, so it is refused here.
+        token: str = jwt_token_service.create_public_api_token(
+            owner.id, frozenset({ApiKeyScope.READ, ApiKeyScope.WRITE})
+        )
+
+        response: Response = client.post(
+            routes.API_KEYS, json=NEW_KEY, headers={"Authorization": f"Bearer {token}"}
+        )
+
+        assert response.status_code == 401
 
 
 class TestListApiKeys:
