@@ -10,6 +10,7 @@ from src.api.errors import (
 from src.api.routers import api_routers, root_routers
 from src.infrastructure.config.app import app_settings
 from src.infrastructure.config.auth import auth_settings
+from src.infrastructure.metrics.http import configure_http_metrics
 
 
 def create_app() -> FastAPI:
@@ -30,6 +31,8 @@ def create_app() -> FastAPI:
     register_domain_exception_handlers(app)
     register_api_exception_handlers(app)
     install_authentication(app, auth_settings)
+
+    configure_http_metrics(app)
 
     return app
 
