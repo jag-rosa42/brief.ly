@@ -8,7 +8,7 @@ from src.application.SummarizeArticles import (
     SummarizeArticles,
 )
 from src.domain.value_objects.article_assessment import ArticleAssessment
-from tests.model import DEFAULT_MODEL
+from tests.model import DEFAULT_MODEL, RecordingFailureMetrics
 
 
 def make_article(article_id: str) -> Article:
@@ -48,8 +48,13 @@ def test_processes_all_batches_and_stops_on_empty_result() -> None:
             )
 
     content_management = ContentManagement()
+    metrics = RecordingFailureMetrics()
     SummarizeArticles(
-        content_management, Summarizer(), DEFAULT_MODEL, batch_size=25
+        content_management,
+        Summarizer(),
+        DEFAULT_MODEL,
+        batch_size=25,
+        failure_metrics=metrics,
     ).execute()
 
     assert content_management.requested_limits == [25, 25, 25]
@@ -65,6 +70,7 @@ def test_processes_all_batches_and_stops_on_empty_result() -> None:
             DEFAULT_MODEL,
         ),
     ]
+    assert metrics.article_failures == 0
 
 
 def test_failed_write_stops_before_fetching_another_batch() -> None:
@@ -88,9 +94,14 @@ def test_failed_write_stops_before_fetching_another_batch() -> None:
             return ArticleAssessment(False, "Complete article", "Summary", 1234)
 
     content_management = ContentManagement()
+    metrics = RecordingFailureMetrics()
     with pytest.raises(RuntimeError, match="write failed"):
         SummarizeArticles(
-            content_management, Summarizer(), DEFAULT_MODEL, batch_size=25
+            content_management,
+            Summarizer(),
+            DEFAULT_MODEL,
+            batch_size=25,
+            failure_metrics=metrics,
         ).execute()
 
     assert content_management.fetch_count == 1
@@ -118,8 +129,13 @@ def test_rejected_article_is_recorded_without_a_summary() -> None:
             return ArticleAssessment(True, "Article is incomplete", None, 1234)
 
     content_management = ContentManagement()
+    metrics = RecordingFailureMetrics()
     SummarizeArticles(
-        content_management, Summarizer(), DEFAULT_MODEL, batch_size=25
+        content_management,
+        Summarizer(),
+        DEFAULT_MODEL,
+        batch_size=25,
+        failure_metrics=metrics,
     ).execute()
 
     assert content_management.saved == [
@@ -130,6 +146,7 @@ def test_rejected_article_is_recorded_without_a_summary() -> None:
         )
     ]
     assert content_management.fetch_count == 2
+    assert metrics.article_failures == 0
 
 
 @pytest.mark.parametrize(
@@ -160,8 +177,13 @@ def test_generation_failure_rejects_article_and_continues(failure: Exception) ->
             return ArticleAssessment(False, "Complete article", "Summary", 12)
 
     content_management = ContentManagement()
+    metrics = RecordingFailureMetrics()
     SummarizeArticles(
-        content_management, Summarizer(), DEFAULT_MODEL, batch_size=25
+        content_management,
+        Summarizer(),
+        DEFAULT_MODEL,
+        batch_size=25,
+        failure_metrics=metrics,
     ).execute()
 
     assert content_management.fetch_count == 2
@@ -172,3 +194,4 @@ def test_generation_failure_rejects_article_and_continues(failure: Exception) ->
     assert rejected.quality_comment == GENERATION_FAILURE_COMMENT
     assert rejected.generation_duration_ms >= 0
     assert content_management.saved[1][1].summary == "Summary"
+    assert metrics.article_failures == 1

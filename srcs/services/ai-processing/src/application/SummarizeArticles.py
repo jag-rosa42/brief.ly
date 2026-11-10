@@ -4,6 +4,7 @@ from time import perf_counter
 from src.application.models.article import Article
 from src.application.ports.ai_summarizer import ArticleSummarizerPort
 from src.application.ports.content_management import ArticleContentManagementPort
+from src.application.ports.failure_metrics import FailureMetricsPort
 from src.domain.value_objects.article_assessment import ArticleAssessment
 
 # The command entry point creates the HTTP clients and passes them to this use case.
@@ -18,6 +19,7 @@ class SummarizeArticles:
         ai_summarizer: ArticleSummarizerPort,
         llm_model: str,
         batch_size: int,
+        failure_metrics: FailureMetricsPort,
     ) -> None:
         if batch_size < 1:
             raise ValueError("Article batch size must be positive")
@@ -25,6 +27,7 @@ class SummarizeArticles:
         self.ai_summarizer = ai_summarizer
         self.llm_model = llm_model
         self.batch_size = batch_size
+        self.failure_metrics = failure_metrics
 
     def execute(self) -> None:
         while True:
@@ -39,6 +42,7 @@ class SummarizeArticles:
                 try:
                     assessment = self.ai_summarizer.ai_summarize_article(article)
                 except Exception:
+                    self.failure_metrics.article_generation_failed()
                     logger.exception(
                         "Article summary generation failed for %s", article.id
                     )

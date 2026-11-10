@@ -4,6 +4,7 @@ from time import perf_counter
 
 from src.application.ports.ai_summarizer import TopicSummarizerPort
 from src.application.ports.content_management import TopicContentManagementPort
+from src.application.ports.failure_metrics import FailureMetricsPort
 from src.domain.value_objects.summary import Summary
 
 TOPIC_ARTICLE_LIMIT = 25  # Content Management's maximum page size.
@@ -18,10 +19,12 @@ class SummarizeTopics:
         content_management: TopicContentManagementPort,
         ai_summarizer: TopicSummarizerPort,
         llm_model: str,
+        failure_metrics: FailureMetricsPort,
     ) -> None:
         self.content_management = content_management
         self.ai_summarizer = ai_summarizer
         self.llm_model = llm_model
+        self.failure_metrics = failure_metrics
 
     def execute(self) -> None:
         topics = self.content_management.list_topics()
@@ -51,6 +54,7 @@ class SummarizeTopics:
                 try:
                     summary = self._summarize_group(topic_id, group)
                 except Exception:
+                    self.failure_metrics.topic_group_generation_failed()
                     logger.exception("Topic summary generation failed for %s", topic_id)
                     return latest_summary
                 combined.append(summary)

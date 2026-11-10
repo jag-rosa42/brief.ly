@@ -3,10 +3,119 @@ from uuid import UUID
 
 import httpx2 as httpx
 import pytest
+from prometheus_client import CollectorRegistry, generate_latest
 
 from src.infrastructure.config.worker import WorkerSettings
+from src.infrastructure.metrics.worker import (
+    PUSHGATEWAY_ADDRESS,
+    PUSHGATEWAY_JOB,
+    WorkerRunMetrics,
+    publish_worker_metrics,
+)
 from src.worker import run_worker
 from tests.model import DEFAULT_MODEL
+
+
+def test_push_uses_stable_internal_job(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, str, CollectorRegistry]] = []
+
+    def fake_push(address: str, *, job: str, registry: CollectorRegistry) -> None:
+        calls.append((address, job, registry))
+
+    monkeypatch.setattr("src.infrastructure.metrics.worker.push_to_gateway", fake_push)
+    registry = WorkerRunMetrics().registry
+    publish_worker_metrics(registry)
+
+    assert calls == [(PUSHGATEWAY_ADDRESS, PUSHGATEWAY_JOB, registry)]
+    assert PUSHGATEWAY_ADDRESS == "pushgateway:9091"
+    assert PUSHGATEWAY_JOB == "ai_processing_summary"
+
+
+@pytest.mark.parametrize(
+    ("failure_kind", "expected_success", "article_failures", "topic_failures"),
+    [
+        (None, 1, 0, 0),
+        ("article", 0, 1, 0),
+        ("topic", 0, 0, 1),
+        ("fatal", 0, 0, 0),
+    ],
+)
+def test_worker_publishes_last_run_even_on_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    failure_kind: str | None,
+    expected_success: int,
+    article_failures: int,
+    topic_failures: int,
+) -> None:
+    class FakeWorkflow:
+        def __init__(self, articles, topics) -> None:
+            self.articles = articles
+            self.topics = topics
+
+        def execute(self) -> None:
+            if failure_kind == "article":
+                self.articles.failure_metrics.article_generation_failed()
+            elif failure_kind == "topic":
+                self.topics.failure_metrics.topic_group_generation_failed()
+            elif failure_kind == "fatal":
+                raise RuntimeError("sensitive exception message")
+
+    monkeypatch.setattr("src.worker.SummarizeArticlesAndTopics", FakeWorkflow)
+    published: list[CollectorRegistry] = []
+    settings = WorkerSettings(
+        _env_file=None,
+        OLLAMA_BASE_URL="http://ollama:11434",
+        OLLAMA_MODEL=DEFAULT_MODEL,
+    )
+    with httpx.Client() as client:
+        if failure_kind == "fatal":
+            with pytest.raises(RuntimeError, match="sensitive exception message"):
+                run_worker(settings, client, client, publish=published.append)
+        else:
+            run_worker(settings, client, client, publish=published.append)
+
+    assert len(published) == 1
+    registry = published[0]
+    assert registry.get_sample_value("ai_worker_last_run_success") == expected_success
+    assert (
+        registry.get_sample_value("ai_worker_last_run_article_failures")
+        == article_failures
+    )
+    assert (
+        registry.get_sample_value("ai_worker_last_run_topic_failures") == topic_failures
+    )
+    duration = registry.get_sample_value("ai_worker_last_run_duration_seconds")
+    completion = registry.get_sample_value("ai_worker_last_completion_timestamp_seconds")
+    assert duration is not None and duration >= 0
+    assert completion is not None and completion > 0
+    samples = [sample for family in registry.collect() for sample in family.samples]
+    assert len(samples) == 5
+    assert all(sample.labels == {} for sample in samples)
+    assert b"sensitive exception message" not in generate_latest(registry)
+
+
+def test_failed_push_is_logged_without_hiding_worker_failure(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    class FatalWorkflow:
+        def __init__(self, articles, topics) -> None:
+            pass
+
+        def execute(self) -> None:
+            raise RuntimeError("worker failed")
+
+    def failed_push(registry: CollectorRegistry) -> None:
+        raise ConnectionError("Pushgateway unavailable")
+
+    monkeypatch.setattr("src.worker.SummarizeArticlesAndTopics", FatalWorkflow)
+    settings = WorkerSettings(
+        _env_file=None,
+        OLLAMA_BASE_URL="http://ollama:11434",
+        OLLAMA_MODEL=DEFAULT_MODEL,
+    )
+    with httpx.Client() as client, pytest.raises(RuntimeError, match="worker failed"):
+        run_worker(settings, client, client, publish=failed_push)
+    assert "Failed to push AI worker metrics to Pushgateway" in caplog.text
 
 
 def test_content_management_defaults_to_compose_service_name(
@@ -153,7 +262,7 @@ def test_worker_wires_get_summarize_put_and_repeats() -> None:
             transport=httpx.MockTransport(ollama_respond),
         ) as ollama_client,
     ):
-        run_worker(settings, content_client, ollama_client)
+        run_worker(settings, content_client, ollama_client, publish=lambda registry: None)
 
     assert calls == [
         "get",
