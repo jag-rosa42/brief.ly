@@ -1,12 +1,14 @@
 import json
+from contextlib import closing
 from uuid import UUID
 
 import httpx2 as httpx
 import pytest
+from shared_auth import DownstreamClient
 
 from src.infrastructure.config.worker import WorkerSettings
 from src.worker import run_worker
-from tests.fakes import FakeTokenProvider
+from tests.fakes import FakeServiceTokenProvider
 from tests.model import DEFAULT_MODEL
 
 
@@ -145,16 +147,19 @@ def test_worker_wires_get_summarize_put_and_repeats() -> None:
         OLLAMA_MODEL=DEFAULT_MODEL,
     )
     with (
-        httpx.Client(
-            base_url=settings.CONTENT_MANAGEMENT_BASE_URL,
-            transport=httpx.MockTransport(content_respond),
+        closing(
+            DownstreamClient(
+                "content-management",
+                settings.CONTENT_MANAGEMENT_BASE_URL,
+                transport=httpx.MockTransport(content_respond),
+            )
         ) as content_client,
         httpx.Client(
             base_url=settings.OLLAMA_BASE_URL,
             transport=httpx.MockTransport(ollama_respond),
         ) as ollama_client,
     ):
-        run_worker(settings, content_client, ollama_client, FakeTokenProvider())
+        run_worker(settings, content_client, ollama_client, FakeServiceTokenProvider())
 
     assert calls == [
         "get",

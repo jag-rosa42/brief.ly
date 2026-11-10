@@ -2,7 +2,7 @@ from urllib.parse import quote
 from uuid import UUID
 
 import httpx2 as httpx
-from shared_auth import DownstreamError
+from shared_auth import DownstreamClient, DownstreamError, TokenExpiredError
 from shared_errors import InfrastructureError
 
 from src.application.models.article import Article
@@ -10,12 +10,21 @@ from src.application.models.topic_article_summary import (
     TopicArticleSummary,
 )
 from src.domain.value_objects.article_assessment import ArticleAssessment
-from src.infrastructure.clients.token_provider import TokenProvider
+from src.infrastructure.clients.service_token_provider import ServiceTokenProvider
 
 
 class ContentManagementClient:
-    def __init__(self, http_client: httpx.Client, token_provider: TokenProvider):
-        self.http_client = http_client
+    """Calls Content Management with the worker's service token (ADR-0008).
+
+    DownstreamClient turns the failures into our errors: unreachable or
+    502/503/504 -> InfrastructureError, any other error answer ->
+    DownstreamError. On top of that, two cases become InfrastructureError
+    ("Content Management can't be called right now"): Identity refusing our
+    credentials, and Content Management's 401 TOKEN_EXPIRED for our token.
+    """
+
+    def __init__(self, client: DownstreamClient, token_provider: ServiceTokenProvider):
+        self.client = client
         self.token_provider = token_provider
 
     def _request(
@@ -27,28 +36,17 @@ class ContentManagementClient:
         json: dict[str, object] | None = None,
     ) -> httpx.Response:
         try:
-            # Service token (ADR-0008), cached and renewed by the provider.
-            headers = {"Authorization": f"Bearer {self.token_provider.get_token()}"}
+            token = self.token_provider.get_token()
         except DownstreamError as exc:
-            # Identity refused the token: Content Management can't be called,
-            # like when it's down. (Identity unreachable is already an
-            # InfrastructureError.)
+            # Identity refused our credentials (Identity unreachable is
+            # already an InfrastructureError).
             raise InfrastructureError("Content Management is unavailable.") from exc
         try:
-            response = self.http_client.request(
-                method,
-                path,
-                params=params,
-                json=json,
-                headers=headers,
-                timeout=10,
+            return self.client.request(
+                method, path, token=token, params=params, json=json
             )
-        except httpx.TransportError as exc:
+        except TokenExpiredError as exc:
             raise InfrastructureError("Content Management is unavailable.") from exc
-        if response.status_code in (502, 503, 504):
-            raise InfrastructureError("Content Management is unavailable.")
-        response.raise_for_status()
-        return response
 
     def list_missing_articles(self, limit: int) -> list[Article]:
         params = {"summary": "missing", "limit": limit}

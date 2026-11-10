@@ -1,15 +1,25 @@
 import json
+from contextlib import closing
 from uuid import UUID
 
 import httpx2 as httpx
 import pytest
-from shared_auth import DownstreamError
+from shared_auth import DownstreamClient, DownstreamError
 from shared_errors import InfrastructureError
 
 from src.domain.value_objects.article_assessment import ArticleAssessment
 from src.infrastructure.clients.ContentManagementClient import ContentManagementClient
-from tests.fakes import FakeTokenProvider
+from tests.fakes import FakeServiceTokenProvider
 from tests.model import DEFAULT_MODEL
+
+
+def _client(transport: httpx.MockTransport) -> closing[DownstreamClient]:
+    """A DownstreamClient whose calls are answered by `transport`."""
+    return closing(
+        DownstreamClient(
+            "content-management", "http://content-management", transport=transport
+        )
+    )
 
 
 def test_requests_send_the_service_token() -> None:
@@ -17,10 +27,8 @@ def test_requests_send_the_service_token() -> None:
         assert request.headers["Authorization"] == "Bearer service-token"
         return httpx.Response(200, json={"items": []})
 
-    with httpx.Client(
-        base_url="http://content-management", transport=httpx.MockTransport(respond)
-    ) as http_client:
-        client = ContentManagementClient(http_client, FakeTokenProvider())
+    with _client(httpx.MockTransport(respond)) as http_client:
+        client = ContentManagementClient(http_client, FakeServiceTokenProvider())
         assert client.list_missing_articles(limit=25) == []
 
 
@@ -46,10 +54,8 @@ def test_list_missing_articles_map_response() -> None:
             },
         )
 
-    with httpx.Client(
-        base_url="http://content-management", transport=httpx.MockTransport(respond)
-    ) as http_client:
-        client = ContentManagementClient(http_client, FakeTokenProvider())
+    with _client(httpx.MockTransport(respond)) as http_client:
+        client = ContentManagementClient(http_client, FakeServiceTokenProvider())
         articles = client.list_missing_articles(limit=25)
 
     assert len(articles) == 1
@@ -74,10 +80,8 @@ def test_save_article_assessment_sends_expected_put() -> None:
         }
         return httpx.Response(200, json={"article_id": str(article_id)})
 
-    with httpx.Client(
-        base_url="http://content-management", transport=httpx.MockTransport(respond)
-    ) as http_client:
-        client = ContentManagementClient(http_client, FakeTokenProvider())
+    with _client(httpx.MockTransport(respond)) as http_client:
+        client = ContentManagementClient(http_client, FakeServiceTokenProvider())
         client.save_article_assessment(
             article_id,
             ArticleAssessment(False, "Complete article", "A concise summary.", 1234),
@@ -88,12 +92,9 @@ def test_save_article_assessment_sends_expected_put() -> None:
 def test_save_article_assessment_reports_unavailable_service() -> None:
     article_id = UUID("123e4567-e89b-12d3-a456-426614174000")
 
-    with httpx.Client(
-        base_url="http://content-management",
-        transport=httpx.MockTransport(lambda request: httpx.Response(503)),
-    ) as http_client:
-        client = ContentManagementClient(http_client, FakeTokenProvider())
-        with pytest.raises(InfrastructureError, match="Content Management"):
+    with _client(httpx.MockTransport(lambda request: httpx.Response(503))) as http_client:
+        client = ContentManagementClient(http_client, FakeServiceTokenProvider())
+        with pytest.raises(InfrastructureError):
             client.save_article_assessment(
                 article_id,
                 ArticleAssessment(False, "Complete article", "A concise summary.", 1234),
@@ -105,22 +106,17 @@ def test_list_missing_articles_reports_connection_failure() -> None:
     def fail(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("connection refused", request=request)
 
-    with httpx.Client(
-        base_url="http://content-management", transport=httpx.MockTransport(fail)
-    ) as http_client:
-        client = ContentManagementClient(http_client, FakeTokenProvider())
-        with pytest.raises(InfrastructureError, match="Content Management"):
+    with _client(httpx.MockTransport(fail)) as http_client:
+        client = ContentManagementClient(http_client, FakeServiceTokenProvider())
+        with pytest.raises(InfrastructureError):
             client.list_missing_articles(limit=25)
 
 
 def test_save_article_assessment_preserves_non_availability_error() -> None:
     article_id = UUID("123e4567-e89b-12d3-a456-426614174000")
-    with httpx.Client(
-        base_url="http://content-management",
-        transport=httpx.MockTransport(lambda request: httpx.Response(404)),
-    ) as http_client:
-        client = ContentManagementClient(http_client, FakeTokenProvider())
-        with pytest.raises(httpx.HTTPStatusError):
+    with _client(httpx.MockTransport(lambda request: httpx.Response(404))) as http_client:
+        client = ContentManagementClient(http_client, FakeServiceTokenProvider())
+        with pytest.raises(DownstreamError):
             client.save_article_assessment(
                 article_id,
                 ArticleAssessment(False, "Complete article", "A summary.", 1234),
@@ -143,10 +139,8 @@ def test_rejected_assessment_uses_same_put_endpoint() -> None:
         }
         return httpx.Response(200)
 
-    with httpx.Client(
-        base_url="http://content-management", transport=httpx.MockTransport(respond)
-    ) as http_client:
-        client = ContentManagementClient(http_client, FakeTokenProvider())
+    with _client(httpx.MockTransport(respond)) as http_client:
+        client = ContentManagementClient(http_client, FakeServiceTokenProvider())
         client.save_article_assessment(
             article_id,
             ArticleAssessment(True, "Article is incomplete", None, 1234),
@@ -186,10 +180,8 @@ def test_topic_read_uses_existing_response_and_write_uses_contract_body() -> Non
         }
         return httpx.Response(200)
 
-    with httpx.Client(
-        base_url="http://content-management", transport=httpx.MockTransport(respond)
-    ) as http_client:
-        client = ContentManagementClient(http_client, FakeTokenProvider())
+    with _client(httpx.MockTransport(respond)) as http_client:
+        client = ContentManagementClient(http_client, FakeServiceTokenProvider())
         assert client.list_topics() == ["technology"]
         articles = client.list_topic_article_summaries("technology", 25)
         client.save_topic_summary(
@@ -220,9 +212,19 @@ def test_raises_without_calling_content_management_when_no_token(
     def respond(request: httpx.Request) -> httpx.Response:
         raise AssertionError("Content Management must not be called without a token")
 
-    with httpx.Client(
-        base_url="http://content-management", transport=httpx.MockTransport(respond)
-    ) as http_client:
-        client = ContentManagementClient(http_client, FakeTokenProvider(error=error))
+    with _client(httpx.MockTransport(respond)) as http_client:
+        client = ContentManagementClient(
+            http_client, FakeServiceTokenProvider(error=error)
+        )
+        with pytest.raises(InfrastructureError):
+            client.list_topics()
+
+
+def test_raises_unavailable_when_our_service_token_expired() -> None:
+    def respond(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(401, json={"error": {"code": "TOKEN_EXPIRED"}})
+
+    with _client(httpx.MockTransport(respond)) as http_client:
+        client = ContentManagementClient(http_client, FakeServiceTokenProvider())
         with pytest.raises(InfrastructureError):
             client.list_topics()

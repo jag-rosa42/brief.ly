@@ -51,6 +51,16 @@ or tokens. It logs Ollama's completion reason and generated-token count. A
 non-stop completion or an accepted summary without sentence-ending punctuation
 counts as a generation failure, so the article is stored as rejected.
 
+## Service token
+
+The worker calls Content Management with a service token from Identity
+(ADR-0008), with `topics:read`, `articles:read` and `summaries:write`. It needs:
+
+| Setting | Description | Example |
+| --- | --- | --- |
+| `IDENTITY_URL` | Base URL of Identity, which gives the token | `http://localhost:8081` (host), `http://identity:8000` (containers, set by `compose.yaml`) |
+| `ai_processing_client_secret` (secret file) | This service's client secret at Identity, created by `make secrets` | `shared/secrets/services/ai_processing_client_secret` (host), `/run/secrets/ai_processing_client_secret` (containers) |
+
 ## Test the local Ollama API
 
 Install and start [Ollama](https://docs.ollama.com/quickstart), then pull a
