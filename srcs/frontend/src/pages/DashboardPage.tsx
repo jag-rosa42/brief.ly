@@ -54,7 +54,7 @@ export function DashboardPage({ tab: activeTab }: { tab: DashboardTab }) {
 	}));
 
 	return (
-		<div className="bg-background min-h-screen flex">
+		<div className="min-h-screen bg-background text-accent md:flex">
 			<Sidebar
 				tabs={visibleTabs}
 				activeTab={activeTab}
@@ -63,7 +63,7 @@ export function DashboardPage({ tab: activeTab }: { tab: DashboardTab }) {
 					void logout();
 				}}
 			/>
-			<main className="flex-1 min-w-0 p-8">
+			<main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
 				{activeTab === "brief" && <BriefPage />}
 				{activeTab === "profile" && <ProfilePage />}
 				{activeTab === "saved" && <SavedArticles />}

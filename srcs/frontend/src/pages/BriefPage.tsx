@@ -37,25 +37,42 @@ function formatDate(date: Date): string {
 
 function DashboardHeader({ firstName, today }: DashboardHeaderProps) {
 	return (
-		<header className="grid grid-cols-1 gap-6 md:grid-cols-3">
-			<Division variant="dashboardcard">
-				<Text variant="label" className="text-info">
+		<header className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(240px,0.9fr)_minmax(0,2.6fr)]">
+			<Division
+				variant="dashboardcard"
+				className="relative min-h-60 justify-between overflow-hidden p-8 after:absolute after:right-10 after:top-10 after:size-10 after:rounded-full after:border-2 after:border-primary after:shadow-[0_0_0_10px_#c981271c] after:content-[''] lg:min-h-[340px] lg:p-12"
+			>
+				<Text variant="label" className="text-primary">
 					Today
 				</Text>
-				<Text variant="subheading">{formatDate(today)}</Text>
+				<Text
+					variant="subheading"
+					className="mt-auto max-w-[12ch] font-serif! text-[clamp(2rem,3.4vw,3.5rem)]! font-medium leading-tight text-accent!"
+				>
+					{formatDate(today)}
+				</Text>
 			</Division>
 
 			{/* min-w-0: a grid item can shrink below its content, so a long name can't widen the card. */}
-			<Division variant="dashboardcard" className="min-w-0 md:col-span-2">
+			<Division
+				variant="dashboardcard"
+				className="min-h-60 min-w-0 justify-between p-8 lg:min-h-[340px] lg:p-12"
+			>
 				{/* Only the name shrinks and ends with "…"; the full name shows on hover. */}
-				<Text variant="title" className="flex font-serif">
+				<Text
+					variant="title"
+					className="flex font-serif text-[clamp(2.7rem,4.2vw,5rem)]! leading-[1.1] font-semibold tracking-[-0.055em] text-accent!"
+				>
 					<span className="shrink-0 whitespace-pre">{"Good morning "}</span>
 					<span className="min-w-0 truncate pb-1" title={firstName}>
 						{firstName}
 					</span>
 					<span className="shrink-0">!</span>
 				</Text>
-				<Text variant="lead" className="italic text-accent/80">
+				<Text
+					variant="lead"
+					className="max-w-3xl font-sans! text-lg font-normal not-italic leading-relaxed text-[#7b6b62]! lg:text-2xl"
+				>
 					"The best way to predict the future is to invent it." - Alan Kay
 				</Text>
 			</Division>
@@ -69,7 +86,7 @@ function TopicPanel({ cluster, isSaved, onToggleSave, onReadMore }: TopicPanelPr
 	let stories;
 	if (articles.length > 0) {
 		stories = (
-			<div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+			<div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
 				{articles.map((article) => (
 					<ArticleCard
 						key={article.id}
@@ -90,18 +107,28 @@ function TopicPanel({ cluster, isSaved, onToggleSave, onReadMore }: TopicPanelPr
 	}
 
 	return (
-		<div className="flex flex-col gap-8">
-			<Division variant="dashboardcard">
-				<Text variant="subheading">Summary of {topicLabel(cluster.topic_id)} today</Text>
-				<Text variant="body" className="text-accent/80">
+		<div className="flex flex-col gap-9">
+			<Division variant="dashboardcard" className="min-h-44 justify-center gap-4 p-8 lg:p-10">
+				<Text
+					variant="subheading"
+					className="font-serif! text-[clamp(1.45rem,2vw,2.1rem)]! font-semibold tracking-tight text-accent!"
+				>
+					Summary of {topicLabel(cluster.topic_id)} today
+				</Text>
+				<Text variant="body" className="text-lg text-[#7b6b62]">
 					{cluster.summary ?? "The summary of this topic is not ready yet."}
 				</Text>
 			</Division>
 
-			<section className="flex flex-col gap-4">
+			<section className="flex flex-col gap-6">
 				<div>
-					<Text variant="subheading">Stories to know</Text>
-					<Text variant="body" className="text-info">
+					<Text
+						variant="subheading"
+						className="font-serif! text-[clamp(1.9rem,2.5vw,2.6rem)]! font-semibold tracking-tight text-accent!"
+					>
+						Stories to know
+					</Text>
+					<Text variant="body" className="text-[#7b6b62]">
 						Curated from your trusted sources
 					</Text>
 				</div>
@@ -128,8 +155,13 @@ function TopicSection({ tabs }: TopicSectionProps) {
 	}
 
 	return (
-		<section className="mt-4 flex flex-col gap-4">
-			<Text variant="subheading">Your interests</Text>
+		<section className="flex flex-col gap-5">
+			<Text
+				variant="subheading"
+				className="font-serif! text-[clamp(1.9rem,2.5vw,2.6rem)]! font-semibold tracking-tight text-accent!"
+			>
+				Your interests
+			</Text>
 			{content}
 		</section>
 	);
@@ -172,7 +204,7 @@ export function BriefPage() {
 	}));
 
 	return (
-		<Division variant="dashboardpage" className="max-w-6xl gap-8">
+		<Division variant="dashboardpage" className="max-w-none gap-10">
 			<DashboardHeader firstName={data.profile.name} today={today} />
 			<TopicSection tabs={tabs} />
 			<ArticleModal article={selectedArticle} onClose={() => setSelectedArticle(null)} />

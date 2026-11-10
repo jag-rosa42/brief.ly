@@ -17,10 +17,10 @@ export function getDivStyle(style: DivVariant): string {
 		case "page":
 			return "bg-background flex flex-col items-center pt-12 px-4";
 		case "dashboardcard":
-			return "bg-white/60 border border-white/70 rounded-3xl p-6 flex flex-col gap-y-3 shadow-soft backdrop-blur-sm";
+			return "flex flex-col gap-y-3 rounded-[2rem] bg-[#f1e8dc] p-6 shadow-[10px_12px_24px_#c5b6a580,-7px_-7px_18px_#fff9f099]";
 		case "stack":
 			return "flex flex-col gap-2";
 		case "dashboardpage":
-			return "flex flex-col mx-auto w-full p-6";
+			return "mx-auto flex w-full flex-col";
 	}
 }
