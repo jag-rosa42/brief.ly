@@ -2,6 +2,7 @@ from urllib.parse import quote
 from uuid import UUID
 
 import httpx2 as httpx
+from shared_auth import DownstreamError
 from shared_errors import InfrastructureError
 
 from src.application.models.article import Article
@@ -9,11 +10,13 @@ from src.application.models.topic_article_summary import (
     TopicArticleSummary,
 )
 from src.domain.value_objects.article_assessment import ArticleAssessment
+from src.infrastructure.clients.token_provider import TokenProvider
 
 
 class ContentManagementClient:
-    def __init__(self, http_client: httpx.Client):
+    def __init__(self, http_client: httpx.Client, token_provider: TokenProvider):
         self.http_client = http_client
+        self.token_provider = token_provider
 
     def _request(
         self,
@@ -24,11 +27,20 @@ class ContentManagementClient:
         json: dict[str, object] | None = None,
     ) -> httpx.Response:
         try:
+            # Service token (ADR-0008), cached and renewed by the provider.
+            headers = {"Authorization": f"Bearer {self.token_provider.get_token()}"}
+        except DownstreamError as exc:
+            # Identity refused the token: Content Management can't be called,
+            # like when it's down. (Identity unreachable is already an
+            # InfrastructureError.)
+            raise InfrastructureError("Content Management is unavailable.") from exc
+        try:
             response = self.http_client.request(
                 method,
                 path,
                 params=params,
                 json=json,
+                headers=headers,
                 timeout=10,
             )
         except httpx.TransportError as exc:

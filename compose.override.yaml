@@ -9,6 +9,7 @@ x-ai-processing-dev-image-build: &ai-processing-dev-image-build
   volumes:
     - ./srcs/services/ai-processing:/app/srcs/services/ai-processing
     - ./shared/packages/shared_errors:/app/shared/packages/shared_errors
+    - ./shared/packages/shared_auth:/app/shared/packages/shared_auth
 
 # Content-management
 x-content-management-dev-image-build: &content-management-dev-image-build
