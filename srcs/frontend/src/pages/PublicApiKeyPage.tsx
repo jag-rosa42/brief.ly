@@ -1,17 +1,31 @@
-import { Fragment, useState } from "react";
+import { useCallback, useState } from "react";
 import type { ReactNode, SubmitEvent } from "react";
-import { useApiKeys, MAX_KEYS, KEY_LIFETIME_MS, formatDate } from "@/utils/useApiKeys";
+import { useApiKeys, MAX_KEYS } from "@/features/api-keys/useApiKey";
+import { mapApiKeyError } from "@/features/api-keys/error";
+import type { ApiKeyScope } from "@/features/api-keys/types";
 import { Division } from "@/shared/components/Division";
 import { Form } from "@/shared/components/Form";
 import { Text } from "@/shared/components/Text";
 import { Input } from "@/shared/components/Input";
 import { Button } from "@/shared/components/Button";
+import { FilterChip } from "@/shared/components/FilterChip";
 import { ApiKeyRow } from "@/shared/components/ApiKeyRow";
+import { ApiError } from "@/shared/components/api/client";
+import { Notification } from "@/shared/components/Notification";
+import type { NotificationVariant } from "@/shared/components/notificationVariants";
+
+const NAME_MIN = 1;
+const NAME_MAX = 50;
+
+const SCOPE_OPTIONS: { value: ApiKeyScope; label: string; description: string }[] = [
+	{ value: "read", label: "Read", description: "View your data" },
+	{ value: "write", label: "Write", description: "Create and modify data" },
+];
 
 function validateName(value: string): string | null {
-	const name = value.trim();
-	if (name.length < 2) return "Key name must be at least 2 characters.";
-	if (name.length > 30) return "Key name must be at most 30 characters.";
+	const length = value.trim().length;
+	if (length < NAME_MIN) return `Key name must be at least ${NAME_MIN} character.`;
+	if (length > NAME_MAX) return `Key name must be at most ${NAME_MAX} characters.`;
 	return null;
 }
 
@@ -19,11 +33,19 @@ interface ConfirmDialogProps {
 	open: boolean;
 	message: ReactNode;
 	confirmLabel: string;
+	busy?: boolean;
 	onConfirm: () => void;
 	onCancel: () => void;
 }
 
-function ConfirmDialog({ open, message, confirmLabel, onConfirm, onCancel }: ConfirmDialogProps) {
+function ConfirmDialog({
+	open,
+	message,
+	confirmLabel,
+	busy = false,
+	onConfirm,
+	onCancel,
+}: ConfirmDialogProps) {
 	if (!open) return null;
 
 	return (
@@ -33,68 +55,182 @@ function ConfirmDialog({ open, message, confirmLabel, onConfirm, onCancel }: Con
 		>
 			<Division variant="featurecard" onClick={(e) => e.stopPropagation()}>
 				<Text variant="body">{message}</Text>
-				<Button variant="primary" onClick={onCancel}>
+				<Button variant="primary" onClick={onCancel} disabled={busy}>
 					Cancel
 				</Button>
-				<Button variant="secondary" onClick={onConfirm}>
-					{confirmLabel}
+				<Button variant="secondary" onClick={onConfirm} disabled={busy}>
+					{busy ? "Please wait..." : confirmLabel}
 				</Button>
 			</Division>
 		</div>
 	);
 }
 
-export function PublicApiKeyPage() {
-	const { keys, addKey, deleteKey, limitReached } = useApiKeys();
-	const [pendingCreate, setPendingCreate] = useState<{ name: string; expiresAt: number } | null>(
-		null,
+interface NewKeyDialogProps {
+	secret: string;
+	expiresAt: string;
+	copyFailed: boolean;
+	onCopyAndClose: () => void;
+	onClose: () => void;
+}
+
+function NewKeyDialog({
+	secret,
+	expiresAt,
+	copyFailed,
+	onCopyAndClose,
+	onClose,
+}: NewKeyDialogProps) {
+	return (
+		<div
+			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="new-key-title"
+		>
+			<Division variant="featurecard">
+				<Text variant="subheading" id="new-key-title">
+					Your new API key
+				</Text>
+				<Text variant="body">Copy it now. You won't be able to see it again.</Text>
+				<code
+					className="break-all rounded border px-3 py-2 text-sm"
+					onClick={(e) => window.getSelection()?.selectAllChildren(e.currentTarget)}
+				>
+					{secret}
+				</code>
+				<Text variant="body" className="text-info">
+					Expires on {new Date(expiresAt).toLocaleString()}
+				</Text>
+				<Button variant="secondary" onClick={onCopyAndClose}>
+					Copy and close
+				</Button>
+				{copyFailed && (
+					<>
+						<Text variant="error" role="alert">
+							Copy failed. Select the key above and copy it manually.
+						</Text>
+						<Button variant="primary" onClick={onClose}>
+							Close anyway
+						</Button>
+					</>
+				)}
+			</Division>
+		</div>
 	);
+}
+
+export function PublicApiKeyPage() {
+	const { keys, loading, loadError, reload, addKey, deleteKey, limitReached } = useApiKeys();
+
 	const [creating, setCreating] = useState(false);
 	const [name, setName] = useState("");
-	const [error, setError] = useState<string | undefined>();
-	const [newKey, setNewKey] = useState<{ id: string; secret: string } | null>(null);
-	const [copied, setCopied] = useState(false);
+	const [scopes, setScopes] = useState<ApiKeyScope[]>(["read"]);
+	const [fieldError, setFieldError] = useState<string | undefined>();
+	const [pendingCreate, setPendingCreate] = useState<{
+		name: string;
+		scopes: ApiKeyScope[];
+	} | null>(null);
 	const [pendingDelete, setPendingDelete] = useState<{ id: string; keyName: string } | null>(null);
+	const [busy, setBusy] = useState(false);
+	const [newKey, setNewKey] = useState<{ id: string; secret: string; expiresAt: string } | null>(
+		null,
+	);
+	const [copyFailed, setCopyFailed] = useState(false);
+	const [notification, setNotification] = useState<{
+		id: number;
+		message: string;
+		variant: NotificationVariant;
+	} | null>(null);
+
+	const closeNotification = useCallback(() => setNotification(null), []);
+
+	function notify(message: string, variant: NotificationVariant) {
+		setNotification({ id: Date.now(), message, variant });
+	}
+
+	function toggleScope(value: string) {
+		const scope = value as ApiKeyScope;
+		setScopes((prev) => {
+			if (!prev.includes(scope)) return [...prev, scope];
+			if (prev.length === 1) return prev; // keep at least one
+			return prev.filter((s) => s !== scope);
+		});
+	}
+
+	function resetForm() {
+		setCreating(false);
+		setName("");
+		setScopes(["read"]);
+		setFieldError(undefined);
+	}
 
 	function handleCreate(e: SubmitEvent) {
 		e.preventDefault();
 		const nameError = validateName(name);
 		if (nameError) {
-			setError(nameError);
+			setFieldError(nameError);
 			return;
 		}
-		setPendingCreate({ name: name.trim(), expiresAt: Date.now() + KEY_LIFETIME_MS });
-	}
-
-	function confirmCreate() {
-		if (pendingCreate) {
-			const created = addKey(pendingCreate.name);
-			if (created) {
-				setNewKey(created);
-				setCopied(false);
-				setName("");
-				setCreating(false);
-			}
+		if (scopes.length === 0) {
+			setFieldError("Pick at least one permission.");
+			return;
 		}
-		setPendingCreate(null);
+		setPendingCreate({ name: name.trim(), scopes });
 	}
 
-	async function handleCopy() {
-		if (!newKey) return;
+	async function confirmCreate() {
+		if (!pendingCreate || busy) return;
+		setBusy(true);
+		try {
+			const created = await addKey(pendingCreate);
+			setNewKey({ id: created.id, secret: created.key, expiresAt: created.expires_at });
+			setCopyFailed(false);
+			resetForm();
+		} catch (e) {
+			notify(mapApiKeyError(e), "error");
+			if (e instanceof ApiError && e.code === "API_KEY_LIMIT_REACHED") {
+				void reload();
+			}
+		} finally {
+			setPendingCreate(null);
+			setBusy(false);
+		}
+	}
+
+	async function confirmDelete() {
+		if (!pendingDelete || busy) return;
+		setBusy(true);
+		try {
+			await deleteKey(pendingDelete.id);
+			notify("API key deleted.", "success");
+		} catch (e) {
+			notify(mapApiKeyError(e), "error");
+		} finally {
+			setPendingDelete(null);
+			setBusy(false);
+		}
+	}
+
+	async function handleCopy(): Promise<boolean> {
+		if (!newKey) return false;
 		try {
 			await navigator.clipboard.writeText(newKey.secret);
-			setCopied(true);
+			return true;
 		} catch {
-			setCopied(false);
+			return false;
 		}
 	}
 
-	function confirmDelete() {
-		if (pendingDelete) {
-			deleteKey(pendingDelete.id);
-			if (newKey?.id === pendingDelete.id) setNewKey(null);
+	async function handleCopyAndClose() {
+		const ok = await handleCopy();
+		if (ok) {
+			setNewKey(null);
+			setCopyFailed(false);
+			notify("API key created.", "success");
+		} else {
+			setCopyFailed(true);
 		}
-		setPendingDelete(null);
 	}
 
 	return (
@@ -106,21 +242,21 @@ export function PublicApiKeyPage() {
 			<div className="w-full max-w-lg">
 				<div className="mb-4 flex items-center justify-between">
 					<Text variant="subheading">Manage your public API keys</Text>
-					<Text variant="body" className="text-info">
-						{keys.length} / {MAX_KEYS}
-					</Text>
+					{!loading && !loadError && (
+						<Text variant="body" className="text-info">
+							{keys.length} / {MAX_KEYS}
+						</Text>
+					)}
 					<Button
 						variant="secondary"
-						disabled={limitReached || creating}
+						disabled={loading || loadError !== null || limitReached || creating}
 						onClick={() => {
 							setCreating(true);
-							setNewKey(null);
 						}}
 					>
 						+
 					</Button>
 				</div>
-
 				{creating && (
 					<Division variant="featurecard" className="mb-4 shadow-sm">
 						<Form
@@ -130,16 +266,7 @@ export function PublicApiKeyPage() {
 									<Button type="submit" variant="secondary" className="w-full">
 										Create
 									</Button>
-									<Button
-										type="button"
-										variant="primary"
-										className="w-full"
-										onClick={() => {
-											setCreating(false);
-											setName("");
-											setError(undefined);
-										}}
-									>
+									<Button type="button" variant="primary" className="w-full" onClick={resetForm}>
 										Cancel
 									</Button>
 								</div>
@@ -150,76 +277,112 @@ export function PublicApiKeyPage() {
 								label="Key name"
 								name="keyName"
 								value={name}
-								error={error}
+								error={fieldError}
 								onChange={(e) => {
 									setName(e.target.value);
-									setError(undefined);
+									setFieldError(undefined);
 								}}
 							/>
-							<Text variant="body" className="text-info">
-								This key will expire in 48 hours.
-							</Text>
+							<div className="flex flex-col gap-2">
+								<Text variant="body" className="font-semibold">
+									Permissions
+								</Text>
+								<div className="flex gap-2">
+									{SCOPE_OPTIONS.map((opt) => (
+										<FilterChip
+											key={opt.value}
+											options={opt}
+											selected={scopes.includes(opt.value)}
+											onToggle={toggleScope}
+										/>
+									))}
+								</div>
+								<Text variant="body" className="text-info text-sm">
+									Select at least one. You can combine both.{" "}
+									{SCOPE_OPTIONS.filter((option) => scopes.includes(option.value))
+										.map((option) => `${option.label}: ${option.description}.`)
+										.join(" ")}
+								</Text>
+							</div>
 						</Form>
 					</Division>
 				)}
 
 				<Division variant="featurecard" className="shadow-sm">
-					{keys.length === 0 ? (
+					{loading && <Text variant="body">Loading API keys...</Text>}
+
+					{!loading && loadError && (
+						<div className="flex flex-col items-center gap-2">
+							<Text variant="error" role="alert">
+								{loadError}
+							</Text>
+							<Button type="button" variant="secondary" onClick={() => void reload()}>
+								Retry
+							</Button>
+						</div>
+					)}
+
+					{!loading && !loadError && keys.length === 0 && (
 						<Text variant="body">No API key yet.</Text>
-					) : (
+					)}
+
+					{!loading &&
+						!loadError &&
 						keys.map((k) => (
-							<Fragment key={k.id}>
+							<Division key={k.id} variant="stack">
 								<ApiKeyRow
 									apiKey={k}
 									onDelete={() => setPendingDelete({ id: k.id, keyName: k.name })}
 								/>
-
-								{newKey?.id === k.id && (
-									<div className="my-3 rounded-lg border border-green-600/40 bg-green-600/10 p-3">
-										<Text variant="body">
-											Copy your API key now. You won't be able to see it again.
-										</Text>
-										<div className="mt-2 flex items-center gap-2">
-											<code className="flex-1 break-all rounded border px-3 py-2 text-sm">
-												{newKey.secret}
-											</code>
-											<Button
-												variant="secondary"
-												onClick={() => {
-													void handleCopy();
-												}}
-											>
-												{copied ? "Copied ✓" : "Copy"}
-											</Button>
-										</div>
-									</div>
-								)}
-							</Fragment>
-						))
-					)}
+							</Division>
+						))}
 				</Division>
 			</div>
 
 			<ConfirmDialog
 				open={pendingDelete !== null}
-				message={`Delete "${pendingDelete?.keyName}" ?`}
+				message={`Delete "${pendingDelete?.keyName ?? ""}" ?`}
 				confirmLabel="Delete"
-				onConfirm={confirmDelete}
+				busy={busy}
+				onConfirm={() => void confirmDelete()}
 				onCancel={() => setPendingDelete(null)}
 			/>
 			<ConfirmDialog
 				open={pendingCreate !== null}
 				message={
 					<>
-						Your new API key <strong>{pendingCreate?.name}</strong> will be ready for use
-						immediately. It will expire on{" "}
-						<strong>{pendingCreate ? formatDate(pendingCreate.expiresAt) : ""}</strong>.
+						Your new API key <strong>{pendingCreate?.name}</strong> (
+						{pendingCreate?.scopes.join(" + ")}) will be ready for use immediately. It will expire
+						48 hours after creation.
 					</>
 				}
+				aria-label="Create API key"
 				confirmLabel="Generate key"
-				onConfirm={confirmCreate}
+				busy={busy}
+				onConfirm={() => void confirmCreate()}
 				onCancel={() => setPendingCreate(null)}
 			/>
+			{newKey && (
+				<NewKeyDialog
+					secret={newKey.secret}
+					expiresAt={newKey.expiresAt}
+					copyFailed={copyFailed}
+					onCopyAndClose={() => void handleCopyAndClose()}
+					onClose={() => {
+						setNewKey(null);
+						setCopyFailed(false);
+						notify("API key created.", "success");
+					}}
+				/>
+			)}
+			{notification && (
+				<Notification
+					key={notification.id}
+					message={notification.message}
+					variant={notification.variant}
+					onClose={closeNotification}
+				/>
+			)}
 		</Division>
 	);
 }
