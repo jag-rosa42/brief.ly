@@ -223,6 +223,60 @@ services:
       retries: 5
 
   # ===========================================================================
+  # OBSERVABILITY
+  # ===========================================================================
+  # Monitoring stays on Compose networks; only the development override
+  # publishes Grafana's UI to the host.
+
+  # Prometheus collects /metrics on a schedule and stores the time series in
+  # its named volume.It joins edge for Traefik and backend for the APIs and Pushgateway.
+  prometheus:
+    image: docker.io/prom/prometheus:v3.16.0
+    container_name: prometheus
+    restart: unless-stopped
+    profiles: [observability]
+    volumes:
+      - prometheus_data:/prometheus
+    networks:
+      - edge
+      - backend
+
+  # Grafana is the UI for Prometheus data, dashboards, and alerts.
+  grafana:
+    image: docker.io/grafana/grafana:13.3.0
+    container_name: grafana
+    restart: unless-stopped
+    profiles: [observability]
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_admin_password
+    secrets:
+      - grafana_admin_password
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./srcs/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - backend
+
+  # the AI summary worker is a short-lived process, so
+  # Prometheus cannot reliably scrape metrics from that process directly.
+  # Each run replaces that job's previous values; Pushgateway is not run
+  # history and these gauges do not describe the AI Processing HTTP API.
+  # Prometheus will scrape Pushgateway's /metrics over the backend network.
+  # --persistence.file periodically writes pushed values to a named volume;
+  # values written there can be restored after a Pushgateway restart.
+  pushgateway:
+    image: docker.io/prom/pushgateway:v1.11.3
+    container_name: pushgateway
+    restart: unless-stopped
+    profiles: [observability]
+    command: ["--persistence.file=/pushgateway/metrics"]
+    volumes:
+      - pushgateway_data:/pushgateway
+    networks:
+      - backend
+
+  # ===========================================================================
   # DATABASES
   # ===========================================================================
 
@@ -434,10 +488,15 @@ secrets:
     file: ./shared/secrets/services/morning_briefing_client_secret
   ai_processing_client_secret:
     file: ./shared/secrets/services/ai_processing_client_secret
+  grafana_admin_password:
+    file: ./shared/secrets/grafana_admin_password
 
 volumes:
   pgsql:
   pgvector:
+  prometheus_data:
+  grafana_data:
+  pushgateway_data:
 
 networks:
   edge:

@@ -15,15 +15,14 @@ configure_network() {
     case "$vm_network_mode" in
         dev|development)
             vm_network_mode=dev
-            # Everything is reached through the gateway (ADR-0006); Adminer
-            # and the databases (added below) are the development exception.
-            for port_name in GATEWAY_PORT GATEWAY_HTTPS_PORT ADMINER_PORT; do
+            # Adminer, Grafana and the databases are development exceptions.
+            for port_name in GATEWAY_PORT GATEWAY_HTTPS_PORT ADMINER_PORT GRAFANA_PORT; do
                 required_port "$port_name"
             done
             gateway_port=$GATEWAY_PORT
             gateway_https_port=$GATEWAY_HTTPS_PORT
-            forward_port_names=(SSH_PORT GATEWAY_PORT GATEWAY_HTTPS_PORT ADMINER_PORT)
-            forward_port_values=("$ssh_port" "$gateway_port" "$gateway_https_port" "$ADMINER_PORT")
+            forward_port_names=(SSH_PORT GATEWAY_PORT GATEWAY_HTTPS_PORT ADMINER_PORT GRAFANA_PORT)
+            forward_port_values=("$ssh_port" "$gateway_port" "$gateway_https_port" "$ADMINER_PORT" "$GRAFANA_PORT")
             ;;
         prod|production)
             vm_network_mode=prod
