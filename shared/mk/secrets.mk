@@ -12,6 +12,7 @@ SERVICES_CLIENT_SECRET_FILES := \
 # Password string-based secrets, 32 random characters each
 SECRET_FILES := \
 	$(SECRET_DIR)/postgres_password \
+	$(SECRET_DIR)/grafana_admin_password \
 	$(SERVICES_CLIENT_SECRET_FILES)
 
 # JWT keys

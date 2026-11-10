@@ -7,6 +7,7 @@ include shared/mk/secrets.mk
 include shared/mk/ingest.mk
 include shared/mk/llm.mk
 
+
 NAME := Transcendence
 .DEFAULT_GOAL := help
 
@@ -42,7 +43,7 @@ PROD_COMPOSE_FILE := compose.yaml
 DEV_COMPOSE_FILE := compose.yaml compose.override.yaml
 DEV_COMPOSE = $(COMPOSE) $(addprefix -f ,$(DEV_COMPOSE_FILE))
 PROD_COMPOSE = $(COMPOSE) $(addprefix -f ,$(PROD_COMPOSE_FILE))
-COMPOSE_PROFILES := frontend backend databases
+COMPOSE_PROFILES := frontend backend databases observability
 COMPOSE_PROFILES_ALL := $(addprefix --profile ,$(COMPOSE_PROFILES))
 COMPOSE_CLEAN_PROFILES_ALL := $(COMPOSE_PROFILES_ALL) --profile front-test
 
@@ -59,6 +60,7 @@ endif
 VM_DIR ?= $(CURDIR)/vm
 SSH_PUBLIC_KEY ?= $(HOME)/.ssh/id_rsa.pub
 VM_SSH_PORT ?= 2222
+GRAFANA_PORT ?= 3000
 
 VM_NETWORK_MODE ?= dev
 VM_SCRIPT=./shared/script/create-vm.sh
@@ -73,9 +75,10 @@ VM_QEMU_ENV := VM_DIR="$(VM_DIR)" VM_USERNAME="$(VM_USERNAME)" \
 	SSH_PUBLIC_KEY="$(SSH_PUBLIC_KEY)" \
 	SSH_PORT="$(VM_SSH_PORT)" VM_NETWORK_MODE="$(VM_NETWORK_MODE)" \
 	GATEWAY_PORT="$(GATEWAY_PORT)" GATEWAY_HTTPS_PORT="$(GATEWAY_HTTPS_PORT)" \
-	ADMINER_PORT="$(ADMINER_PORT)" \
+	ADMINER_PORT="$(ADMINER_PORT)" GRAFANA_PORT="$(GRAFANA_PORT)" \
 	POSTGRES_PORT="$(POSTGRES_PORT)" AI_POSTGRES_PORT="$(AI_POSTGRES_PORT)"
-# Inside the VM, Compose publishes the development ports (databases, Adminer)
+# Inside the VM, Compose publishes the development ports (databases, Adminer,
+# Grafana)
 # on every guest address: QEMU forwards to the guest's network address, not
 # its loopback. QEMU itself only listens on the host's 127.0.0.1.
 VM_REMOTE_ENV := DEV_BIND_ADDRESS=0.0.0.0
