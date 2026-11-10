@@ -59,6 +59,13 @@ paths under the fixed value `none`. `method` is the HTTP method. Configure
 from HTTP instrumentation. Do not attach request-specific or sensitive values
 to any metric. Keep `/metrics` accessible only on the internal network.
 
+AI Processing configures these HTTP metrics in
+`srcs/services/ai-processing/src/infrastructure/metrics/http.py`. Its fixed
+`service="ai-processing"` label is supplied to the instrumentator's
+per-request info before the request counter and duration histogram run,
+because the installed instrumentator does not populate that custom label
+itself. The worker metrics below use a separate process and registry.
+
 #### AI summary worker
 
 Use these last-run gauges for the separate, short-lived summary process:
@@ -118,17 +125,17 @@ Management's dependency files before Person 2 instruments its HTTP app.
 
 ### P1.1 — Bring up the monitoring infrastructure
 
-- [ ] Add pinned Prometheus, Grafana, and Pushgateway images to `compose.yaml`
+- [x] Add pinned Prometheus, Grafana, and Pushgateway images to `compose.yaml`
   under an `observability` profile. Give Prometheus and Grafana named volumes.
   If the latest worker result must survive a Pushgateway restart, configure
   its persistence file on a named volume.
-- [ ] Put Prometheus on `edge` and `backend`; put Grafana and Pushgateway on
+- [x] Put Prometheus on `edge` and `backend`; put Grafana and Pushgateway on
   `backend`. Prometheus must reach Traefik on `edge` and APIs on `backend`.
   Do not publish Prometheus, Pushgateway, or Traefik metrics ports on the host.
-- [ ] In the development override, bind Grafana to `127.0.0.1:3000`, following
+- [x] In the development override, bind Grafana to `127.0.0.1:3000`, following
   the existing `DEV_BIND_ADDRESS` convention for the VM. Supply its admin
   password outside version control. Mount Person 2's provisioning files.
-- [ ] If the team uses the project VM, add Grafana's development port to
+- [x] If the team uses the project VM, add Grafana's development port to
   `shared/script/create-vm/network.sh` and pass it through `Makefile`'s
   `VM_QEMU_ENV`. Keep production forwarding limited to the gateway unless a
   separate access policy is designed.
@@ -139,15 +146,15 @@ endpoints have no host ports.
 
 ### P1.2 — Scrape Prometheus, Traefik, Pushgateway, and APIs
 
-- [ ] Create `srcs/monitoring/prometheus.yml` with a 15-second scrape
+- [x] Create `srcs/monitoring/prometheus.yml` with a 15-second scrape
   interval. Use named jobs for Prometheus, Traefik, Pushgateway, and each of
   `identity`, `content-management`, `personalization`, `morning-briefing`, and
   `ai-processing` at `<service>:8000/metrics`. Use container addresses, not
   `localhost`.
-- [ ] Enable Traefik's Prometheus exporter in `srcs/gateway/traefik.yaml` on
+- [x] Enable Traefik's Prometheus exporter in `srcs/gateway/traefik.yaml` on
   a dedicated internal entry point. Scrape it over `edge`. Do not publish the
   port or add it to `srcs/gateway/dynamic/routers.yaml`.
-- [ ] Validate the config with `promtool` and inspect Prometheus Targets.
+- [x] Validate the config with `promtool` and inspect Prometheus Targets.
   APIs not yet instrumented by Person 2 may be `DOWN` during parallel work;
   all must be `UP` at integration.
 
@@ -157,7 +164,7 @@ Person 2's data source exists.
 
 ### P1.3 — Instrument the AI Processing worker
 
-- [ ] Add the chosen client to AI Processing's `pyproject.toml` and `uv.lock`.
+- [x] Add the chosen client to AI Processing's `pyproject.toml` and `uv.lock`.
   Expose ordinary HTTP request metrics from its `src/main.py` app; these
   describe the `/health` API, not the summary worker.
 - [ ] In `src/application/SummarizeArticles.py`, record a generation failure
