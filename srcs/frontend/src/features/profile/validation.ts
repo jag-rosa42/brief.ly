@@ -32,8 +32,7 @@ export function mapProfileError(err: unknown): FormErrors {
 	// Cas 2 : le back a refusé les données (validation).
 	if (err.status === 422) {
 		const errors: FormErrors = {};
-		// err.details peut être absent (undefined) : dans ce cas on prend une liste vide.
-		const details = err.details ?? [];
+		const details = err.details;
 		// Le back peut renvoyer plusieurs erreurs : on les traite une par une.
 		for (const detail of details) {
 			const fieldName = detail.field.toLowerCase();

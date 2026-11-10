@@ -3,6 +3,7 @@ import { Button } from "@/shared/components/Button";
 export interface FilterChipOption {
 	value: string;
 	label: string;
+	description?: string;
 }
 
 export interface FilterChipProps {

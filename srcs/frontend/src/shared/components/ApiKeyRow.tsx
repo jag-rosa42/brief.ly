@@ -1,27 +1,25 @@
-import { getStatus, formatDate } from "@/utils/useApiKeys";
-import type { ApiKey } from "@/utils/useApiKeys";
+import { formatDate, isExpired } from "@/features/api-keys/format";
+import type { ApiKey } from "@/features/api-keys/types";
 import { Text } from "@/shared/components/Text";
 import { Button } from "@/shared/components/Button";
 
 export function ApiKeyRow({ apiKey, onDelete }: { apiKey: ApiKey; onDelete: () => void }) {
-	const status = getStatus(apiKey);
+	const expired = isExpired(apiKey.expires_at);
 
 	return (
 		<div className="flex items-center justify-between gap-3 py-2">
-			<div className="flex flex-col">
-				<Text variant="body" className="font-semibold">
+			<div className="flex flex-col min-w-0">
+				<Text variant="body" className="font-semibold truncate" title={apiKey.name}>
 					{apiKey.name}
 				</Text>
-				<code className="text-sm">••••{apiKey.lastChars}</code>
+				<code className="text-sm">{apiKey.prefix}••••</code>
 				<Text variant="body" className="text-info text-sm">
-					Expires on {formatDate(apiKey.expires)}
+					{apiKey.scopes.join(" + ")} · Expires on {formatDate(apiKey.expires_at)}
 				</Text>
 			</div>
 
 			<div className="flex items-center gap-3">
-				<Text variant={status === "active" ? "success" : "error"}>
-					{status === "active" ? "Active" : "Revoked"}
-				</Text>
+				<Text variant={expired ? "error" : "success"}>{expired ? "Expired" : "Active"}</Text>
 				<Button variant="chip" type="button" onClick={onDelete}>
 					Delete
 				</Button>
