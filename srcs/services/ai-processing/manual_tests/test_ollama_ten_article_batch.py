@@ -1,12 +1,18 @@
 """Explicit ten-article worker test with real Ollama and fake Content Management."""
 
 import json
+from contextlib import closing
 from dataclasses import dataclass, field
 from time import perf_counter
 
 import httpx2 as httpx
+from shared_auth import DownstreamClient
 
-from scripts.try_ollama_workflow import DEFAULT_MODEL, DEFAULT_OLLAMA_URL
+from scripts.try_ollama_workflow import (
+    DEFAULT_MODEL,
+    DEFAULT_OLLAMA_URL,
+    StaticTokenProvider,
+)
 from src.infrastructure.config.worker import WorkerSettings
 from src.worker import run_worker
 
@@ -211,13 +217,16 @@ def test_ten_articles_with_three_rejections() -> None:
     fake = FakeContentManagement()
     started = perf_counter()
     with (
-        httpx.Client(
-            base_url=settings.CONTENT_MANAGEMENT_BASE_URL,
-            transport=httpx.MockTransport(fake.respond),
+        closing(
+            DownstreamClient(
+                "content-management",
+                settings.CONTENT_MANAGEMENT_BASE_URL,
+                transport=httpx.MockTransport(fake.respond),
+            )
         ) as content_client,
         httpx.Client(base_url=settings.OLLAMA_BASE_URL) as ollama_client,
     ):
-        run_worker(settings, content_client, ollama_client)
+        run_worker(settings, content_client, ollama_client, StaticTokenProvider())
     elapsed_seconds = perf_counter() - started
 
     assert fake.missing_pages == [
