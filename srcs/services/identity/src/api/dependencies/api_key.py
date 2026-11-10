@@ -8,6 +8,7 @@ from src.api.dependencies.security import TokenHasherDep
 from src.application.port.api_key.generator import ApiKeyGenerator
 from src.application.use_cases.api_keys.create_api_key import CreateApiKey
 from src.application.use_cases.api_keys.list_api_keys import ListApiKeys
+from src.application.use_cases.api_keys.revoke_api_key import RevokeApiKey
 from src.domain.repositories.api_key_repository import ApiKeyRepository
 from src.infrastructure.database.repositories.sqlalchemy_api_key_repository import (
     SqlAlchemyApiKeyRepository,
@@ -65,3 +66,16 @@ def get_list_api_keys(api_key_repository: ApiKeyRepositoryDep) -> ListApiKeys:
 
 
 ListApiKeysDep = Annotated[ListApiKeys, Depends(get_list_api_keys)]
+
+
+# ---------------------------------------------------------------------------
+# Revoke API Key
+# ---------------------------------------------------------------------------
+def get_revoke_api_key(
+    uow: UnitOfWorkDep,
+    api_key_repository: ApiKeyRepositoryDep,
+) -> RevokeApiKey:
+    return RevokeApiKey(uow, api_key_repository)
+
+
+RevokeApiKeyDep = Annotated[RevokeApiKey, Depends(get_revoke_api_key)]

@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Response, status
 from shared_errors import ErrorResponse
 
@@ -5,6 +7,7 @@ from src.api.dependencies import CurrentAccountDep
 from src.api.dependencies.api_key import (
     CreateApiKeyDep,
     ListApiKeysDep,
+    RevokeApiKeyDep,
 )
 from src.api.schemas.api_key import (
     ApiKeyListResponse,
@@ -68,3 +71,21 @@ def list_api_keys(
 ) -> ApiKeyListResponse:
     api_keys: list[ApiKey] = list_api_keys.execute(account_id=current_account.id)
     return ApiKeyListResponse.from_domain(api_keys)
+
+
+@router.delete(
+    path="/{key_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {
+            "model": ErrorResponse,
+            "description": "VALIDATION_ERROR (key_id not a UUID)",
+        },
+    },
+)
+def revoke_api_key(
+    key_id: UUID,
+    current_account: CurrentAccountDep,
+    revoke_api_key: RevokeApiKeyDep,
+) -> None:
+    revoke_api_key.execute(account_id=current_account.id, api_key_id=key_id)
