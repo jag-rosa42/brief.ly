@@ -237,6 +237,7 @@ services:
     profiles: [observability]
     volumes:
       - prometheus_data:/prometheus
+      - ./srcs/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     networks:
       - edge
       - backend
