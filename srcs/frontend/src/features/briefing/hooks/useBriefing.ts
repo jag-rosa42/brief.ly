@@ -6,6 +6,7 @@ import { deleteSavedArticle, saveArticle } from "@/features/saved-articles/api";
 import { MAX_SAVED_ARTICLES } from "@/features/saved-articles/constants";
 import { useNotify } from "@/app/useNotify";
 
+
 export function useBriefing() {
 	const [data, setData] = useState<Briefing | null>(null);
 	const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set());
