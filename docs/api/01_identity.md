@@ -9,14 +9,14 @@ Identity owns accounts, tokens and API keys. Conventions, tokens and errors are 
 | Frontend | POST | `/api/identity/auth/logout` | `/auth/logout` | Refresh cookie | 204 | Done |
 | Frontend | POST | `/api/identity/auth/refresh` | `/auth/refresh` | Refresh cookie | 200 | Done |
 | Frontend | GET | `/api/identity/accounts/me` | `/accounts/me` | Bearer | 200 | Done |
-| Frontend | POST | `/api/identity/api-keys` | `/api-keys` | Bearer | 201 | To do |
-| Frontend | GET | `/api/identity/api-keys` | `/api-keys` | Bearer | 200 | To do |
-| Frontend | DELETE | `/api/identity/api-keys/{key_id}` | `/api-keys/{key_id}` | Bearer | 204 | To do |
-| Internal | any | — | `/internal/v1/api-keys/verify` | Gateway | 200 | To do |
+| Frontend | POST | `/api/identity/api-keys` | `/api-keys` | Bearer | 201 | Done |
+| Frontend | GET | `/api/identity/api-keys` | `/api-keys` | Bearer | 200 | Done |
+| Frontend | DELETE | `/api/identity/api-keys/{key_id}` | `/api-keys/{key_id}` | Bearer | 204 | Done |
+| Internal | any | — | `/internal/v1/api-keys/verify` | Gateway | 200 | Done |
 | Internal | POST | — | `/internal/v1/oauth/token` | Client credentials | 200 | Done |
 | Internal | GET | — | `/health` | None | 200 | Done |
 
-Where the done routes live on `main`: `srcs/services/identity/src/api/routers/auth/router.py` (auth), `srcs/services/identity/src/api/routers/accounts/router.py` (`/accounts/me`), `srcs/services/identity/src/api/routers/auth/cookie.py` (cookie), `srcs/services/identity/src/api/dependencies/security.py` (CSRF guard), `srcs/services/identity/src/api/routers/oauth/router.py` (service tokens; the client registry is `srcs/services/identity/src/infrastructure/oauth/service_clients.py`).
+Where the done routes live on `main`: `srcs/services/identity/src/api/routers/auth/router.py` (auth), `srcs/services/identity/src/api/routers/accounts/router.py` (`/accounts/me`), `srcs/services/identity/src/api/routers/auth/cookie.py` (cookie), `srcs/services/identity/src/api/dependencies/security.py` (CSRF guard), `srcs/services/identity/src/api/routers/oauth/router.py` (service tokens; the client registry is `srcs/services/identity/src/infrastructure/oauth/service_clients.py`), `srcs/services/identity/src/api/routers/api_keys/router.py` (API keys) and `srcs/services/identity/src/api/routers/api_keys/internal_router.py` (the gateway's verify route).
 
 ## Refresh cookie
 
@@ -120,7 +120,7 @@ Header: Authorization: Bearer <access token>
 Body:
 {
   "name": str,                 1-50 chars, a label for the user ("my script")
-  "scopes": ["read" | "write"] 1-2 items, no duplicates
+  "scopes": ["read" | "write"] 1-2 items, no duplicates (the database refuses any other value too)
 }
 
 201 Created
@@ -211,7 +211,7 @@ The errors use our shared format with the OAuth 2.0 error names in uppercase (RF
 
 ### /internal/v1/api-keys/verify
 
-This route is the exchange step of the **phantom token pattern**: an opaque API key comes in, a short-lived JWT goes out. Called only by Traefik's ForwardAuth middleware, for every request on `/public/v1/*` except the docs. Traefik sends the original request's headers; Identity reads `X-API-Key`. There is no cache: every public request is one database lookup, so a revoked key fails on the very next request (a short cache is a possible future improvement, see open questions). The method Traefik uses must be checked against the Traefik docs when implementing, so the route should accept any method.
+This route is the exchange step of the **phantom token pattern**: an opaque API key comes in, a short-lived JWT goes out. Called only by Traefik's ForwardAuth middleware, for every request on `/public/v1/*` except the docs. Traefik sends the original request's headers; Identity reads `X-API-Key`. There is no cache: every public request is one database lookup, so a revoked key fails on the very next request (a short cache is a possible future improvement, see open questions). Traefik's ForwardAuth sends `GET` whatever the original method (unless its `preserveRequestMethod` option is set); the route accepts any method anyway, and only `GET` appears in Identity's OpenAPI document.
 
 ```text
 Header: X-API-Key: <key>
@@ -222,4 +222,6 @@ Header: X-API-Key: <key>
                       Traefik copies this header into the forwarded request, replacing any
                       Authorization header the client sent.
 401 Unauthorized      INVALID_API_KEY (missing, unknown, revoked or expired), returned by Traefik to the client as is
+                      Header: WWW-Authenticate: ApiKey header="X-API-Key"
+                        (RFC 9110: a 401 names how to authenticate; "ApiKey" is our own scheme)
 ```
