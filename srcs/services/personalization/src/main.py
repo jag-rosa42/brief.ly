@@ -17,6 +17,7 @@ from src.api.errors.handlers import register_domain_exception_handlers
 from src.api.routers import api_routers, internal_routers, public_routers, root_routers
 from src.infrastructure.config.app import app_settings
 from src.infrastructure.config.auth import auth_settings
+from src.infrastructure.metrics.http import configure_http_metrics
 
 
 @asynccontextmanager
@@ -65,6 +66,7 @@ def create_app() -> FastAPI:
             PublicDocument("Morning Briefing", public_openapi_path("morning-briefing")),
         ],
     )
+    configure_http_metrics(app)
 
     return app
 
