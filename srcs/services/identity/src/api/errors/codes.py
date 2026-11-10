@@ -49,6 +49,16 @@ DOMAIN_ERROR_STATUS_MAP: dict[ErrorCode, HttpErrorConfig] = {
     ErrorCode.API_KEY_LIMIT_REACHED: HttpErrorConfig(
         status_code=_H409,
     ),
+    # Answered to the gateway's ForwardAuth, which returns it to the program
+    # as is, headers included.
+    # RFC 9110 §15.5.2: a 401 must name how to authenticate. There is no
+    # registered scheme for API keys, so "ApiKey" is ours; it tells the
+    # developer which header to send. Never "Basic": browsers would open a
+    # login pop-up.
+    ErrorCode.INVALID_API_KEY: HttpErrorConfig(
+        status_code=_H401,
+        headers={"WWW-Authenticate": 'ApiKey header="X-API-Key"'},
+    ),
 }
 
 

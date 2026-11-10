@@ -16,6 +16,7 @@ class ErrorCode(StrEnum):
     INVALID_CLIENT = "INVALID_CLIENT"
     INVALID_SCOPE = "INVALID_SCOPE"
     API_KEY_LIMIT_REACHED = "API_KEY_LIMIT_REACHED"
+    INVALID_API_KEY = "INVALID_API_KEY"
 
 
 class DomainError(Exception):
@@ -96,3 +97,12 @@ class ApiKeyLimitReachedError(DomainError):
 
     def __init__(self):
         super().__init__("This account already has the maximum number of active API keys")
+
+
+class InvalidApiKeyError(DomainError):
+    # One error for a missing, unknown, revoked or expired key: the caller
+    # never learns which, so it can't probe for keys that once existed.
+    code = ErrorCode.INVALID_API_KEY
+
+    def __init__(self):
+        super().__init__("Missing or invalid API key")

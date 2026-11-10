@@ -35,6 +35,9 @@ class SecuritySettings(ServiceSettings):
     # accepted by Identity, so they are refused everywhere else.
     JWT_ACCESS_AUDIENCE: str = "transcendence:api"
     JWT_REFRESH_AUDIENCE: str = "transcendence:identity"
+    # Public API tokens (ADR-0009): accepted only on /public/v1 routes, and on
+    # the internal routes a public route forwards them to.
+    JWT_PUBLIC_API_AUDIENCE: str = "transcendence:public-api"
 
     # -----------------------------------------------------------------------
     # Lifetimes
@@ -45,6 +48,9 @@ class SecuritySettings(ServiceSettings):
     # Service tokens are short because they can't be revoked.
     # The client renews them shortly before they expire.
     SERVICE_TOKEN_EXPIRE_MINUTES: int = 5
+    # Public API tokens are created for one request by the gateway's
+    # ForwardAuth, so they only need to outlive that request (ADR-0009).
+    PUBLIC_API_TOKEN_EXPIRE_SECONDS: int = 60
 
 
 security_settings = SecuritySettings()

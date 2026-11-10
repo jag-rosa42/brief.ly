@@ -10,7 +10,8 @@ from src.application.port.api_key.generator import GeneratedApiKey
 from src.application.use_cases.api_keys.create_api_key import CreateApiKey
 from src.application.use_cases.api_keys.list_api_keys import ListApiKeys
 from src.application.use_cases.api_keys.revoke_api_key import RevokeApiKey
-from src.domain.entities.api_key import ApiKey
+from src.application.use_cases.api_keys.verify_api_key import VerifyApiKey
+from src.domain.entities.api_key import ApiKey, ApiKeyScope
 from tests.fixtures.accounts import FakeAccountRepository
 from tests.fixtures.security import FakeTokenHasher
 from tests.fixtures.unit_of_work import FakeUnitOfWork
@@ -94,6 +95,27 @@ def api_key_generator() -> FakeApiKeyGenerator:
 
 
 # ---------------------------------------------------------------------------
+# Public API Token Creator
+# ---------------------------------------------------------------------------
+class FakePublicApiTokenCreator:
+    """Records what it was asked to sign, and returns a readable fake token."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[UUID, frozenset[ApiKeyScope]]] = []
+
+    def create_public_api_token(
+        self, account_id: UUID, scopes: frozenset[ApiKeyScope]
+    ) -> str:
+        self.calls.append((account_id, scopes))
+        return f"fake-public-api-token-for-{account_id}"
+
+
+@pytest.fixture
+def public_api_token_creator() -> FakePublicApiTokenCreator:
+    return FakePublicApiTokenCreator()
+
+
+# ---------------------------------------------------------------------------
 # Use cases, wired to the fakes
 # ---------------------------------------------------------------------------
 @pytest.fixture
@@ -124,3 +146,16 @@ def revoke_api_key(
     api_key_repository: FakeApiKeyRepository,
 ) -> RevokeApiKey:
     return RevokeApiKey(uow, api_key_repository)
+
+
+@pytest.fixture
+def verify_api_key(
+    api_key_repository: FakeApiKeyRepository,
+    token_hasher: FakeTokenHasher,
+    public_api_token_creator: FakePublicApiTokenCreator,
+) -> VerifyApiKey:
+    return VerifyApiKey(
+        api_key_repository,
+        token_hasher,
+        public_api_token_creator,
+    )

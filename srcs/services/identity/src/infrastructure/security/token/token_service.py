@@ -14,6 +14,7 @@ from src.application.port.token.types import (
     CreatedToken,
     RefreshTokenClaims,
 )
+from src.domain.entities.api_key import ApiKeyScope
 from src.domain.exception import InvalidTokenError, TokenExpiredError
 from src.infrastructure.security.settings import security_settings
 from src.infrastructure.security.token.jwt_payload import JWTTokenPayload
@@ -55,6 +56,10 @@ class JWTTokenService:
                 minutes=security_settings.SERVICE_TOKEN_EXPIRE_MINUTES
             ),
         }
+        self._public_api_audience: str = security_settings.JWT_PUBLIC_API_AUDIENCE
+        self._public_api_token_lifetime: timedelta = timedelta(
+            seconds=security_settings.PUBLIC_API_TOKEN_EXPIRE_SECONDS
+        )
 
     def create_access_token(self, account_id: UUID) -> str:
         created_token: CreatedToken = self._create_token(
@@ -124,16 +129,42 @@ class JWTTokenService:
             expires_in=int(lifetime.total_seconds()),
         )
 
+    def create_public_api_token(
+        self,
+        account_id: UUID,
+        scopes: frozenset[ApiKeyScope],
+    ) -> str:
+        """A token for one public API request, made from an API key (ADR-0009).
+
+        It is an access token (`type=access`, `sub` = the key's owner), so the
+        services read it like a browser token.
+        What differs:
+        - the audience is the public API, so it is refused on frontend routes
+          (and a browser token on public routes);
+        - `scope` holds the key's scopes;
+        - and it lives about a minute, the time of one request through the gateway.
+        """
+        created_token: CreatedToken = self._create_token(
+            subject=str(account_id),
+            audience=self._public_api_audience,
+            token_type=TokenType.ACCESS,
+            # Space-separated and sorted, like service tokens.
+            extra_claims={"scope": " ".join(sorted(scopes))},
+            lifetime=self._public_api_token_lifetime,
+        )
+        return created_token.token
+
     def _create_token(
         self,
         subject: str,
         audience: str,
         token_type: TokenType,
         extra_claims: dict[str, Any] | None = None,
+        lifetime: timedelta | None = None,
     ) -> CreatedToken:
         now: datetime = datetime.now(UTC)
         token_id: UUID = uuid4()
-        expires_at: datetime = now + self._lifetimes[token_type]
+        expires_at: datetime = now + (lifetime or self._lifetimes[token_type])
         payload: dict[str, Any] = {
             # Extra claim goes first so that an extra one can never replace a standard one
             **(extra_claims or {}),

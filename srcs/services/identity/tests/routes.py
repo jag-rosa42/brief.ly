@@ -19,6 +19,7 @@ ACCOUNTS_ME: str = app.url_path_for("get_me")
 HEALTH: str = app.url_path_for("health_check")
 OAUTH_TOKEN: str = app.url_path_for("create_token")
 API_KEYS: str = app.url_path_for("create_api_key")
+API_KEYS_VERIFY: str = app.url_path_for("verify_api_key")
 
 
 def api_key(key_id: object) -> str:
