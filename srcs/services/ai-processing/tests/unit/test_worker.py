@@ -6,6 +6,7 @@ import pytest
 
 from src.infrastructure.config.worker import WorkerSettings
 from src.worker import run_worker
+from tests.fakes import FakeTokenProvider
 from tests.model import DEFAULT_MODEL
 
 
@@ -29,7 +30,7 @@ def test_worker_wires_get_summarize_put_and_repeats() -> None:
 
     def content_respond(request: httpx.Request) -> httpx.Response:
         nonlocal saved
-        assert "Authorization" not in request.headers
+        assert request.headers["Authorization"] == "Bearer service-token"
         if request.method == "GET" and request.url.path == "/internal/v1/topics":
             calls.append("topics")
             return httpx.Response(200, json=[{"id": "local-news"}])
@@ -153,7 +154,7 @@ def test_worker_wires_get_summarize_put_and_repeats() -> None:
             transport=httpx.MockTransport(ollama_respond),
         ) as ollama_client,
     ):
-        run_worker(settings, content_client, ollama_client)
+        run_worker(settings, content_client, ollama_client, FakeTokenProvider())
 
     assert calls == [
         "get",

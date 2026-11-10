@@ -97,6 +97,7 @@ x-ai-processing-image-build: &ai-processing-image-build
     dockerfile: Dockerfile
     additional_contexts:
       shared_errors: ./shared/packages/shared_errors
+      shared_auth: ./shared/packages/shared_auth
   image: ai-processing
   env_file:
     - ./srcs/services/ai-processing/.env
@@ -302,11 +303,16 @@ services:
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
       POSTGRES_DEFAULT_DB_NAME: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
+      IDENTITY_URL: ${IDENTITY_INTERNAL_URL:?Variable not set}
     depends_on:
       pgvector:
         condition: service_healthy
       prestart-ai-processing:
         condition: service_completed_successfully
+    # Replaces the anchor's list too, so postgres_password is repeated.
+    secrets:
+      - postgres_password
+      - ai_processing_client_secret
 
   # -- Content-management -----------------------------------------------------
   prestart-content-management:
