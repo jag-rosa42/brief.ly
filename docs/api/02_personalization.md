@@ -27,7 +27,8 @@ It serves the same use cases through two doors: Frontend routes (browser token) 
 Public routes answer like their Frontend twin, plus:
 
 ```text
-401 Unauthorized      INVALID_API_KEY (from Identity, via the gateway)
+401 Unauthorized      INVALID_API_KEY (from Identity, via the gateway),
+                      with WWW-Authenticate: ApiKey header="X-API-Key"
 403 Forbidden         INSUFFICIENT_SCOPE (key lacks read or write)
 429 Too Many Requests rate limited by the gateway (per IP, then per key)
 ```
