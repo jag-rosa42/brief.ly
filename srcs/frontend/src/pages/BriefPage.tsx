@@ -35,6 +35,18 @@ function formatDate(date: Date): string {
 	}).format(date);
 }
 
+function getGreeting(date: Date): string {
+	const hour = date.getHours();
+
+	if (hour < 12) {
+		return "Good morning";
+	}
+	if (hour < 18) {
+		return "Good afternoon";
+	}
+	return "Good evening";
+}
+
 function DashboardHeader({ firstName, today }: DashboardHeaderProps) {
 	return (
 		<header className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -49,7 +61,7 @@ function DashboardHeader({ firstName, today }: DashboardHeaderProps) {
 			<Division variant="dashboardcard" className="min-w-0 md:col-span-2">
 				{/* Only the name shrinks and ends with "…"; the full name shows on hover. */}
 				<Text variant="title" className="flex font-serif">
-					<span className="shrink-0 whitespace-pre">{"Good morning "}</span>
+					<span className="shrink-0 whitespace-pre">{`${getGreeting(today)} `}</span>
 					<span className="min-w-0 truncate pb-1" title={firstName}>
 						{firstName}
 					</span>
