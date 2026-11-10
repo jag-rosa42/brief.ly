@@ -78,10 +78,20 @@ services:
     volumes:
       - ./srcs/gateway/dev/frontend.yaml:/etc/traefik/dynamic/frontend.yaml:ro
 
+  # Grafana is the only monitoring UI published in development. Normally Docker
+  # binds it to 127.0.0.1 on this computer. In the project VM, the Makefile sets
+  # DEV_BIND_ADDRESS=0.0.0.0, so Docker listens on every IPv4 interface inside
+  # the guest; QEMU separately forwards only host 127.0.0.1 to the guest port.
+  # Other VM network modes could also reach the guest's all-interface binding.
+  grafana:
+    ports:
+      - "${DEV_BIND_ADDRESS:-127.0.0.1}:${GRAFANA_PORT:-3000}:3000"
+
   front-test:
     build:
       context: ./srcs/frontend/
       dockerfile: Dockerfile.dev
+    network_mode: none
     volumes:
       - ./srcs/frontend/:/app
       - frontend_node_modules:/app/node_modules
