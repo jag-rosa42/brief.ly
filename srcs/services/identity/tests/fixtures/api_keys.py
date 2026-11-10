@@ -8,6 +8,7 @@ import pytest
 
 from src.application.port.api_key.generator import GeneratedApiKey
 from src.application.use_cases.api_keys.create_api_key import CreateApiKey
+from src.application.use_cases.api_keys.list_api_keys import ListApiKeys
 from src.domain.entities.api_key import ApiKey
 from tests.fixtures.accounts import FakeAccountRepository
 from tests.fixtures.security import FakeTokenHasher
@@ -109,3 +110,8 @@ def create_api_key(
         api_key_generator,
         token_hasher,
     )
+
+
+@pytest.fixture
+def list_api_keys(api_key_repository: FakeApiKeyRepository) -> ListApiKeys:
+    return ListApiKeys(api_key_repository)

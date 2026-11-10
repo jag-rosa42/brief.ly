@@ -63,3 +63,11 @@ class CreatedApiKeyResponse(ApiKeyResponse):
             **ApiKeyResponse.from_domain(created.api_key).model_dump(),
             key=created.key,
         )
+
+
+class ApiKeyListResponse(BaseModel):
+    items: list[ApiKeyResponse]  # [] when the account has no active key
+
+    @classmethod
+    def from_domain(cls, api_keys: list[ApiKey]) -> Self:
+        return cls(items=[ApiKeyResponse.from_domain(key) for key in api_keys])

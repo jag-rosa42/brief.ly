@@ -4,12 +4,15 @@ from shared_errors import ErrorResponse
 from src.api.dependencies import CurrentAccountDep
 from src.api.dependencies.api_key import (
     CreateApiKeyDep,
+    ListApiKeysDep,
 )
 from src.api.schemas.api_key import (
+    ApiKeyListResponse,
     CreateApiKeyRequest,
     CreatedApiKeyResponse,
 )
 from src.application.use_cases.api_keys.create_api_key import CreatedApiKey
+from src.domain.entities.api_key import ApiKey
 
 router = APIRouter(
     prefix="/api-keys",
@@ -52,3 +55,16 @@ def create_api_key(
     # The body holds a secret, shown once: no cache may keep a copy.
     response.headers["Cache-Control"] = "no-store"
     return CreatedApiKeyResponse.from_created(created)
+
+
+@router.get(
+    path="",
+    status_code=status.HTTP_200_OK,
+    response_model=ApiKeyListResponse,
+)
+def list_api_keys(
+    current_account: CurrentAccountDep,
+    list_api_keys: ListApiKeysDep,
+) -> ApiKeyListResponse:
+    api_keys: list[ApiKey] = list_api_keys.execute(account_id=current_account.id)
+    return ApiKeyListResponse.from_domain(api_keys)

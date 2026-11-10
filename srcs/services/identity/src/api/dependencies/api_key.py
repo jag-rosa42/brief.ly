@@ -7,6 +7,7 @@ from src.api.dependencies.database import SessionDep, UnitOfWorkDep
 from src.api.dependencies.security import TokenHasherDep
 from src.application.port.api_key.generator import ApiKeyGenerator
 from src.application.use_cases.api_keys.create_api_key import CreateApiKey
+from src.application.use_cases.api_keys.list_api_keys import ListApiKeys
 from src.domain.repositories.api_key_repository import ApiKeyRepository
 from src.infrastructure.database.repositories.sqlalchemy_api_key_repository import (
     SqlAlchemyApiKeyRepository,
@@ -54,3 +55,13 @@ def get_create_api_key(
 
 
 CreateApiKeyDep = Annotated[CreateApiKey, Depends(get_create_api_key)]
+
+
+# ---------------------------------------------------------------------------
+# List API Keys
+# ---------------------------------------------------------------------------
+def get_list_api_keys(api_key_repository: ApiKeyRepositoryDep) -> ListApiKeys:
+    return ListApiKeys(api_key_repository)
+
+
+ListApiKeysDep = Annotated[ListApiKeys, Depends(get_list_api_keys)]

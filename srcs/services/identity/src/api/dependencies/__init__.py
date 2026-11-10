@@ -8,6 +8,7 @@ from src.api.dependencies.api_key import (
     ApiKeyGeneratorDep,
     ApiKeyRepositoryDep,
     CreateApiKeyDep,
+    ListApiKeysDep,
 )
 from src.api.dependencies.database import SessionDep, UnitOfWorkDep
 from src.api.dependencies.security import (
@@ -31,6 +32,7 @@ __all__: list[str] = [
     "CreateAccountSessionDep",
     "CreateApiKeyDep",
     "CurrentAccountDep",
+    "ListApiKeysDep",
     "LoginAccountDep",
     "LogoutAccountDep",
     "OptionalRefreshTokenCookieDep",

@@ -1,4 +1,4 @@
-"""POST /api-keys through the whole stack, without a database.
+"""POST and GET /api-keys through the whole stack, without a database.
 
 Real access tokens, checked by the real CurrentAccountDep; real use cases,
 real key generator. Only the repositories and the unit of work are
@@ -6,7 +6,7 @@ in-memory fakes, so these tests don't need PostgreSQL.
 """
 
 from collections.abc import Generator
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -25,6 +25,7 @@ from src.main import app
 from tests import routes
 from tests.fixtures.accounts import FakeAccountRepository
 from tests.fixtures.api_keys import FakeApiKeyRepository
+from tests.fixtures.factory import build_api_key
 from tests.fixtures.unit_of_work import FakeUnitOfWork
 
 NEW_KEY: dict[str, Any] = {"name": "my script", "scopes": ["read", "write"]}
@@ -145,3 +146,44 @@ class TestCreateApiKey:
 
         assert response.status_code == 401
         assert error_code(response) == "INVALID_TOKEN"
+
+
+class TestListApiKeys:
+    def test_returns_an_empty_list_without_keys(
+        self, client: TestClient, auth: dict[str, str]
+    ) -> None:
+        response: Response = client.get(routes.API_KEYS, headers=auth)
+
+        assert response.status_code == 200
+        assert response.json() == {"items": []}
+
+    def test_lists_active_keys_newest_first_without_the_key(
+        self,
+        client: TestClient,
+        auth: dict[str, str],
+        owner: Account,
+        api_key_repository: FakeApiKeyRepository,
+    ) -> None:
+        now = datetime.now(UTC)
+        older = build_api_key(account_id=owner.id, created_at=now - timedelta(hours=2))
+        newer = build_api_key(account_id=owner.id, created_at=now - timedelta(hours=1))
+        revoked = build_api_key(account_id=owner.id, revoked_at=now)
+        someone_elses = build_api_key()
+        for api_key in (older, newer, revoked, someone_elses):
+            api_key_repository.add(api_key)
+
+        response: Response = client.get(routes.API_KEYS, headers=auth)
+
+        items: list[dict[str, Any]] = response.json()["items"]
+        assert [item["id"] for item in items] == [str(newer.id), str(older.id)]
+        assert set(items[0]) == {
+            "id",
+            "name",
+            "prefix",
+            "scopes",
+            "created_at",
+            "expires_at",
+        }
+
+    def test_returns_401_without_a_token(self, client: TestClient) -> None:
+        assert client.get(routes.API_KEYS).status_code == 401
