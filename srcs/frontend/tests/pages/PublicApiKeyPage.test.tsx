@@ -85,7 +85,8 @@ async function createKeyUntilDialog() {
 	renderPage();
 	submitForm();
 	fireEvent.click(screen.getByRole("button", { name: "Generate key" }));
-	const dialog = await screen.findByRole("dialog");
+	const secret = await screen.findByText(SECRET);
+	const dialog = secret.closest<HTMLElement>('[role="dialog"]')!;
 	return { hook, dialog };
 }
 
