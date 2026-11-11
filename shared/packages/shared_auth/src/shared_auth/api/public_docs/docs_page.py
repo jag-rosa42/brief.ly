@@ -54,8 +54,8 @@ _DOCS_PAGE_TEMPLATE: str = """<!DOCTYPE html>
 def build_public_docs_init_script(documents: Sequence[PublicDocument]) -> str:
     """The page's only inline script: it starts Swagger UI.
 
-    Kept apart because a Content-Security-Policy that allows it by hash
-    (Phase 8) needs its exact text.
+    Kept apart because a Content-Security-Policy that allows it by its hash
+    needs its exact text.
 
     Raises:
         ValueError: `documents` is empty.

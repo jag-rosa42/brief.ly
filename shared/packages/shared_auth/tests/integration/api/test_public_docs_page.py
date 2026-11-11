@@ -96,7 +96,8 @@ class TestPublicDocsPage:
         assert config["persistAuthorization"] is False
 
     def test_has_one_inline_script_the_init_script(self) -> None:
-        # Phase 8's Content-Security-Policy allows this script by its hash.
+        # A Content-Security-Policy can allow this script by its hash: it must
+        # stay the only inline script.
         html: str = build_public_docs_html(DOCUMENTS)
 
         inline_scripts: list[str] = re.findall(r"<script>(.*?)</script>", html, re.S)

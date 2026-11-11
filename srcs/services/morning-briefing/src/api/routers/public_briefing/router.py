@@ -28,5 +28,6 @@ def get_public_briefing(
 ) -> BriefingResponse:
     # The profile belongs to the key's owner: the public API token is
     # forwarded to Personalization, whose internal route accepts it
-    # (CurrentForwardedUserDep, ADR-0008 and ADR-0009 recipe step 7).
+    # (CurrentForwardedUserDep). ADR-0008 and ADR-0009: a public route that
+    # calls another service for the user forwards the user's token.
     return BriefingResponse.from_domain(get_briefing.execute(user.token))
