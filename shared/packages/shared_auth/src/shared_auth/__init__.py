@@ -3,10 +3,19 @@ from shared_auth.api.dependencies import (
     CurrentForwardedUserDep,
     CurrentServiceDep,
     CurrentUserDep,
+    PublicApiReaderDep,
+    PublicApiWriterDep,
     require_public_api_scopes,
     require_service_scopes,
 )
 from shared_auth.api.installation import install_authentication
+from shared_auth.api.public_docs import (
+    PUBLIC_API_RESPONSES,
+    PublicDocument,
+    install_public_docs_page,
+    install_public_openapi,
+    public_openapi_path,
+)
 from shared_auth.application.authenticator import Authenticator
 from shared_auth.application.port.token_verifier import TokenVerifier
 from shared_auth.domain.exceptions import (
@@ -31,6 +40,7 @@ from shared_auth.infrastructure.settings import AuthSettings
 from shared_auth.infrastructure.tokens.jwt_token_verifier import JWTTokenVerifier
 
 __all__: list[str] = [
+    "PUBLIC_API_RESPONSES",
     "AuthSettings",
     "AuthenticationError",
     "Authenticator",
@@ -46,6 +56,9 @@ __all__: list[str] = [
     "InvalidTokenError",
     "JWTTokenVerifier",
     "Principal",
+    "PublicApiReaderDep",
+    "PublicApiWriterDep",
+    "PublicDocument",
     "ServicePrincipal",
     "TokenExpiredError",
     "TokenType",
@@ -54,6 +67,9 @@ __all__: list[str] = [
     "VerifiedToken",
     "ensure_scopes",
     "install_authentication",
+    "install_public_docs_page",
+    "install_public_openapi",
+    "public_openapi_path",
     "require_public_api_scopes",
     "require_service_scopes",
 ]

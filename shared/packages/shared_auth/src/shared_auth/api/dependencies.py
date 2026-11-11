@@ -10,8 +10,7 @@ Usage example on routes:
         def get_profile_for_briefing(user: CurrentForwardedUserDep): ...
 
     # public route: a public API token holding the scope
-        Writer = Depends(require_public_api_scopes("write"))
-        def update_profile(user: Annotated[UserPrincipal, Writer]): ...
+        def update_profile(user: PublicApiWriterDep): ...
 
     # internal route: a service token holding the scope
         SummaryWriter = Depends(require_service_scopes("summaries:write"))
@@ -134,3 +133,23 @@ def require_public_api_scopes(*scopes: str) -> Callable[..., UserPrincipal]:
         return user
 
     return dependency
+
+
+# ---------------------------------------------------------------------------
+# Public API scopes (ADR-0009)
+# ---------------------------------------------------------------------------
+# A key carries "read" and/or "write", and they mean the same thing on every
+# public route, whatever service serves it: "read" for GET routes, "write"
+# for the routes that change data. So every service uses these two.
+
+PUBLIC_API_READ_SCOPE: str = "read"
+PUBLIC_API_WRITE_SCOPE: str = "write"
+
+PublicApiReaderDep = Annotated[
+    UserPrincipal,
+    Depends(require_public_api_scopes(PUBLIC_API_READ_SCOPE)),
+]
+PublicApiWriterDep = Annotated[
+    UserPrincipal,
+    Depends(require_public_api_scopes(PUBLIC_API_WRITE_SCOPE)),
+]
