@@ -128,7 +128,7 @@ test("shows the link to the original article", async () => {
 	answerWith([FIRST]);
 
 	renderPage();
-	fireEvent.click(await screen.findByRole("button", { name: "Read More →" }));
+	fireEvent.click(await screen.findByRole("button", { name: "Read More" }));
 
 	expect(screen.getByText("Read the full article on TechDaily ↗")).toBeInTheDocument();
 });
@@ -158,7 +158,7 @@ test("opens the right article when clicking Read more", async () => {
 	answerWith([FIRST, SECOND]);
 
 	renderPage();
-	fireEvent.click((await screen.findAllByRole("button", { name: "Read More →" }))[1]);
+	fireEvent.click((await screen.findAllByRole("button", { name: "Read More" }))[1]);
 
 	// The title is also on the card, so look for it inside the modal only.
 	const dialog = screen.getByRole("dialog");

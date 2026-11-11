@@ -3,6 +3,7 @@ import { Button } from "@/shared/components/Button";
 import { ArticleCard } from "@/shared/components/ArticleCard";
 import { ArticleModal, type Article } from "@/shared/components/ArticleModal";
 import { Dropdown } from "@/shared/components/Dropdown";
+import { Icon } from "@/shared/components/Icon";
 import { Input } from "@/shared/components/Input";
 import { Text } from "@/shared/components/Text";
 import { Division } from "@/shared/components/Division";
@@ -146,20 +147,22 @@ function Pagination({ currentPage, pageCount, onPageChange }: PaginationProps) {
 		<div className="flex items-center justify-center gap-4">
 			<Button
 				variant="primary"
+				aria-label="Previous page"
 				disabled={currentPage === 1}
 				onClick={() => onPageChange(currentPage - 1)}
 			>
-				🡨
+				<Icon name="arrow-left" />
 			</Button>
 			<Text variant="body">
 				Page {currentPage} / {pageCount}
 			</Text>
 			<Button
 				variant="primary"
+				aria-label="Next page"
 				disabled={currentPage === pageCount}
 				onClick={() => onPageChange(currentPage + 1)}
 			>
-				🡪
+				<Icon name="arrow-right" />
 			</Button>
 		</div>
 	);
