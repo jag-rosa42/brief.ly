@@ -3,6 +3,7 @@ import type { ReactNode, SubmitEvent } from "react";
 import { useApiKeys, MAX_KEYS } from "@/features/api-keys/useApiKey";
 import { mapApiKeyError } from "@/features/api-keys/error";
 import type { ApiKeyScope } from "@/features/api-keys/types";
+import { isApiKeyScope } from "@/features/api-keys/types";
 import { Division } from "@/shared/components/Division";
 import { Form } from "@/shared/components/Form";
 import { Text } from "@/shared/components/Text";
@@ -33,6 +34,8 @@ interface ConfirmDialogProps {
 	open: boolean;
 	message: ReactNode;
 	confirmLabel: string;
+	ariaLabel: string;
+	role?: "dialog" | "alertdialog";
 	busy?: boolean;
 	onConfirm: () => void;
 	onCancel: () => void;
@@ -42,6 +45,8 @@ function ConfirmDialog({
 	open,
 	message,
 	confirmLabel,
+	ariaLabel,
+	role = "dialog",
 	busy = false,
 	onConfirm,
 	onCancel,
@@ -50,6 +55,9 @@ function ConfirmDialog({
 
 	return (
 		<div
+			role={role}
+			aria-modal="true"
+			aria-label={ariaLabel}
 			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
 			onClick={onCancel}
 		>
@@ -150,11 +158,11 @@ export function PublicApiKeyPage() {
 	}
 
 	function toggleScope(value: string) {
-		const scope = value as ApiKeyScope;
+		if (!isApiKeyScope(value)) return;
 		setScopes((prev) => {
-			if (!prev.includes(scope)) return [...prev, scope];
-			if (prev.length === 1) return prev; // keep at least one
-			return prev.filter((s) => s !== scope);
+			if (!prev.includes(value)) return [...prev, value];
+			if (prev.length === 1) return prev;
+			return prev.filter((s) => s !== value);
 		});
 	}
 
@@ -341,6 +349,8 @@ export function PublicApiKeyPage() {
 
 			<ConfirmDialog
 				open={pendingDelete !== null}
+				role="alertdialog"
+				ariaLabel="Delete API key"
 				message={`Delete "${pendingDelete?.keyName ?? ""}" ?`}
 				confirmLabel="Delete"
 				busy={busy}
@@ -349,6 +359,7 @@ export function PublicApiKeyPage() {
 			/>
 			<ConfirmDialog
 				open={pendingCreate !== null}
+				ariaLabel="Create API key"
 				message={
 					<>
 						Your new API key <strong>{pendingCreate?.name}</strong> (
