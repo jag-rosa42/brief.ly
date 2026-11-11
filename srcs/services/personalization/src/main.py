@@ -3,12 +3,18 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from shared_auth import install_authentication
+from shared_auth import (
+    PublicDocument,
+    install_authentication,
+    install_public_docs_page,
+    install_public_openapi,
+    public_openapi_path,
+)
 from shared_errors import register_shared_exception_handlers
 
 from src.api.dependencies.clients import close_clients
 from src.api.errors.handlers import register_domain_exception_handlers
-from src.api.routers import api_routers, internal_routers, root_routers
+from src.api.routers import api_routers, internal_routers, public_routers, root_routers
 from src.infrastructure.config.app import app_settings
 from src.infrastructure.config.auth import auth_settings
 
@@ -35,9 +41,28 @@ def create_app() -> FastAPI:
     app.include_router(root_routers)
     app.include_router(api_routers)
     app.include_router(internal_routers)
+    app.include_router(public_routers)
     register_shared_exception_handlers(app)
     register_domain_exception_handlers(app)
     install_authentication(app, auth_settings, public_api=True)
+
+    # Public API documentation (ADR-0009), readable without a key:
+    # - this service's document: GET /public/v1/openapi/personalization.json
+    install_public_openapi(
+        app,
+        public_routers,
+        service_name="personalization",
+        title="Transcendence public API: profile, topics and saved articles",
+    )
+    # - the page for every service's document: GET /public/v1/docs
+    #   (Personalization hosts it; Morning Briefing serves its own document).
+    install_public_docs_page(
+        app,
+        documents=[
+            PublicDocument("Personalization", public_openapi_path("personalization")),
+            PublicDocument("Morning Briefing", public_openapi_path("morning-briefing")),
+        ],
+    )
 
     return app
 

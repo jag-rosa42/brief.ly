@@ -22,3 +22,15 @@ TOPICS: str = app.url_path_for("get_topics")
 
 def me_saved_article(article_id: UUID) -> str:
     return app.url_path_for("delete_my_saved_article", article_id=str(article_id))
+
+
+# Public API (ADR-0009)
+PUBLIC_ME_PROFILE: str = app.url_path_for("get_my_public_profile")
+PUBLIC_ME_SAVED_ARTICLES: str = app.url_path_for("list_my_public_saved_articles")
+PUBLIC_TOPICS: str = app.url_path_for("get_public_topics")
+PUBLIC_OPENAPI: str = "/public/v1/openapi/personalization.json"
+PUBLIC_DOCS: str = "/public/v1/docs"
+
+
+def public_me_saved_article(article_id: UUID) -> str:
+    return app.url_path_for("save_my_public_article", article_id=str(article_id))
