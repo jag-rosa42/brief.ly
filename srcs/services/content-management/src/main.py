@@ -29,8 +29,6 @@ def create_app() -> FastAPI:
     register_shared_exception_handlers(app)
     register_domain_exception_handlers(app)
     register_api_exception_handlers(app)
-    # Verifies the service tokens of /internal routes (ADR-0008). No
-    # public_api: Content Management has no public route.
     install_authentication(app, auth_settings)
 
     return app
