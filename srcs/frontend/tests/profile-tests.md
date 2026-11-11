@@ -302,13 +302,14 @@ Repeat the check for:
 
 - The user can log out and log in successfully.
 - Identity authentication works independently of whether a Personalization profile exists.
-- `GET /api/personalization/me/profile` returns **404 Not Found** with `PROFILE_NOT_FOUND`.
+- `GET /api/personalization/me/profile` returns **200 OK** with the body `null`.
+- The Chrome console shows no error (no red `404` line).
 - The frontend handles the missing profile correctly.
 - The user is redirected to the profile creation/onboarding page, where the name and interests can be completed.
 - No application crash occurs.
 - After completing the form, the frontend sends a PUT request that creates the profile (201).
 
-> **Important:** according to the Personalization contract, a missing profile is represented by `404 PROFILE_NOT_FOUND`.
+> **Important:** according to the Personalization contract, the frontend route represents a missing profile by `200` with `null` (the public route keeps `404 PROFILE_NOT_FOUND`).
 
 ### 11. Newly registered user with a completed profile
 

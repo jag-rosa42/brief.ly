@@ -1,4 +1,4 @@
-import { apiFetch, ApiError } from "@/shared/components/api/client";
+import { apiFetch } from "@/shared/components/api/client";
 
 export interface Profile {
 	name: string;
@@ -16,14 +16,11 @@ export interface UpsertProfileBody {
 	topic_ids?: string[];
 }
 
-// 404 PROFILE_NOT_FOUND n'est pas une erreur : c'est le mode onboarding.
-export async function getProfile(): Promise<Profile | null> {
-	try {
-		return await apiFetch<Profile>("/api/personalization/me/profile");
-	} catch (e) {
-		if (e instanceof ApiError && e.code === "PROFILE_NOT_FOUND") return null;
-		throw e;
-	}
+// null: no profile yet (right after sign-up), so the app shows the profile
+// form. The API answers 200 with null rather than 404, so Chrome's console
+// stays clean.
+export function getProfile(): Promise<Profile | null> {
+	return apiFetch<Profile | null>("/api/personalization/me/profile");
 }
 
 export async function getTopics(): Promise<Topic[]> {
