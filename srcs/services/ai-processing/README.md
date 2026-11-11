@@ -18,10 +18,16 @@ For this QEMU VM, `.env.example` sets
 `http://content-management:8000` for Content Management. Set
 `CONTENT_MANAGEMENT_BASE_URL` only when running outside Compose.
 `OLLAMA_TIMEOUT_SECONDS` defaults to 120.
+`OLLAMA_CONTEXT_LENGTH` defaults to 8192 tokens and is sent as `num_ctx` on every
+article and topic request, so the worker does not depend on the host's default.
 `ARTICLE_BATCH_SIZE` defaults to 25 and controls the `limit` sent when the
 worker fetches articles missing summaries. Content Management currently accepts
 limits of 1–25, so keep this value in that range. Set it in the service's
 `.env` to change the worker batch size.
+After four failed generation attempts, the worker saves the article as rejected
+with no summary and the comment `AI assessment failed after 4 attempts.` It then
+continues to later batches and topic summaries. Generation failures still count
+in worker metrics. A failure to save an assessment still stops the run.
 If an existing `.env` has `CONTENT_MANAGEMENT_BASE_URL=` with an empty value,
 remove that line so the default applies. Update `OLLAMA_BASE_URL` in that file
 too; changing `.env.example` does not change an existing `.env`.
@@ -115,7 +121,7 @@ host, use the existing Make target to start AI Processing and its dependencies
 inside the VM:
 
 ```sh
-make vm SERVICE=ai-processing
+make vm-service SERVICE=ai-processing
 ```
 
 Then enter the VM with `make connect-vm`. From the repository root inside the
@@ -125,7 +131,7 @@ VM, run the one-article test in a temporary AI Processing container:
 docker compose -f compose.yaml -f compose.override.yaml --profile backend --profile databases run --rm --no-deps ai-processing python -m scripts.try_ollama_workflow
 ```
 
-The temporary container uses the image built by `make vm` and skips database
+The temporary container uses the image built by `make vm-service` and skips database
 startup because this test has no database dependency. This also works if the
 regular AI Processing prestart step fails.
 
