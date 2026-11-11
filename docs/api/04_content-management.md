@@ -7,22 +7,21 @@ A topic is never hard-deleted, so a profile can never point at a missing topic. 
 | Kind | Method | Service path | Auth | Success | Status |
 | --- | --- | --- | --- | --- | --- |
 | Internal | POST | `/internal/v1/ingestion-runs` | Service (`ingestion:run`) | 201 | Partial (token check missing) |
-| Internal | GET | `/internal/v1/topics` | Service (`topics:read`) | 200 | Partial (token check missing) |
-| Internal | GET | `/internal/v1/articles?topic_id={topic_id}` | Service (`articles:read`) | 200 | Partial (token check missing) |
-| Internal | GET | `/internal/v1/articles?summary=missing` | Service (`articles:read`) | 200 | Partial (token check missing) |
-| Internal | GET | `/internal/v1/articles/{article_id}` | Service (`articles:read`) | 200 | Partial (token check missing) |
-| Internal | PUT | `/internal/v1/articles/{article_id}/summary` | Service (`summaries:write`) | 200 | Partial (token check missing) |
-| Internal | PUT | `/internal/v1/topics/{topic_id}/summary` | Service (`summaries:write`) | 200 | Partial (token check missing) |
+| Internal | GET | `/internal/v1/topics` | Service (`topics:read`) | 200 | Done |
+| Internal | GET | `/internal/v1/articles?topic_id={topic_id}` | Service (`articles:read`) | 200 | Done |
+| Internal | GET | `/internal/v1/articles?summary=missing` | Service (`articles:read`) | 200 | Done |
+| Internal | GET | `/internal/v1/articles/{article_id}` | Service (`articles:read`) | 200 | Done |
+| Internal | PUT | `/internal/v1/articles/{article_id}/summary` | Service (`summaries:write`) | 200 | Done |
+| Internal | PUT | `/internal/v1/topics/{topic_id}/summary` | Service (`summaries:write`) | 200 | Done |
 | Internal | GET | `/health` | None | 200 | Done |
 
-**The topic GET and summary PUT routes are Partial.** The GET returns `id`,
-`summary`, and `summarized_at`; the PUT creates or replaces the latest summary.
-Neither route checks a service token yet (the known gap below).
+The topic GET returns `id`, `summary`, and `summarized_at`; the PUT creates or replaces the latest summary.
 
-**`POST /internal/v1/ingestion-runs` is Partial.** It triggers a synchronous ingestion and reports whether it succeeded fully or partially, but does not check a service token yet.
+Every route above except `/health` and `POST /internal/v1/ingestion-runs` checks the service token and its scope (ADR-0008): no valid token gives 401, a token without the route's scope gives 403 `INSUFFICIENT_SCOPE`.
+
+**`POST /internal/v1/ingestion-runs` is Partial.** It triggers a synchronous ingestion and reports whether it succeeded fully or partially, but does not check a service token yet: no client in Identity's registry has `ingestion:run`, and `make ingest` calls it without a token. It stays protected only by not being routed and by the `backend` network.
 
 - Only AI Processing's client may get the `summaries:write` scope (Identity's client registry, ADR-0008).
-- Known gap: until service tokens exist (ADR-0008), these routes are unauthenticated and protected only by not being routed and by the `backend` network. Service tokens are built before the Public API.
 - The article GET routes and article summary PUT route exist. The article GET routes apply the rejection rules below.
 
 The article object, used by every article endpoint:

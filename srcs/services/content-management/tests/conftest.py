@@ -8,6 +8,7 @@ discovery mechanism.
 """
 
 pytest_plugins: list[str] = [
+    "tests.fixtures.auth",
     # Domain fixtures
     "tests.fixtures.article_summary",
     "tests.fixtures.discovered_article",

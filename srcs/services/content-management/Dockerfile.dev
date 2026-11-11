@@ -10,6 +10,7 @@ COPY ./pyproject.toml ./
 COPY ./uv.lock ./
 
 COPY --from=shared_errors / /app/shared/packages/shared_errors/
+COPY --from=shared_auth / /app/shared/packages/shared_auth/
 
 RUN uv sync --frozen --no-install-project
 

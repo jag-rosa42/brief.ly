@@ -30,7 +30,7 @@ from src.main import app
 
 
 @pytest.fixture
-def client(db_session: Session) -> Generator[TestClient]:
+def client(db_session: Session, service_headers: dict[str, str]) -> Generator[TestClient]:
     """
     Provide a FastAPI TestClient configured to use the test's database session.
 
@@ -44,14 +44,16 @@ def client(db_session: Session) -> Generator[TestClient]:
     app.dependency_overrides[get_db] = override_get_db
 
     try:
-        with TestClient(app) as test_client:
+        with TestClient(app, headers=service_headers) as test_client:
             yield test_client
     finally:
         app.dependency_overrides.clear()
 
 
 @pytest.fixture
-def concurrent_clients(engine: Engine) -> Generator[tuple[TestClient, TestClient]]:
+def concurrent_clients(
+    engine: Engine, service_headers: dict[str, str]
+) -> Generator[tuple[TestClient, TestClient]]:
     """
     Provide Two FastAPI TestClients using independent database sessions.
 
@@ -82,7 +84,10 @@ def concurrent_clients(engine: Engine) -> Generator[tuple[TestClient, TestClient
     app.dependency_overrides[get_db] = override_get_db
 
     try:
-        with TestClient(app) as client_a, TestClient(app) as client_b:
+        with (
+            TestClient(app, headers=service_headers) as client_a,
+            TestClient(app, headers=service_headers) as client_b,
+        ):
             yield client_a, client_b
     finally:
         app.dependency_overrides.pop(get_db, None)

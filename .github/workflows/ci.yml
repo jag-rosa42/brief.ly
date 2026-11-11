@@ -48,6 +48,7 @@ jobs:
               - 'shared/packages/shared_errors/**'
             content-management:
               - 'srcs/services/content-management/**'
+              - 'shared/packages/shared_auth/**'
               - 'shared/packages/shared_errors/**'
             morning-briefing:
               - 'srcs/services/morning-briefing/**'
@@ -121,6 +122,7 @@ jobs:
     uses: ./.github/workflows/reusable-python.yml
     with:
       working-directory: srcs/services/content-management
+      generate-jwt-keys: true
 
   morning-briefing:
     needs: check-changes

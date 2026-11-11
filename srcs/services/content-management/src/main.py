@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from shared_auth import install_authentication
 from shared_errors import register_shared_exception_handlers
 
 from src.api.errors import (
@@ -8,6 +9,7 @@ from src.api.errors import (
 )
 from src.api.routers import api_routers, root_routers
 from src.infrastructure.config.app import app_settings
+from src.infrastructure.config.auth import auth_settings
 
 
 def create_app() -> FastAPI:
@@ -27,6 +29,9 @@ def create_app() -> FastAPI:
     register_shared_exception_handlers(app)
     register_domain_exception_handlers(app)
     register_api_exception_handlers(app)
+    # Verifies the service tokens of /internal routes (ADR-0008). No
+    # public_api: Content Management has no public route.
+    install_authentication(app, auth_settings)
 
     return app
 

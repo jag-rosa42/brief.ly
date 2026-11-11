@@ -10,6 +10,7 @@ from src.api.dependencies import (
     ListArticlesDep,
     UpdateArticleSummaryDep,
 )
+from src.api.dependencies.service_auth import ARTICLES_READ, SUMMARIES_WRITE
 from src.api.schemas import (
     ArticleListResponse,
     ArticleResponse,
@@ -24,6 +25,7 @@ router = APIRouter(
 
 @router.get(
     path="",
+    dependencies=[ARTICLES_READ],
     status_code=status.HTTP_200_OK,
     response_model=ArticleListResponse,
     responses={
@@ -62,6 +64,7 @@ def list_articles(
 
 @router.get(
     path="/{article_id}",
+    dependencies=[ARTICLES_READ],
     status_code=status.HTTP_200_OK,
     response_model=ArticleResponse,
     responses={
@@ -76,6 +79,7 @@ def get_article(article_id: UUID, get_article: GetArticleDep) -> ArticleResponse
 
 @router.put(
     path="/{article_id}/summary",
+    dependencies=[SUMMARIES_WRITE],
     status_code=status.HTTP_200_OK,
     response_model=ArticleResponse,
     responses={

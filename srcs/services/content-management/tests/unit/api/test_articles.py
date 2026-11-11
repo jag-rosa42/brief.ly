@@ -20,8 +20,8 @@ from tests import routes
 
 
 @pytest.fixture
-def client() -> TestClient:
-    return TestClient(app)
+def client(service_headers: dict[str, str]) -> TestClient:
+    return TestClient(app, headers=service_headers)
 
 
 @pytest.fixture

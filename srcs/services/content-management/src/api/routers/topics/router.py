@@ -2,6 +2,7 @@ from fastapi import APIRouter, status
 from shared_errors import ErrorResponse
 
 from src.api.dependencies import ListTopicsDep, UpdateTopicSummaryDep
+from src.api.dependencies.service_auth import SUMMARIES_WRITE, TOPICS_READ
 from src.api.schemas.topic import TopicResponse, UpdateTopicSummaryRequest
 
 router = APIRouter(
@@ -12,6 +13,7 @@ router = APIRouter(
 
 @router.get(
     path="",
+    dependencies=[TOPICS_READ],
     status_code=status.HTTP_200_OK,
     response_model=list[TopicResponse],
 )
@@ -21,6 +23,7 @@ def list_topics(list_topics: ListTopicsDep) -> list[TopicResponse]:
 
 @router.put(
     path="/{topic_id}/summary",
+    dependencies=[SUMMARIES_WRITE],
     status_code=status.HTTP_200_OK,
     response_model=TopicResponse,
     responses={
