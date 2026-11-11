@@ -71,9 +71,74 @@ A service's `/docs`, `/health` and `/internal/...` routes are not reachable thro
 
 To get a new self-signed certificate, delete both files and run `make secrets`.
 
+## Observability in development
+
+`make docker` starts the `observability` Compose profile with Prometheus,
+Grafana, and Pushgateway. Use `make ps` to check the containers,
+`make logs SERVICE=grafana` (or `prometheus` or `pushgateway`) to inspect logs,
+and `make down` to stop the stack without removing its named volumes. For the
+development VM, use `make vm`, `make ps-vm`, `make logs-vm SERVICE=grafana`,
+and `make down-vm` instead.
+
+Open Grafana at `http://127.0.0.1:3000`, or at the `GRAFANA_PORT` configured in
+`.env`. The same host address works for a development VM because that port is
+forwarded. The default admin user is `admin`; read its password from
+`shared/secrets/grafana_admin_password`. The provisioned Prometheus data
+source and dashboards should appear after Grafana starts.
+
+In Grafana **Explore**, select **Prometheus** and try these queries:
+
+```promql
+up
+sum by (service) (rate(http_requests_total[5m]))
+sum by (service) (rate(http_requests_total{status=~"5.."}[5m]))
+ai_worker_last_run_success
+```
+
+`up` is `1` when Prometheus can scrape a target and `0` when it cannot. The
+HTTP rates are responses per second; they include API requests handled by the
+five FastAPI services, not frontend page or asset requests. A missing 5xx
+series can simply mean that service has not returned a 5xx response. The
+worker result is absent until a summary run has pushed its gauges to
+Pushgateway; `1` means its last run succeeded and `0` means it failed or had
+an item generation failure. `make summarize` runs the worker in the VM's AI
+Processing container.
+
+To inspect Prometheus **Targets** without publishing Prometheus on the host,
+run this on the Docker host. For a VM stack, first enter the VM with
+`make connect-vm`, then run the same command there:
+
+```bash
+docker exec prometheus wget -qO- 'http://127.0.0.1:9090/api/v1/targets?state=active'
+```
+
+The response lists scrape targets and their health. For raw API metrics, query
+the service from inside its container. For example:
+
+```bash
+docker exec identity python -c 'import urllib.request; print(urllib.request.urlopen("http://127.0.0.1:8000/metrics").read().decode())'
+```
+
+If a target is down or a panel shows no data, check Targets, the raw
+`/metrics` output, and the relevant service logs with
+`make logs SERVICE=<service>` or `make logs-vm SERVICE=<service>`. For an API
+error, the HTTP metric identifies the service and response status; the
+exception traceback is in that service's logs. For a failed summary run,
+check the `make summarize` output and AI Processing logs. Pushgateway's own
+`up=1` shows only that Prometheus can scrape Pushgateway, not that the worker
+succeeded.
+
+Prometheus retains data for at most 15 days or 2 GB, whichever limit is hit
+first. Allow at least 3 GB for its volume because recent samples and the
+write-ahead log can temporarily exceed the retention limit. In shared
+environments, keep Grafana bound to localhost or put it behind a deliberate
+access policy. Never publish Prometheus, Pushgateway, or service `/metrics`
+endpoints through the public gateway, and keep Grafana's admin password out
+of version control.
+
 ## Development environment
 
-The development override bind-mounts the frontend and backend source code for live reload. Vite's hot reload goes through the gateway too (`wss://localhost:8443`). No service publishes a port: only the databases and Adminer do, on `127.0.0.1`, for the commands that run on the host.
+The development override bind-mounts the frontend and backend source code for live reload. Vite's hot reload goes through the gateway too (`wss://localhost:8443`). Apart from the gateway, only the databases, Adminer, and Grafana publish development ports on `127.0.0.1` for use from the host.
 
 ### Adminer
 
