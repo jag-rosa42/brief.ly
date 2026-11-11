@@ -1,0 +1,59 @@
+apiVersion: 1
+groups:
+    - orgId: 1
+      name: ai-worker-result-1m
+      folder: Observability
+      interval: 1m
+      rules:
+        - uid: ai_worker_failed
+          title: AI Worker Last Run Failed
+          condition: B
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: PBFA97CFB590B2093
+              model:
+                editorMode: code
+                expr: ai_worker_last_run_success
+                instant: true
+                interval: ""
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: B
+              queryType: expression
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                        type: lt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                            - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: B
+                type: threshold
+          noDataState: OK
+          execErrState: Error
+          for: 1m
+          annotations:
+            description: The latest summary worker run failed or had an article or topic generation failure. Check the summarize command output and the AI Processing logs.
+            summary: AI worker last run failed
+          isPaused: false
