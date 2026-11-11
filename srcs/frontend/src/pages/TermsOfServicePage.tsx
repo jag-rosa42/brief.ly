@@ -2,107 +2,85 @@ import { StaticPage, StaticSection } from "@/shared/components/StaticPage";
 
 export function TermsOfServicePage() {
 	return (
-		<StaticPage title="Terms of Service" lastUpdated="September 11th, 2026">
+		<StaticPage title="Terms of Service" lastUpdated="November 11th, 2026">
 			<StaticSection title="1. Acceptance of Terms">
 				<p>
 					By creating an account or using Brief.ly, you agree to these Terms of Service. If you do
-					not agree with these terms, please do not use the service.
+					not agree with them, please do not use the service.
 				</p>
 			</StaticSection>
 
-			<StaticSection title="2. Content of the Services">
+			<StaticSection title="2. About Brief.ly">
 				<p>
-					Brief.ly is a service designed to help users discover and follow daily article summaries
-					through a personal dashboard.
-				</p>
-
-				<p className="mt-3">
-					The service may be updated, modified, or temporarily unavailable as we continue to develop
-					and improve it.
+					Brief.ly is a student project made at 42, not a commercial service. It gathers articles on
+					the topics you follow and shows them in a daily brief, with short summaries. It may
+					change, or be unavailable, as the project evolves.
 				</p>
 			</StaticSection>
 
 			<StaticSection title="3. Your Account">
 				<p>
-					You are responsible for providing accurate information when creating your account and for
-					keeping your account credentials secure.
-				</p>
-
-				<p className="mt-3">
-					You are responsible for all activity that occurs through your account. Please contact us
-					if you believe that your account has been accessed without your permission.
+					You are responsible for giving accurate information when you sign up, for keeping your
+					password secure, and for what happens through your account. Contact us if you think
+					someone else has used it.
 				</p>
 			</StaticSection>
 
 			<StaticSection title="4. Acceptable Use">
-				<p>You agree to use Brief.ly responsibly and only for lawful purposes.</p>
-
-				<p className="mt-3">
-					You must not attempt to interfere with the service, gain unauthorized access to other
-					accounts or systems, abuse the service, or use it in a way that could harm other users or
-					the service itself.
-				</p>
-			</StaticSection>
-
-			<StaticSection title="5. Article Summaries">
 				<p>
-					Brief.ly provides summaries of articles from external sources. These summaries are
-					intended to help users quickly understand the main topics and are not a replacement for
-					reading the original articles.
-				</p>
-
-				<p className="mt-3">
-					We do not guarantee that summaries are always complete, accurate, or up to date. For
-					important information, you should always consult the original source.
+					Use Brief.ly responsibly and only for lawful purposes. Don't try to interfere with the
+					service, to access other accounts or systems, or to use it in a way that could harm other
+					users or the service itself.
 				</p>
 			</StaticSection>
 
-			<StaticSection title="6. Intellectual Property">
+			<StaticSection title="5. AI-Generated Summaries">
 				<p>
-					The Brief.ly name, design, interface, and original software are owned by the project team
-					and may not be copied, modified, or redistributed without permission.
-				</p>
-
-				<p className="mt-3">
-					Article content and trademarks belonging to third parties remain the property of their
-					respective owners.
+					The summaries are written automatically by an AI model. They can be incomplete, outdated
+					or wrong, and they don't replace the original articles: for anything important, read the
+					source, linked on each article.
 				</p>
 			</StaticSection>
 
-			<StaticSection title="7. Availability of the Service">
+			<StaticSection title="6. Public API and API Keys">
 				<p>
-					We aim to keep Brief.ly available and reliable, but we do not guarantee uninterrupted
-					access to the service.
-				</p>
-
-				<p className="mt-3">
-					The service may occasionally be unavailable due to maintenance, technical issues, or
-					circumstances beyond our control.
+					You can create API keys to use Brief.ly from your own programs. Each key acts on your
+					account with the scopes you chose, and expires after 48 hours. Keep your keys secret:
+					anyone who has one can use it. Revoke a key you no longer need, or one that may have
+					leaked. Requests are rate-limited, and we may revoke keys that are abused.
 				</p>
 			</StaticSection>
 
-			<StaticSection title="8. Account Termination">
-				<p>You may stop using the service and request the deletion of your account at any time.</p>
-
-				<p className="mt-3">
-					We may suspend or terminate an account if it is used in violation of these Terms of
-					Service or in a way that could harm the service or other users.
-				</p>
-			</StaticSection>
-
-			<StaticSection title="9. Changes to These Terms">
+			<StaticSection title="7. Intellectual Property">
 				<p>
-					We may update these Terms of Service from time to time. When we make changes, we will
-					update the date at the top of this page. Continued use of the service after changes are
-					made means that you accept the updated terms.
+					The articles, and the names and trademarks of their publishers, belong to their owners.
+					Brief.ly only shows a short summary and links to the original.
 				</p>
 			</StaticSection>
 
-			<StaticSection title="10. Contact">
+			<StaticSection title="8. Availability of the Service">
 				<p>
-					If you have any questions about these Terms of Service, please contact us at
-					contact@brief.ly.
+					We don't guarantee that Brief.ly is always available: it may be down for maintenance,
+					technical issues, or the end of the project.
 				</p>
+			</StaticSection>
+
+			<StaticSection title="9. Account Termination">
+				<p>
+					You may stop using Brief.ly at any time, and ask the team to delete your account and its
+					data. We may suspend an account used against these terms.
+				</p>
+			</StaticSection>
+
+			<StaticSection title="10. Changes to These Terms">
+				<p>
+					We may update these terms. When we do, we update the date at the top of this page. Using
+					the service after a change means you accept the new terms.
+				</p>
+			</StaticSection>
+
+			<StaticSection title="11. Contact">
+				<p>If you have any questions, please contact us at contact@brief.ly.</p>
 			</StaticSection>
 		</StaticPage>
 	);

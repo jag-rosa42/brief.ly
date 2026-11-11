@@ -1,74 +1,79 @@
 import { StaticPage, StaticSection } from "@/shared/components/StaticPage";
+import { Text } from "@/shared/components/Text";
 
 export function PrivacyPolicyPage() {
 	return (
-		<StaticPage title="Privacy Policy" lastUpdated="September 14th, 2026">
+		<StaticPage title="Privacy Policy" lastUpdated="November 11th, 2026">
+			<Text variant="body" className="mb-8">
+				Brief.ly is a student project made at 42. This page explains what it stores about you and
+				why.
+			</Text>
+
 			<StaticSection title="1. What Information Do We Gather About You?">
-				<p>
-					When you use our service, we may collect information that is necessary to create and
-					manage your account and provide a complete experience.
-				</p>
+				<ul className="list-disc space-y-1 pl-5">
+					<li>
+						Your account: your email address and your password. The password is never stored as is,
+						only as a hash.
+					</li>
+					<li>Your profile: the name you choose and the topics you follow.</li>
+					<li>Your saved articles (up to 12).</li>
+					<li>
+						Your API keys, if you create any: their name, scopes and dates. The key itself is shown
+						once, then only stored as a hash.
+					</li>
+					<li>
+						Our server logs record the IP address and the page of each request, for security and
+						debugging.
+					</li>
+				</ul>
 			</StaticSection>
 
 			<StaticSection title="2. How Do We Use Your Information?">
 				<p>
-					We use your information to provide and maintain the service and authenticate your account.
+					Only to run the service: to sign you in, to build your daily brief from your topics, to
+					keep your saved articles, and to let your programs use the public API with your keys. We
+					don't use it for advertising or profiling.
 				</p>
 			</StaticSection>
 
-			<StaticSection title="3. What About Third-Party Authentication?">
+			<StaticSection title="3. How Do We Use Cookies?">
 				<p>
-					You may be able to sign in using a third-party authentication provider. If you choose this
-					option, the provider may share certain account information with us in accordance with your
-					authorization and their privacy policy.
+					We use a single cookie, which keeps you signed in for up to 7 days. It can't be read by
+					the page's scripts and is only sent to our own site. Your browser also keeps a small
+					sign-in marker and the last page you visited, so you get back to it after reloading. There
+					are no advertising or tracking cookies.
 				</p>
 			</StaticSection>
 
-			<StaticSection title="4. How Do We Use Cookies?">
+			<StaticSection title="4. To Whom Do We Disclose or Share the Data We Gather?">
 				<p>
-					We may use cookies or similar technologies that are necessary to keep you authenticated
-					and maintain your session. We do not use cookies for advertising purposes.
+					To no one. We don't sell or share your data. The articles come from NewsAPI, but we never
+					send it anything about you, and the summaries are written by an AI model that runs on our
+					own server.
 				</p>
 			</StaticSection>
 
-			<StaticSection title="5. To Whom Do We Disclose or Share the Data We Gather?">
+			<StaticSection title="5. How Do We Protect Your Data?">
 				<p>
-					We do not sell your personal information. Your information is only shared with third-party
-					services when necessary to provide authentication, storage, or other essential features of
-					the application.
+					Passwords and API keys are stored only as hashes, all traffic goes through HTTPS, and the
+					public API is rate-limited. No online service can guarantee complete security, though.
 				</p>
 			</StaticSection>
 
-			<StaticSection title="6. How Do We Protect Your Data?">
+			<StaticSection title="6. What Are Your Rights and Choices?">
 				<p>
-					We take reasonable measures to protect your information from unauthorized access,
-					alteration, disclosure, or destruction. However, no online service can guarantee complete
-					security.
+					You can see and change your profile and saved articles at any time, and revoke your API
+					keys. There is no button to delete your account yet: to have your account and its data
+					deleted, contact the team (see below).
 				</p>
 			</StaticSection>
 
-			<StaticSection title="7. What Are Your Rights and Choices?">
-				<p>
-					You may request access to, correction of, or deletion of your personal information. You
-					may also request the deletion of your account and associated data.
-				</p>
+			<StaticSection title="7. How Are Changes to this Privacy Policy Communicated?">
+				<p>We will post any change on this page and update the date at the top.</p>
 			</StaticSection>
 
-			<StaticSection title="8. How Are Changes to this Privacy Policy Communicated?">
-				<p>
-					We will post any changes on this page by updating this policy. If we make a significant or
-					material change in the way we collect, use or share your personal information, we will
-					notify you via email or prominent notice within the website. If you object to any change,
-					you can stop using the website Services. After we post any changes on this page, your
-					continued use of the website Services is subject to the updated Privacy Policy.
-				</p>
-			</StaticSection>
-
-			<StaticSection title="9. How Can You Contact Us?">
-				<p>
-					If you have any questions about this Privacy Policy or how your data is handled, please
-					contact us at contact@brief.ly.
-				</p>
+			<StaticSection title="8. How Can You Contact Us?">
+				<p>If you have any questions, please contact us at contact@brief.ly.</p>
 			</StaticSection>
 		</StaticPage>
 	);
