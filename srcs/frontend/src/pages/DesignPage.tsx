@@ -18,22 +18,23 @@ import { Spinner } from "@/shared/components/Spinner";
 import { Tabs } from "@/shared/components/Tab";
 import { tabVariant } from "@/shared/components/tabVariants";
 import { Text } from "@/shared/components/Text";
-import { textVariants } from "@/shared/components/textVariants";
+import { getTextStyle, textVariants } from "@/shared/components/textVariants";
 
 // The design system of Brief.ly on one page: its colors, fonts and icons,
 // and every shared component with its variants. Public, to show it without
 // an account.
 
-// The tokens of index.css (@theme). Written out in full: Tailwind only
-// generates the classes it finds as is in the code.
+// The tokens of index.css (@theme). The classes are written out in full:
+// Tailwind only generates the classes it finds as is in the code. The values
+// shown are read from the CSS (colorValue), so they can't go stale.
 const COLORS = [
-	{ name: "primary", swatch: "bg-primary", value: "#d4751a" },
-	{ name: "secondary", swatch: "bg-secondary", value: "#b79a7a" },
-	{ name: "accent", swatch: "bg-accent", value: "#493a33" },
-	{ name: "background", swatch: "bg-background", value: "#f2ebe0" },
-	{ name: "error", swatch: "bg-error", value: "#e62e1c" },
-	{ name: "info", swatch: "bg-info", value: "#7a807a" },
-	{ name: "success", swatch: "bg-success", value: "#778b6b" },
+	{ name: "primary", swatch: "bg-primary" },
+	{ name: "secondary", swatch: "bg-secondary" },
+	{ name: "accent", swatch: "bg-accent" },
+	{ name: "background", swatch: "bg-background" },
+	{ name: "error", swatch: "bg-error" },
+	{ name: "info", swatch: "bg-info" },
+	{ name: "success", swatch: "bg-success" },
 ];
 
 const SHADES = [
@@ -68,6 +69,11 @@ const TOPICS = [
 	{ value: "health", label: "Health" },
 	{ value: "science", label: "Science" },
 ];
+
+// The value of a color token, as index.css defines it (e.g. "#d4751a").
+function colorValue(name: string): string {
+	return getComputedStyle(document.documentElement).getPropertyValue(`--color-${name}`).trim();
+}
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
 	return (
@@ -117,7 +123,7 @@ export function DesignPage() {
 								{color.name}
 							</Text>
 							<Text variant="body" className="text-xs text-info">
-								{color.value}
+								{colorValue(color.name)}
 							</Text>
 						</div>
 					))}
@@ -152,7 +158,9 @@ export function DesignPage() {
 				<div className="flex flex-col gap-4">
 					{textVariants.map((variant) => (
 						<Example key={variant} name={`Text ${variant}`}>
-							<Text variant={variant}>Your morning, in a few minutes</Text>
+							{/* The style only, in a <p>: Text would render title and heading
+								as <h1>/<h2> and add them to the page's outline. */}
+							<p className={getTextStyle(variant)}>Your morning, in a few minutes</p>
 						</Example>
 					))}
 				</div>

@@ -43,3 +43,9 @@ test("shows a notification of the chosen kind", () => {
 		"alert",
 	);
 });
+
+test("keeps one main heading: the Text samples are not headings", () => {
+	renderPage();
+
+	expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+});

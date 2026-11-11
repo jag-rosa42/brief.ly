@@ -1,3 +1,4 @@
+import type { SVGProps } from "react";
 import { ICON_PATHS, type IconName } from "@/shared/components/iconPaths";
 
 // The app's icons, drawn for Brief.ly on one 24 × 24 grid with the same
@@ -16,17 +17,18 @@ const SIZES = {
 
 export type IconSize = keyof typeof SIZES;
 
-interface IconProps {
+// Every native <svg> attribute is accepted too (data-*, aria-describedby...)
+// and passed on to the <svg>.
+interface IconProps extends Omit<SVGProps<SVGSVGElement>, "name" | "children"> {
 	name: IconName;
 	size?: IconSize;
 	// Only for an icon that stands alone and means something (no text next
 	// to it). Next to a text, or in a button that has an aria-label, leave it
 	// out: the icon is then hidden from screen readers.
 	label?: string;
-	className?: string;
 }
 
-export function Icon({ name, size = "md", label, className = "" }: IconProps) {
+export function Icon({ name, size = "md", label, className = "", ...props }: IconProps) {
 	return (
 		<svg
 			viewBox="0 0 24 24"
@@ -39,6 +41,7 @@ export function Icon({ name, size = "md", label, className = "" }: IconProps) {
 			role={label ? "img" : undefined}
 			aria-label={label}
 			aria-hidden={label ? undefined : true}
+			{...props}
 		>
 			<path d={ICON_PATHS[name]} />
 		</svg>
