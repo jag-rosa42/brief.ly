@@ -195,19 +195,22 @@ def test_topic_read_uses_existing_response_and_write_uses_contract_body() -> Non
 
 
 @pytest.mark.parametrize(
-    "error",
+    ("error", "message"),
     [
         pytest.param(
-            InfrastructureError("Identity is unavailable."), id="identity-unreachable"
+            InfrastructureError("Identity is unavailable."),
+            "Identity is unavailable",
+            id="identity-unreachable",
         ),
         pytest.param(
             DownstreamError(service="identity", status_code=401, code="INVALID_CLIENT"),
+            r"Identity refused AI Processing's credentials \(INVALID_CLIENT\)",
             id="identity-refuses",
         ),
     ],
 )
 def test_raises_without_calling_content_management_when_no_token(
-    error: Exception,
+    error: Exception, message: str
 ) -> None:
     def respond(request: httpx.Request) -> httpx.Response:
         raise AssertionError("Content Management must not be called without a token")
@@ -216,7 +219,7 @@ def test_raises_without_calling_content_management_when_no_token(
         client = ContentManagementClient(
             http_client, FakeServiceTokenProvider(error=error)
         )
-        with pytest.raises(InfrastructureError):
+        with pytest.raises(InfrastructureError, match=message):
             client.list_topics()
 
 
