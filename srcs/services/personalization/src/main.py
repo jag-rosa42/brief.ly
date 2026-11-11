@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -20,7 +20,9 @@ from src.infrastructure.config.auth import auth_settings
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
+    # FastAPI's startup/shutdown hook: it must be an async context manager
+    # (the older @app.on_event is deprecated), even in an app of sync routes.
     yield
     # When the service stops: close the connections to other services.
     close_clients()
