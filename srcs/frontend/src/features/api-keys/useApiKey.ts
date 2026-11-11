@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createApiKey, deleteApiKey, listApiKeys } from "@/features/api-keys/api";
 import type { ApiKey, CreateApiKeyPayload, CreatedApiKey } from "@/features/api-keys/types";
 
 export const MAX_KEYS = 5;
+const EXPIRY_MARGIN_MS = 500;
 
 export function useApiKeys() {
 	const [keys, setKeys] = useState<ApiKey[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [loadError, setLoadError] = useState<string | null>(null);
+	const [now, setNow] = useState(() => Date.now());
 
 	async function reload() {
 		setLoading(true);
@@ -20,6 +22,12 @@ export function useApiKeys() {
 			setLoading(false);
 		}
 	}
+
+	const refreshSilently = useCallback(async () => {
+		try {
+			setKeys(await listApiKeys());
+		} catch {}
+	}, []);
 
 	useEffect(() => {
 		let ignore = false;
@@ -47,6 +55,24 @@ export function useApiKeys() {
 		};
 	}, []);
 
+	useEffect(() => {
+		const current = Date.now();
+		const nextExpiry = Math.min(
+			...keys.map((k) => Date.parse(k.expires_at)).filter((t) => t > current),
+		);
+		if (!Number.isFinite(nextExpiry)) return;
+
+		const id = setTimeout(
+			() => {
+				setNow(Date.now());
+				void refreshSilently();
+			},
+			nextExpiry - current + EXPIRY_MARGIN_MS,
+		);
+
+		return () => clearTimeout(id);
+	}, [keys, refreshSilently]);
+
 	async function addKey(payload: CreateApiKeyPayload): Promise<CreatedApiKey> {
 		const created = await createApiKey(payload);
 		const item: ApiKey = {
@@ -66,13 +92,15 @@ export function useApiKeys() {
 		setKeys((prev) => prev.filter((k) => k.id !== id));
 	}
 
+	const activeKeys = keys.filter((k) => Date.parse(k.expires_at) > now);
+
 	return {
-		keys,
+		keys: activeKeys,
 		loading,
 		loadError,
 		reload,
 		addKey,
 		deleteKey,
-		limitReached: keys.length >= MAX_KEYS,
+		limitReached: activeKeys.length >= MAX_KEYS,
 	};
 }
