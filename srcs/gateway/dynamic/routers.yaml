@@ -15,6 +15,8 @@
 #    service. The path is NOT stripped: services serve /public/v1/... as is.
 #    Every request goes through the same chain (public-api-chain), in this
 #    order:
+#      0. public-rate-limit-info: every answer tells the program its limits
+#           (X-RateLimit-* headers).
 #      a. public-rate-limit-ip:  too many requests from one IP  -> 429
 #      b. public-rate-limit-key: too many requests with one key -> 429
 #      c. public-forward-auth:
@@ -139,10 +141,25 @@ http:
     public-api-chain:
       chain:
         middlewares:
+          - public-rate-limit-info
           - public-rate-limit-ip
           - public-rate-limit-key
           - public-forward-auth
           - public-strip-api-key
+
+    # 0. Tell the program its limits, on every answer. First in the chain:
+    # Traefik adds these headers to whatever comes back through it, so the
+    # 429s of a. and b. and the 401 of c. carry them too, not only the
+    # services' answers. The values are written by hand: keep them equal to
+    # a. and b. below, and to shared_auth's documentation
+    # (shared/packages/shared_auth/src/shared_auth/api/public_docs/responses.py).
+    public-rate-limit-info:
+      headers:
+        customResponseHeaders:
+          X-RateLimit-Limit-Per-Key: "5"
+          X-RateLimit-Burst-Per-Key: "10"
+          X-RateLimit-Limit-Per-IP: "20"
+          X-RateLimit-Burst-Per-IP: "40"
 
     # Limits are in memory, per gateway: they reset when the gateway restarts
     # (one gateway, so that's fine; ADR-0009). Just over the limit, Traefik
@@ -153,6 +170,9 @@ http:
     # average = requests per second allowed over time;
     # burst = how many may arrive at once. Low enough to show a 429
     #         with a simple loop.
+    #
+    # Changing a value? Also change public-rate-limit-info above, and the
+    # constants in shared_auth's public_docs/responses.py (the public docs).
 
     # a. Per client IP: protects the stack from one noisy machine, keys or not.
     public-rate-limit-ip:
