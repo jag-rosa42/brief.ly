@@ -20,7 +20,7 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
 		setLoaded(false);
 		setError(null);
 		try {
-			setProfile(await getProfile()); // null si PROFILE_NOT_FOUND
+			setProfile(await getProfile()); // null si pas encore de profil (200 null)
 		} catch (e) {
 			if (e instanceof ApiError && e.status === 401) return;
 			setError(e instanceof Error ? e.message : "Unable to load profile.");
@@ -47,7 +47,7 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
 
 		void getProfile()
 			.then((loadedProfile) => {
-				if (!ignore) setProfile(loadedProfile); // null si PROFILE_NOT_FOUND
+				if (!ignore) setProfile(loadedProfile); // null si pas encore de profil (200 null)
 			})
 			.catch((e: unknown) => {
 				if (ignore) return;
