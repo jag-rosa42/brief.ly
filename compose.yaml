@@ -262,6 +262,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./srcs/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./srcs/monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
     networks:
       - backend
 
