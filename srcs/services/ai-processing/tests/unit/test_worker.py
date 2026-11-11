@@ -70,21 +70,26 @@ def test_worker_publishes_last_run_even_on_failure(
         OLLAMA_BASE_URL="http://ollama:11434",
         OLLAMA_MODEL=DEFAULT_MODEL,
     )
-    with httpx.Client() as client:
+    with (
+        closing(
+            DownstreamClient("content-management", settings.CONTENT_MANAGEMENT_BASE_URL)
+        ) as content_client,
+        httpx.Client() as ollama_client,
+    ):
         if failure_kind == "fatal":
             with pytest.raises(RuntimeError, match="sensitive exception message"):
                 run_worker(
                     settings,
-                    client,
-                    client,
+                    content_client,
+                    ollama_client,
                     FakeServiceTokenProvider(),
                     publish=published.append,
                 )
         else:
             run_worker(
                 settings,
-                client,
-                client,
+                content_client,
+                ollama_client,
                 FakeServiceTokenProvider(),
                 publish=published.append,
             )
@@ -110,7 +115,7 @@ def test_worker_publishes_last_run_even_on_failure(
 
 
 def test_failed_push_is_logged_without_hiding_worker_failure(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class FatalWorkflow:
         def __init__(self, articles, topics) -> None:
@@ -123,16 +128,28 @@ def test_failed_push_is_logged_without_hiding_worker_failure(
         raise ConnectionError("Pushgateway unavailable")
 
     monkeypatch.setattr("src.worker.SummarizeArticlesAndTopics", FatalWorkflow)
+    logged_messages: list[str] = []
+    monkeypatch.setattr("src.worker.logger.exception", logged_messages.append)
     settings = WorkerSettings(
         _env_file=None,
         OLLAMA_BASE_URL="http://ollama:11434",
         OLLAMA_MODEL=DEFAULT_MODEL,
     )
-    with httpx.Client() as client, pytest.raises(RuntimeError, match="worker failed"):
+    with (
+        closing(
+            DownstreamClient("content-management", settings.CONTENT_MANAGEMENT_BASE_URL)
+        ) as content_client,
+        httpx.Client() as ollama_client,
+        pytest.raises(RuntimeError, match="worker failed"),
+    ):
         run_worker(
-            settings, client, client, FakeServiceTokenProvider(), publish=failed_push
+            settings,
+            content_client,
+            ollama_client,
+            FakeServiceTokenProvider(),
+            publish=failed_push,
         )
-    assert "Failed to push AI worker metrics to Pushgateway" in caplog.text
+    assert logged_messages == ["Failed to push AI worker metrics to Pushgateway"]
 
 
 def test_content_management_defaults_to_compose_service_name(
