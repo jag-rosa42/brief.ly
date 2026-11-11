@@ -10,6 +10,10 @@ import { useBriefing } from "@/features/briefing/hooks/useBriefing";
 import type { TopicCluster } from "@/features/briefing/types";
 import { toArticle, topicLabel } from "@/shared/utils/article";
 import { Button } from "@/shared/components/Button";
+import type { Appearance } from "@/shared/components/neomorphicVariants";
+
+const BRIEF_APPEARANCE: Appearance = "neomorphic";
+
 interface TopicPanelProps {
 	cluster: TopicCluster;
 	isSaved: (id: string) => boolean;
@@ -50,7 +54,7 @@ function getGreeting(date: Date): string {
 function DashboardHeader({ firstName, today }: DashboardHeaderProps) {
 	return (
 		<header className="grid grid-cols-1 gap-6 md:grid-cols-3">
-			<Division variant="dashboardcard">
+			<Division variant="dashboardcard" appearance={BRIEF_APPEARANCE}>
 				<Text variant="label" className="text-info">
 					Today
 				</Text>
@@ -58,7 +62,11 @@ function DashboardHeader({ firstName, today }: DashboardHeaderProps) {
 			</Division>
 
 			{/* min-w-0: a grid item can shrink below its content, so a long name can't widen the card. */}
-			<Division variant="dashboardcard" className="min-w-0 md:col-span-2">
+			<Division
+				variant="dashboardcard"
+				appearance={BRIEF_APPEARANCE}
+				className="min-w-0 md:col-span-2"
+			>
 				{/* Only the name shrinks and ends with "…"; the full name shows on hover. */}
 				<Text variant="title" className="flex font-serif">
 					<span className="shrink-0 whitespace-pre">{`${getGreeting(today)} `}</span>
@@ -78,6 +86,10 @@ function DashboardHeader({ firstName, today }: DashboardHeaderProps) {
 function TopicPanel({ cluster, isSaved, onToggleSave, onReadMore }: TopicPanelProps) {
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const articles = cluster.articles.map(toArticle);
+	const navigationButtonStyle =
+		BRIEF_APPEARANCE === "neomorphic"
+			? ({ relief: "up", className: "bg-background" } as const)
+			: {};
 
 	function scrollByCard(direction: 1 | -1) {
 		scrollRef.current?.scrollBy({ left: direction * 344, behavior: "smooth" });
@@ -87,11 +99,12 @@ function TopicPanel({ cluster, isSaved, onToggleSave, onReadMore }: TopicPanelPr
 		stories = (
 			<div
 				ref={scrollRef}
-				className="flex gap-6 overflow-x-auto snap-x snap-mandatory px-1 pt-1 pb-4"
+				className="-mx-8 flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-px-8 px-8 py-8 article-scroll"
 			>
 				{articles.map((article) => (
 					<div key={article.id} className="flex w-80 shrink-0 snap-start">
 						<ArticleCard
+							appearance={BRIEF_APPEARANCE}
 							article={article}
 							isSaved={isSaved(article.id)}
 							onReadMore={() => onReadMore(article)}
@@ -111,7 +124,7 @@ function TopicPanel({ cluster, isSaved, onToggleSave, onReadMore }: TopicPanelPr
 
 	return (
 		<div className="flex flex-col gap-8">
-			<Division variant="dashboardcard">
+			<Division variant="dashboardcard" appearance={BRIEF_APPEARANCE}>
 				<Text variant="subheading">Summary of {topicLabel(cluster.topic_id)} today</Text>
 				<Text variant="body" className="text-accent/80">
 					{cluster.summary ?? "The summary of this topic is not ready yet."}
@@ -130,7 +143,8 @@ function TopicPanel({ cluster, isSaved, onToggleSave, onReadMore }: TopicPanelPr
 						<div className="flex gap-2">
 							<Button
 								type="button"
-								variant="primary"
+								variant="side"
+								{...navigationButtonStyle}
 								aria-label="Previous stories"
 								onClick={() => scrollByCard(-1)}
 							>
@@ -138,7 +152,8 @@ function TopicPanel({ cluster, isSaved, onToggleSave, onReadMore }: TopicPanelPr
 							</Button>
 							<Button
 								type="button"
-								variant="primary"
+								variant="side"
+								{...navigationButtonStyle}
 								aria-label="Next stories"
 								onClick={() => scrollByCard(1)}
 							>
@@ -157,10 +172,10 @@ function TopicPanel({ cluster, isSaved, onToggleSave, onReadMore }: TopicPanelPr
 function TopicSection({ tabs }: TopicSectionProps) {
 	let content;
 	if (tabs.length > 0) {
-		content = <Tabs tabs={tabs} variant="pill" />;
+		content = <Tabs tabs={tabs} variant="pill" appearance={BRIEF_APPEARANCE} />;
 	} else {
 		content = (
-			<Division variant="dashboardcard">
+			<Division variant="dashboardcard" appearance={BRIEF_APPEARANCE}>
 				<Text variant="body">
 					You haven't selected any preferences yet. Complete your profile to get your personalised
 					brief.
@@ -209,10 +224,14 @@ export function BriefPage() {
 	}));
 
 	return (
-		<Division variant="dashboardpage" className="max-w-6xl gap-8">
+		<Division variant="dashboardpage" className="gap-8">
 			<DashboardHeader firstName={data.profile.name} today={today} />
 			<TopicSection tabs={tabs} />
-			<ArticleModal article={selectedArticle} onClose={() => setSelectedArticle(null)} />
+			<ArticleModal
+				article={selectedArticle}
+				appearance={BRIEF_APPEARANCE}
+				onClose={() => setSelectedArticle(null)}
+			/>
 		</Division>
 	);
 }
