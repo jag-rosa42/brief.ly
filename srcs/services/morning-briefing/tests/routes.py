@@ -13,3 +13,5 @@ from src.main import app
 
 HEALTH: str = app.url_path_for("health_check")
 BRIEFING: str = app.url_path_for("get_briefing")
+PUBLIC_BRIEFING: str = app.url_path_for("get_public_briefing")
+PUBLIC_OPENAPI: str = "/public/v1/openapi/morning-briefing.json"
