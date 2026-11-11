@@ -13,16 +13,18 @@ It serves the same use cases through two doors: Frontend routes (browser token) 
 | Frontend | GET | `/api/personalization/me/saved-articles` | `/me/saved-articles` | Bearer | 200 | Done |
 | Frontend | POST | `/api/personalization/me/saved-articles/{article_id}` | `/me/saved-articles/{article_id}` | Bearer | 201 | Done |
 | Frontend | DELETE | `/api/personalization/me/saved-articles/{article_id}` | `/me/saved-articles/{article_id}` | Bearer | 204 | Done |
-| Public | GET | `/public/v1/topics` | same | API key (`read`) | 200 | To do |
-| Public | GET | `/public/v1/me/profile` | same | API key (`read`) | 200 | To do |
-| Public | PUT | `/public/v1/me/profile` | same | API key (`write`) | 201 / 200 | To do |
-| Public | GET | `/public/v1/me/saved-articles` | same | API key (`read`) | 200 | To do |
-| Public | POST | `/public/v1/me/saved-articles/{article_id}` | same | API key (`write`) | 201 | To do |
-| Public | DELETE | `/public/v1/me/saved-articles/{article_id}` | same | API key (`write`) | 204 | To do |
-| Public | GET | `/public/v1/docs` | same | None | 200 | To do |
-| Public | GET | `/public/v1/openapi/personalization.json` | same | None | 200 | To do |
+| Public | GET | `/public/v1/topics` | same | API key (`read`) | 200 | Done |
+| Public | GET | `/public/v1/me/profile` | same | API key (`read`) | 200 | Done |
+| Public | PUT | `/public/v1/me/profile` | same | API key (`write`) | 201 / 200 | Done |
+| Public | GET | `/public/v1/me/saved-articles` | same | API key (`read`) | 200 | Done |
+| Public | POST | `/public/v1/me/saved-articles/{article_id}` | same | API key (`write`) | 201 | Done |
+| Public | DELETE | `/public/v1/me/saved-articles/{article_id}` | same | API key (`write`) | 204 | Done |
+| Public | GET | `/public/v1/docs` | same | None | 200 | Done |
+| Public | GET | `/public/v1/openapi/personalization.json` | same | None | 200 | Done |
 | Internal | GET | — | `/internal/v1/me/profile` | User (forwarded) | 200 | Done |
 | Internal | GET | — | `/health` | None | 200 | Done |
+
+Where the public routes live: `srcs/services/personalization/src/api/routers/public_*/router.py`, mounted under `/public/v1` in `srcs/services/personalization/src/api/routers/__init__.py`. The document and the docs page are installed in `srcs/services/personalization/src/main.py`, with `shared_auth`'s `install_public_openapi` and `install_public_docs_page`.
 
 Public routes answer like their Frontend twin, plus:
 
@@ -30,7 +32,8 @@ Public routes answer like their Frontend twin, plus:
 401 Unauthorized      INVALID_API_KEY (from Identity, via the gateway),
                       with WWW-Authenticate: ApiKey header="X-API-Key"
 403 Forbidden         INSUFFICIENT_SCOPE (key lacks read or write)
-429 Too Many Requests rate limited by the gateway (per IP, then per key)
+429 Too Many Requests rate limited by the gateway (per IP, then per key);
+                      plain text body (Traefik's), with Retry-After
 ```
 
 Public documentation:
@@ -38,6 +41,8 @@ Public documentation:
 - `/public/v1/docs` is a Swagger UI page served by Personalization. Swagger UI can show several OpenAPI documents with a selector; this page shows two: `/public/v1/openapi/personalization.json` (served by Personalization) and `/public/v1/openapi/morning-briefing.json` (served by Morning Briefing).
 - Each document contains only that service's `/public/v1` routes.
 - These three paths need no key: the gateway routes them without ForwardAuth.
+- The document offers one way to authenticate, the `X-API-Key` header, so Swagger UI's "Authorize" and "Try it out" work from the page.
+- Swagger UI's files come from `cdn.jsdelivr.net`, pinned to one version and checked by Subresource Integrity (`shared_auth/api/public_docs.py`).
 - Each service's own `/docs` stays unrouted.
 
 ## Endpoint details
