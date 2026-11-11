@@ -90,7 +90,7 @@ export function SignupPage() {
 				<Text variant="subheading" className="mb-4">
 					Sign up
 				</Text>
-				<Division variant="featurecard" className="shadow-sm">
+				<Division variant="featurecard" shadow="sm">
 					<Form
 						onSubmit={(e) => {
 							void handleSubmit(e);

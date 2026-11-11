@@ -266,7 +266,7 @@ export function PublicApiKeyPage() {
 					</Button>
 				</div>
 				{creating && (
-					<Division variant="featurecard" className="mb-4 shadow-sm">
+					<Division variant="featurecard" shadow="sm" className="mb-4">
 						<Form
 							onSubmit={handleCreate}
 							actions={
@@ -316,7 +316,7 @@ export function PublicApiKeyPage() {
 					</Division>
 				)}
 
-				<Division variant="featurecard" className="shadow-sm">
+				<Division variant="featurecard" shadow="sm">
 					{loading && <Text variant="body">Loading API keys...</Text>}
 
 					{!loading && loadError && (

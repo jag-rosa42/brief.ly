@@ -61,7 +61,7 @@ export function ProfilePage() {
 				<Text variant="subheading" className="mb-4">
 					Personalise your brief
 				</Text>
-				<Division variant="featurecard" className="shadow-sm">
+				<Division variant="featurecard" shadow="sm">
 					<Form
 						onSubmit={(e) => {
 							void handleSave(e);
