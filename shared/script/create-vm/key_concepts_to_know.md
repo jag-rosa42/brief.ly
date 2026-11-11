@@ -142,7 +142,7 @@ host localhost:8443 → QEMU → VM:8443 → gateway container:8443 → service:
 The launcher forwards PostgreSQL ports in `dev` and `local-backend` modes, and
 Adminer's in `dev` mode. Production mode only forwards the gateway's ports.
 Inside the VM, Compose publishes the database and Adminer ports on every guest
-address (`DEV_BIND_ADDRESS=0.0.0.0`, set by the VM targets): QEMU forwards to
+address (`VM_GUEST_BIND_ADDRESS=0.0.0.0`, set by the VM targets): QEMU forwards to
 the guest's network address, not its loopback. QEMU itself only listens on the
 host's `127.0.0.1`.
 
@@ -190,12 +190,12 @@ make launch-vm VM_NETWORK_MODE=prod
 ```
 
 Development mode forwards the gateway (`GATEWAY_PORT`, `GATEWAY_HTTPS_PORT`),
-Adminer and the databases using the ports passed by Make. FastAPI's `/docs`
+Grafana, Adminer and the databases using the ports passed by Make. FastAPI's `/docs`
 pages are not routed by the gateway; open them by running the service on the
 host (`make run SERVICE=<name>`). `local-backend` mode leaves app ports free
 for host processes and is used with explicit database forwarding by
-`make run-vm`. Production mode forwards only the gateway's two ports; this is
-the one public application edge.
+`make run-vm`. Production mode forwards the gateway's two ports and Grafana
+on host loopback; the gateway remains the one public application edge.
 Stop a running VM before changing modes because QEMU fixes its forwarded ports
 at startup.
 
