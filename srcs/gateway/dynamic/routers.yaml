@@ -22,6 +22,8 @@
 #             which Traefik puts in the forwarded request (the "phantom
 #             token");
 #           - no:  Identity's 401 goes back to the program.
+#      d. public-strip-api-key:  the key has done its job; the services get
+#           only the token, never the key.
 #    The documentation (/public/v1/docs and /public/v1/openapi/...) has its
 #    own routers: per-IP limit only, no key needed.
 #
@@ -80,14 +82,14 @@ http:
         Path(`/public/v1/me/profile`) ||
         Path(`/public/v1/me/saved-articles`) ||
         PathPrefix(`/public/v1/me/saved-articles/`)
-      middlewares: [public-rate-limit-ip, public-rate-limit-key, public-forward-auth]
+      middlewares: [public-rate-limit-ip, public-rate-limit-key, public-forward-auth, public-strip-api-key]
       service: personalization
 
     morning-briefing-public:
       entrypoints: [websecure]
       rule: >-
         Path(`/public/v1/morning-briefing`)
-      middlewares: [public-rate-limit-ip, public-rate-limit-key, public-forward-auth]
+      middlewares: [public-rate-limit-ip, public-rate-limit-key, public-forward-auth, public-strip-api-key]
       service: morning-briefing
 
     # The documentation: readable without a key, so no ForwardAuth.
@@ -176,6 +178,14 @@ http:
         # the program sent, so a program can't bring its own token.
         authResponseHeaders: ["Authorization"]
 
+    # d. Drop the key before forwarding: the services need only the token
+    # (ADR-0009, phantom token), so the long-lived key never reaches them or
+    # their logs. It must come last: b and c still read the header. An empty
+    # value tells Traefik to remove the header.
+    public-strip-api-key:
+      headers:
+        customRequestHeaders:
+          X-API-Key: ""
 
   services:
     identity:
