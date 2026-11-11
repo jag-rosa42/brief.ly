@@ -3,6 +3,7 @@ import { getBriefing } from "@/features/briefing/api";
 import type { Briefing } from "@/features/briefing/types";
 import { ApiError } from "@/shared/components/api/client";
 import { deleteSavedArticle, saveArticle } from "@/features/saved-articles/api";
+import { MAX_SAVED_ARTICLES } from "@/features/saved-articles/constants";
 import { useNotify } from "@/app/useNotify";
 
 export function useBriefing() {
@@ -74,7 +75,10 @@ export function useBriefing() {
 		} catch (err) {
 			if (wasSaved) notify("The article could not be removed, please try again.", "error");
 			else if (err instanceof ApiError && err.code === "SAVED_ARTICLES_LIMIT_REACHED")
-				notify("You can save up to 12 articles: remove one from Saved first.", "error");
+				notify(
+					`You can save up to ${MAX_SAVED_ARTICLES} articles: remove one from Saved first.`,
+					"error",
+				);
 			else notify("The article could not be saved, please try again.", "error");
 		} finally {
 			pendingIds.current.delete(articleId);

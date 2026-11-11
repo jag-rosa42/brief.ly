@@ -4,6 +4,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import { getBriefing } from "@/features/briefing/api";
 import type { Briefing, BriefingArticle } from "@/features/briefing/types";
 import { deleteSavedArticle, saveArticle } from "@/features/saved-articles/api";
+import { MAX_SAVED_ARTICLES } from "@/features/saved-articles/constants";
 import { ApiError } from "@/shared/components/api/client";
 import { NotificationProvider } from "@/app/NotificationContext";
 import { BriefPage } from "@/pages/BriefPage";
@@ -261,7 +262,7 @@ test("says what to do when the saved articles limit is reached", async () => {
 
 	// Trying again would fail the same way: the message says what to do instead.
 	expect(await screen.findByRole("alert")).toHaveTextContent(
-		"You can save up to 12 articles: remove one from Saved first.",
+		`You can save up to ${MAX_SAVED_ARTICLES} articles: remove one from Saved first.`,
 	);
 	expect(screen.getByRole("button", { name: "Save" })).toHaveAttribute("aria-pressed", "false");
 });
