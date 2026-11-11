@@ -13,7 +13,8 @@
 #
 # 2. Public API (ADR-0009): an allowlist too, under /public/v1, one router per
 #    service. The path is NOT stripped: services serve /public/v1/... as is.
-#    Every request goes through the same chain, in this order:
+#    Every request goes through the same chain (public-api-chain), in this
+#    order:
 #      a. public-rate-limit-ip:  too many requests from one IP  -> 429
 #      b. public-rate-limit-key: too many requests with one key -> 429
 #      c. public-forward-auth:
@@ -82,14 +83,14 @@ http:
         Path(`/public/v1/me/profile`) ||
         Path(`/public/v1/me/saved-articles`) ||
         PathPrefix(`/public/v1/me/saved-articles/`)
-      middlewares: [public-rate-limit-ip, public-rate-limit-key, public-forward-auth, public-strip-api-key]
+      middlewares: [public-api-chain]
       service: personalization
 
     morning-briefing-public:
       entrypoints: [websecure]
       rule: >-
         Path(`/public/v1/morning-briefing`)
-      middlewares: [public-rate-limit-ip, public-rate-limit-key, public-forward-auth, public-strip-api-key]
+      middlewares: [public-api-chain]
       service: morning-briefing
 
     # The documentation: readable without a key, so no ForwardAuth.
@@ -133,6 +134,16 @@ http:
         prefixes: ["/api/morning-briefing"]
 
     # --- Public API chain (ADR-0009) -----------------------------------------
+    # Every public router uses this one chain, so a new router can't skip a
+    # step or change the order. Traefik runs the steps top to bottom.
+    public-api-chain:
+      chain:
+        middlewares:
+          - public-rate-limit-ip
+          - public-rate-limit-key
+          - public-forward-auth
+          - public-strip-api-key
+
     # Limits are in memory, per gateway: they reset when the gateway restarts
     # (one gateway, so that's fine; ADR-0009). Just over the limit, Traefik
     # holds the request a moment (at most 1 / (2 × average): 25 ms for the IP
