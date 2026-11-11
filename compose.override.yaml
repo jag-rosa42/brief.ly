@@ -18,6 +18,7 @@ x-content-management-dev-image-build: &content-management-dev-image-build
   volumes:
     - ./srcs/services/content-management:/app/srcs/services/content-management
     - ./shared/packages/shared_errors:/app/shared/packages/shared_errors
+    - ./shared/packages/shared_auth:/app/shared/packages/shared_auth
 
 # Identity
 x-identity-dev-image-build: &identity-dev-image-build

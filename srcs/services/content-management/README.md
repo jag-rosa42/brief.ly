@@ -3,6 +3,16 @@
 Content Management discovers and normalizes articles and exposes the internal
 topic and ingestion APIs.
 
+## Service tokens
+
+The `/internal/v1` routes (except `POST /ingestion-runs`) check the caller's
+service token and its scope (ADR-0008, `docs/api/04_content-management.md`).
+
+| Setting | Description | Example |
+| --- | --- | --- |
+| `JWT_SERVICE_AUDIENCE` (`.env`) | Audience of this service in service tokens | `transcendence:content-management` |
+| `jwt_public_key` (secret file) | Identity's public key, to verify tokens, created by `make secrets` | `shared/secrets/jwt_public_key` (local), `/run/secrets/jwt_public_key` (containers) |
+
 ## NewsAPI credential
 
 Article ingestion reads its NewsAPI credential from the repository-level secret

@@ -110,6 +110,7 @@ x-content-management-image-build: &content-management-image-build
     dockerfile: Dockerfile
     additional_contexts:
       shared_errors: ./shared/packages/shared_errors
+      shared_auth: ./shared/packages/shared_auth
   image: content-management
   env_file:
     - ./srcs/services/content-management/.env
@@ -329,6 +330,7 @@ services:
     secrets:
       - news_api_key
       - postgres_password
+      - jwt_public_key
 
   # -- Identity ---------------------------------------------------------------
   prestart-identity:
