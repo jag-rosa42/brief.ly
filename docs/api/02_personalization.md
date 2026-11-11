@@ -36,6 +36,17 @@ Public routes answer like their Frontend twin, plus:
                       plain text body (Traefik's), with Retry-After
 ```
 
+Every answer of a public route, errors included, carries the limits, added by the gateway:
+
+```text
+X-RateLimit-Limit-Per-Key: 5     requests per second, per API key
+X-RateLimit-Burst-Per-Key: 10    requests one key may send at once
+X-RateLimit-Limit-Per-IP:  20    requests per second, per IP address
+X-RateLimit-Burst-Per-IP:  40    requests one IP address may send at once
+```
+
+They are set in `srcs/gateway/dynamic/routers.yaml` (`public-rate-limit-info`), and stated at the top of each public document.
+
 Public documentation:
 
 - `/public/v1/docs` is a Swagger UI page served by Personalization. Swagger UI can show several OpenAPI documents with a selector; this page shows two: `/public/v1/openapi/personalization.json` (served by Personalization) and `/public/v1/openapi/morning-briefing.json` (served by Morning Briefing).
