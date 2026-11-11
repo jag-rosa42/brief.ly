@@ -59,6 +59,7 @@ install_authentication(app, auth_settings)  # fails here if the key is invalid
 | `CurrentServiceDep` | service token addressed to this service |
 | `Depends(require_service_scopes("x:write"))` | service token holding the scopes |
 | `Depends(require_public_api_scopes("write"))` | public API token holding the scopes |
+| `PublicApiReaderDep` / `PublicApiWriterDep` | public API token with `read` / `write` (the two scopes of every public route) |
 
 ```python
 @router.get("/me/profile")
@@ -75,6 +76,66 @@ def put_summary(service: SummaryWriter): ...  # service.name, service.scopes
 ```
 
 Always filter data by `user.account_id`, never by an ID from the URL or body.
+
+## Document the public API
+
+A service with public routes (ADR-0009) serves a document with only those
+routes. Build them on one router with the `/public/v1` prefix, then:
+
+```python
+from shared_auth import PUBLIC_API_RESPONSES, PublicApiReaderDep, install_public_openapi
+
+# PUBLIC_API_RESPONSES documents the 401, 403 and 429 of every public route.
+public_routers = APIRouter(prefix="/public/v1", responses=PUBLIC_API_RESPONSES)
+
+
+@public_routers.get("/morning-briefing")
+def get_public_briefing(user: PublicApiReaderDep): ...  # needs the "read" scope
+
+
+app.include_router(public_routers)
+# GET /public/v1/openapi/morning-briefing.json
+install_public_openapi(app, public_routers, service_name="morning-briefing")
+```
+
+- Only routes under `/public/v1` are accepted: anything else stops the
+  service at startup, so an internal route can't leak into the public docs.
+- The document declares the `X-API-Key` header, so Swagger UI's "Authorize"
+  button works.
+
+One service (Personalization) hosts the page that shows every document:
+
+```python
+from shared_auth import PublicDocument, install_public_docs_page, public_openapi_path
+
+# GET /public/v1/docs
+install_public_docs_page(app, documents=[
+    PublicDocument("Personalization", public_openapi_path("personalization")),
+    PublicDocument("Morning Briefing", public_openapi_path("morning-briefing")),
+])
+```
+
+Swagger UI's files come from `cdn.jsdelivr.net`, pinned to
+`SWAGGER_UI_VERSION` in `api/public_docs/swagger_ui.py`.
+
+Every public document states the rate limits at its top, and its `429`
+lists the `Retry-After` and `X-RateLimit-*` headers. The numbers are in
+`api/public_docs/responses.py`: they copy the gateway's
+(`srcs/gateway/dynamic/routers.yaml`), so change both together.
+
+To document other answers the same way, describe each one with
+`OpenApiResponse` (a frozen dataclass, so a missing description is an error)
+and turn them into FastAPI's `responses=` shape with `to_fastapi_responses`:
+
+```python
+from shared_errors import ErrorResponse
+
+from shared_auth.api.public_docs import OpenApiResponse, to_fastapi_responses
+
+responses = to_fastapi_responses({
+    404: OpenApiResponse(description="No such article", model=ErrorResponse),
+})
+```
 
 ## Call another service
 
