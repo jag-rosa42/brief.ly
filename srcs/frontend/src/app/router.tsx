@@ -4,6 +4,7 @@ import { Layout } from "@/app/Layout";
 import { LandingPage } from "@/pages/LandingPage";
 import { TermsOfServicePage } from "@/pages/TermsOfServicePage";
 import { PrivacyPolicyPage } from "@/pages/PrivacyPolicyPage";
+import { DesignPage } from "@/pages/DesignPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { SignupPage } from "@/pages/SignupPage";
 import { LoginPage } from "@/pages/LoginPage";
@@ -59,6 +60,7 @@ export function AppRouter() {
 					<Route index element={<LandingPage />} />
 					<Route path="/termsofservice" element={<TermsOfServicePage />} />
 					<Route path="/privacypolicy" element={<PrivacyPolicyPage />} />
+					<Route path="/designpage" element={<DesignPage />} />
 					<Route element={<GuestRoute />}>
 						<Route path="/signup" element={<SignupPage />} />
 						<Route path="/login" element={<LoginPage />} />
