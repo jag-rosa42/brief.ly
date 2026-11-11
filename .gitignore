@@ -59,6 +59,8 @@ dkms.conf
 *env
 *secrets/
 /vm/
+/backups/
+/backup-extract-*/
 
 # front
 node_modules
