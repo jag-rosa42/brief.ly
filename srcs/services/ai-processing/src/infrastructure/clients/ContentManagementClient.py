@@ -18,9 +18,9 @@ class ContentManagementClient:
 
     DownstreamClient turns the failures into our errors: unreachable or
     502/503/504 -> InfrastructureError, any other error answer ->
-    DownstreamError. On top of that, two cases become InfrastructureError
-    ("Content Management can't be called right now"): Identity refusing our
-    credentials, and Content Management's 401 TOKEN_EXPIRED for our token.
+    DownstreamError. On top of that, two cases become InfrastructureError:
+    Identity refusing our credentials (with a message naming the cause), and
+    Content Management's 401 TOKEN_EXPIRED for our token.
     """
 
     def __init__(self, client: DownstreamClient, token_provider: ServiceTokenProvider):
@@ -39,8 +39,13 @@ class ContentManagementClient:
             token = self.token_provider.get_token()
         except DownstreamError as exc:
             # Identity refused our credentials (Identity unreachable is
-            # already an InfrastructureError).
-            raise InfrastructureError("Content Management is unavailable.") from exc
+            # already an InfrastructureError). Nobody but us reads the
+            # worker's errors, so name the cause to fix.
+            raise InfrastructureError(
+                "Identity refused AI Processing's credentials "
+                f"({exc.downstream_code or exc.status_code}): "
+                "check its client secret and scopes."
+            ) from exc
         try:
             return self.client.request(
                 method, path, token=token, params=params, json=json
