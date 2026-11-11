@@ -5,7 +5,7 @@ from fastapi import Depends
 from src.api.dependencies.database import SessionDep, UnitOfWorkDep
 from src.api.dependencies.saved_article import SavedArticleRepositoryDep
 from src.api.dependencies.topic_catalog import TopicCatalogDep
-from src.application.use_cases.get_current_profile import GetCurrentProfile
+from src.application.use_cases.find_current_profile import FindCurrentProfile
 from src.application.use_cases.get_internal_profile import GetInternalProfile
 from src.application.use_cases.upsert_current_profile import UpsertCurrentProfile
 from src.domain.repositories.profile_repository import ProfileRepository
@@ -21,11 +21,13 @@ def get_profile_repository(session: SessionDep) -> ProfileRepository:
 ProfileRepositoryDep = Annotated[ProfileRepository, Depends(get_profile_repository)]
 
 
-def get_current_profile(profile_repository: ProfileRepositoryDep) -> GetCurrentProfile:
-    return GetCurrentProfile(profile_repository)
+def get_find_current_profile(
+    profile_repository: ProfileRepositoryDep,
+) -> FindCurrentProfile:
+    return FindCurrentProfile(profile_repository)
 
 
-GetCurrentProfileDep = Annotated[GetCurrentProfile, Depends(get_current_profile)]
+FindCurrentProfileDep = Annotated[FindCurrentProfile, Depends(get_find_current_profile)]
 
 
 def get_internal_profile(

@@ -202,9 +202,12 @@ class TestPublicProfile:
     def test_get_never_returns_another_account(
         self, client: TestClient, key: Headers, account_id: UUID
     ) -> None:
+        # Another key owner, without a profile, gets their own (empty)
+        # profile: null, never John's.
         response: Response = client.get(PUBLIC_ME_PROFILE, headers=key(uuid4(), "read"))
 
-        assert response.status_code == 404
+        assert response.status_code == 200
+        assert response.json() is None
 
     def test_get_needs_read(
         self, client: TestClient, key: Headers, account_id: UUID

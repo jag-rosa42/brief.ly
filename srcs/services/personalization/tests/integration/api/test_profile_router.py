@@ -34,15 +34,17 @@ def test_get_my_profile_returns_the_profile(
     assert body["updated_at"] is not None
 
 
-def test_get_my_profile_returns_404_when_profile_does_not_exist(
+def test_get_my_profile_returns_null_when_profile_does_not_exist(
     client: TestClient,
     db_session: Session,
     auth_headers: AuthHeaders,
 ) -> None:
+    # Right after sign-up: no profile yet. A 200, so Chrome's console stays
+    # clean; the frontend shows the profile form.
     response = client.get(ME_PROFILE, headers=auth_headers(uuid4()))
 
-    assert response.status_code == 404
-    assert ErrorResponse.model_validate(response.json()).error.code == "PROFILE_NOT_FOUND"
+    assert response.status_code == 200
+    assert response.json() is None
 
 
 def test_get_my_profile_returns_401_without_a_token(

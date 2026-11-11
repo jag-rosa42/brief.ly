@@ -3,7 +3,7 @@ from shared_auth import CurrentUserDep
 from shared_errors import ErrorResponse
 
 from src.api.dependencies import (
-    GetCurrentProfileDep,
+    FindCurrentProfileDep,
     UpsertCurrentProfileDep,
 )
 from src.api.schemas.profile import ProfileResponse, UpsertProfileRequest
@@ -17,17 +17,20 @@ router = APIRouter(
 @router.get(
     path="",
     status_code=status.HTTP_200_OK,
-    response_model=ProfileResponse,
+    # null when the user hasn't created their profile yet (right after
+    # sign-up): a normal state for the app, which then shows the profile
+    # form. A 404 would make Chrome log an error in the console.
+    response_model=ProfileResponse | None,
     responses={
         status.HTTP_401_UNAUTHORIZED: {"model": ErrorResponse},
-        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
     },
 )
 def get_my_profile(
     user: CurrentUserDep,
-    get_current_profile: GetCurrentProfileDep,
-) -> ProfileResponse:
-    return ProfileResponse.from_domain(get_current_profile.execute(user.account_id))
+    find_current_profile: FindCurrentProfileDep,
+) -> ProfileResponse | None:
+    profile = find_current_profile.execute(user.account_id)
+    return None if profile is None else ProfileResponse.from_domain(profile)
 
 
 @router.put(
