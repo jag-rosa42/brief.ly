@@ -1,6 +1,7 @@
 import { Division } from "@/shared/components/Division";
 import { Text } from "@/shared/components/Text";
 import { Button } from "@/shared/components/Button";
+import { Icon } from "@/shared/components/Icon";
 import type { Article } from "@/shared/components/ArticleModal";
 
 const MOCK_READING_TIME = 4;
@@ -54,9 +55,14 @@ export function ArticleCard({
 					type="button"
 					variant="simple"
 					onClick={onReadMore}
-					className="group ml-auto font-semibold after:absolute after:inset-0 after:content-['']"
+					className="group ml-auto inline-flex items-center gap-1 font-semibold after:absolute after:inset-0 after:content-['']"
 				>
-					Read More →
+					Read More
+					<Icon
+						name="arrow-right"
+						size="sm"
+						className="transition-transform group-hover:translate-x-0.5"
+					/>
 				</Button>
 			</div>
 		</Division>

@@ -3,6 +3,7 @@ import {
 	getNotificationStyle,
 	type NotificationVariant,
 } from "@/shared/components/notificationVariants";
+import { Icon } from "@/shared/components/Icon";
 
 interface NotificationProps {
 	message: string;
@@ -37,7 +38,7 @@ export function Notification({
 				onClick={onClose}
 				className="absolute top-2 right-2 text-info hover:text-accent"
 			>
-				✕
+				<Icon name="close" size="sm" />
 			</button>
 		</div>
 	);
