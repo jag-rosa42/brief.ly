@@ -234,10 +234,6 @@ test.each([
 		new ApiError(404, "ARTICLE_NOT_FOUND", "Article not found"),
 	],
 	["the user has no profile anymore", new ApiError(404, "PROFILE_NOT_FOUND", "Profile not found")],
-	[
-		"the limit is reached",
-		new ApiError(409, "SAVED_ARTICLES_LIMIT_REACHED", "Saved articles limit reached"),
-	],
 ])("keeps the article unsaved when %s", async (_case, error) => {
 	vi.mocked(getBriefing).mockResolvedValue(briefing());
 	vi.mocked(saveArticle).mockRejectedValue(error);
@@ -252,6 +248,22 @@ test.each([
 	// The page waits for the answer: on an error, nothing changes.
 	expect(screen.getByRole("button", { name: "Save" })).toHaveAttribute("aria-pressed", "false");
 	expect(screen.queryByRole("button", { name: "Saved" })).not.toBeInTheDocument();
+});
+
+test("says what to do when the saved articles limit is reached", async () => {
+	vi.mocked(getBriefing).mockResolvedValue(briefing());
+	vi.mocked(saveArticle).mockRejectedValue(
+		new ApiError(409, "SAVED_ARTICLES_LIMIT_REACHED", "Saved articles limit reached"),
+	);
+
+	renderPage();
+	fireEvent.click(await screen.findByRole("button", { name: "Save" }));
+
+	// Trying again would fail the same way: the message says what to do instead.
+	expect(await screen.findByRole("alert")).toHaveTextContent(
+		"You can save up to 12 articles: remove one from Saved first.",
+	);
+	expect(screen.getByRole("button", { name: "Save" })).toHaveAttribute("aria-pressed", "false");
 });
 
 test("sends one request when the button is clicked twice quickly", async () => {

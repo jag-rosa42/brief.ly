@@ -71,8 +71,10 @@ export function useBriefing() {
 			});
 			if (wasSaved) notify("The article has been removed from your saved articles.", "success");
 			else notify("The article has been added to your saved articles.", "success");
-		} catch {
+		} catch (err) {
 			if (wasSaved) notify("The article could not be removed, please try again.", "error");
+			else if (err instanceof ApiError && err.code === "SAVED_ARTICLES_LIMIT_REACHED")
+				notify("You can save up to 12 articles: remove one from Saved first.", "error");
 			else notify("The article could not be saved, please try again.", "error");
 		} finally {
 			pendingIds.current.delete(articleId);
