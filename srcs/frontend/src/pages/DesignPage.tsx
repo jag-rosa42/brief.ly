@@ -6,6 +6,7 @@ import { Button } from "@/shared/components/Button";
 import { buttonVariants } from "@/shared/components/buttonVariants";
 import { Card } from "@/shared/components/Card";
 import { Division } from "@/shared/components/Division";
+import { divShadows } from "@/shared/components/divVariants";
 import { Dropdown } from "@/shared/components/Dropdown";
 import { FilterChip } from "@/shared/components/FilterChip";
 import { Icon } from "@/shared/components/Icon";
@@ -13,6 +14,7 @@ import { ICON_NAMES } from "@/shared/components/iconPaths";
 import { Input } from "@/shared/components/Input";
 import { Link } from "@/shared/components/Link";
 import { Logo } from "@/shared/components/Logo";
+import { appearances, reliefs } from "@/shared/components/neomorphicVariants";
 import { notificationVariants } from "@/shared/components/notificationVariants";
 import { Spinner } from "@/shared/components/Spinner";
 import { Tabs } from "@/shared/components/Tab";
@@ -21,8 +23,9 @@ import { Text } from "@/shared/components/Text";
 import { getTextStyle, textVariants } from "@/shared/components/textVariants";
 
 // The design system of Brief.ly on one page: its colors, fonts and icons,
-// and every shared component with its variants. Public, to show it without
-// an account.
+// and every shared component with its variants, in both appearances:
+// classic (flat, with shadows) and neomorphic (in relief, like the dashboard).
+// Public, to show it without an account.
 
 // The tokens of index.css (@theme). The classes are written out in full:
 // Tailwind only generates the classes it finds as is in the code. The values
@@ -180,6 +183,32 @@ export function DesignPage() {
 				</div>
 			</Section>
 
+			<Section title="Surfaces">
+				<Text variant="body">
+					Two appearances. Classic cards are flat and take a shadow. Neomorphic ones are cut from
+					the background and lit from the top left: raised (up), pressed in (down) or flat (none).
+					The dashboard uses the neomorphic one.
+				</Text>
+				<Example name="Classic: shadows">
+					<div className="grid w-full grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
+						{divShadows.map((shadow) => (
+							<Division key={shadow} variant="featurecard" shadow={shadow}>
+								<Text variant="body">{shadow}</Text>
+							</Division>
+						))}
+					</div>
+				</Example>
+				<Example name="Neomorphic: reliefs">
+					<div className="grid w-full grid-cols-2 gap-6 sm:grid-cols-3">
+						{reliefs.map((relief) => (
+							<Division key={relief} variant="featurecard" appearance="neomorphic" relief={relief}>
+								<Text variant="body">{relief}</Text>
+							</Division>
+						))}
+					</div>
+				</Example>
+			</Section>
+
 			<Section title="Buttons and links">
 				<div className="flex flex-wrap items-end gap-6">
 					{buttonVariants.map((variant) => (
@@ -199,6 +228,15 @@ export function DesignPage() {
 							Disabled
 						</Button>
 					</Example>
+					{reliefs
+						.filter((relief) => relief !== "none")
+						.map((relief) => (
+							<Example key={relief} name={`Button primary, relief ${relief}`}>
+								<Button type="button" variant="primary" relief={relief}>
+									Button
+								</Button>
+							</Example>
+						))}
 					<Example name="With an icon">
 						<Button type="button" variant="link">
 							<Icon name="bookmark" size="sm" />
@@ -283,36 +321,45 @@ export function DesignPage() {
 				<div className="grid gap-8 sm:grid-cols-2">
 					{tabVariant.map((variant) => (
 						<Example key={variant} name={`Tabs ${variant}`}>
-							<Tabs
-								variant={variant}
-								tabs={TOPICS.map((topic) => ({ value: topic.value, label: topic.label }))}
-							/>
+							<Tabs variant={variant} tabs={TOPICS} />
+						</Example>
+					))}
+					{(["pill", "side"] as const).map((variant) => (
+						<Example key={`${variant}-neomorphic`} name={`Tabs ${variant}, neomorphic`}>
+							<Tabs variant={variant} appearance="neomorphic" tabs={TOPICS} />
 						</Example>
 					))}
 				</div>
 			</Section>
 
 			<Section title="Cards">
-				<div className="grid gap-6 md:grid-cols-3">
-					<Card title="Card" description="A title, a description and its content." />
-					<Division variant="featurecard">
-						<Text variant="heading">Division featurecard</Text>
-						<Text variant="body">The cards of the landing page.</Text>
-					</Division>
-					<Division variant="dashboardcard">
-						<Text variant="heading">Division dashboardcard</Text>
-						<Text variant="body">The surfaces of the dashboard.</Text>
-					</Division>
-				</div>
-				<Example name="Article card">
-					<ArticleCard
-						className="max-w-md"
-						article={SAMPLE_ARTICLE}
-						isSaved={saved}
-						onToggleSave={() => setSaved((prev) => !prev)}
-						onReadMore={() => notify("Read More opens the article.", "info")}
-					/>
-				</Example>
+				{appearances.map((appearance) => (
+					<Example key={appearance} name={appearance}>
+						<div className="grid w-full gap-6 md:grid-cols-3">
+							<Card
+								appearance={appearance}
+								title="Card"
+								description="A title, a description and its content."
+							/>
+							<Division variant="featurecard" appearance={appearance}>
+								<Text variant="heading">Division featurecard</Text>
+								<Text variant="body">The cards of the landing page and the forms.</Text>
+							</Division>
+							<Division variant="dashboardcard" appearance={appearance}>
+								<Text variant="heading">Division dashboardcard</Text>
+								<Text variant="body">The surfaces of the dashboard.</Text>
+							</Division>
+						</div>
+						<ArticleCard
+							className="mt-2 max-w-md"
+							appearance={appearance}
+							article={SAMPLE_ARTICLE}
+							isSaved={saved}
+							onToggleSave={() => setSaved((prev) => !prev)}
+							onReadMore={() => notify("Read More opens the article.", "info")}
+						/>
+					</Example>
+				))}
 			</Section>
 
 			<Section title="Feedback">
