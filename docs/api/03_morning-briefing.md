@@ -11,7 +11,7 @@ Every route is implemented: the Frontend route in `srcs/services/morning-briefin
 | Public | GET | `/public/v1/openapi/morning-briefing.json` | same | None | 200 | Done |
 | Internal | GET | — | `/health` | None | 200 | Done |
 
-The Public route answers like the Frontend route, plus `401 INVALID_API_KEY`, `403 INSUFFICIENT_SCOPE` and `429`, exactly like Personalization's Public routes. It forwards the public API token to Personalization's `/internal/v1/me/profile`, which accepts it (ADR-0009, recipe step 7). Its OpenAPI document is shown on `/public/v1/docs` (see [02_personalization.md](02_personalization.md)).
+The Public route answers like the Frontend route, plus `401 INVALID_API_KEY`, `403 INSUFFICIENT_SCOPE` and `429`, exactly like Personalization's Public routes. It forwards the public API token to Personalization's `/internal/v1/me/profile`, which accepts it (ADR-0009: a public route that calls another service for the user forwards the user's token). Its OpenAPI document is shown on `/public/v1/docs` (see [02_personalization.md](02_personalization.md)).
 
 ## Endpoint details
 
