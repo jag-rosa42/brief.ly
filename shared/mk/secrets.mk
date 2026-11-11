@@ -38,12 +38,12 @@ TLS_PRIVATE_KEY      := $(CERTIFICATE_DIR)/localhost-key.pem
 SECRETS_MODE ?= generate
 
 .PHONY: secrets secrets-check secrets-banner secrets-dir secrets-random secrets-jwt-keys \
-		secrets-provider-placeholders secrets-certs
+		secrets-provider-placeholders secrets-certs secrets-backup-password
 
 ifeq ($(SECRETS_MODE),validate)
 secrets: secrets-check
 else ifeq ($(SECRETS_MODE),generate)
-secrets: secrets-banner secrets-random secrets-jwt-keys secrets-provider-placeholders secrets-certs
+secrets: secrets-banner secrets-random secrets-backup-password secrets-jwt-keys secrets-provider-placeholders secrets-certs
 	@$(call print,$(GREEN_COLOR),✓ Generated secrets and provider placeholders are ready.)
 else
 $(error SECRETS_MODE must be generate or validate)
@@ -76,6 +76,23 @@ secrets-random: | secrets-dir
 			printf "$(GREEN_COLOR)✓ $$secret already exists, skipping ㊙️$(DEFAULT_COLOR)\n"; \
 		fi; \
 	done
+
+# The backup key is generated on the host but is not part of secrets-check:
+# vm-sync excludes it, so the guest must not require it.
+secrets-backup-password: | secrets-dir
+	@if [ -z "$(BACKUP_PASSWORD_FILE)" ]; then \
+		printf '[SECRETS] Set BACKUP_PASSWORD_FILE in the host .env.\n' >&2; \
+		exit 1; \
+	fi
+	@if [ ! -s "$(BACKUP_PASSWORD_FILE)" ]; then \
+		printf "$(YELLOW_COLOR)㊙️ Generating $(BACKUP_PASSWORD_FILE)...$(DEFAULT_COLOR)\n"; \
+		umask 077; \
+		openssl rand -base64 48 > "$(BACKUP_PASSWORD_FILE)" || exit $$?; \
+		printf "$(GREEN_COLOR)✓ Backup password generated$(DEFAULT_COLOR)\n"; \
+	else \
+		printf "$(GREEN_COLOR)✓ Backup password already exists, skipping ㊙️$(DEFAULT_COLOR)\n"; \
+	fi
+	@chmod 600 "$(BACKUP_PASSWORD_FILE)"
 
 # --- Externally supplied provider credentials ---
 secrets-provider-placeholders: | secrets-dir

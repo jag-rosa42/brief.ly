@@ -6,6 +6,7 @@ include shared/mk/colors.mk
 include shared/mk/secrets.mk
 include shared/mk/ingest.mk
 include shared/mk/llm.mk
+include shared/mk/backup_recovery.mk
 
 
 NAME := Transcendence
@@ -128,6 +129,14 @@ help:
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) secrets                     $(CYAN_COLOR)Create missing secrets$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── 🚀 Production ─────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) prod                        $(CYAN_COLOR)Build and run the production stack inside the VM$(DEFAULT_COLOR)\n\n"
+	@printf "$(ROSE_COLOR)── 📦 Backups ────────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup                      $(CYAN_COLOR)Create and verify an encrypted host backup$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-schedule-install [BACKUP_TIME=HHMM]  $(CYAN_COLOR)Install daily host cron for make backup (default 0200)$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-list                 $(CYAN_COLOR)List completed host backup sets$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-retention-preview    $(CYAN_COLOR)Preview which backup sets retention would keep$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-prune [APPLY=1]      $(CYAN_COLOR)Report backup storage and optionally remove old sets$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-extract BACKUP_SET=id  $(CYAN_COLOR)Decrypt into a new host directory$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-verify BACKUP_SET=id  $(CYAN_COLOR)Verify one encrypted backup set$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── 📦 Shared container tools ────────────────────────────────────────────$(DEFAULT_COLOR)\n"
 	@printf "$(CYAN_COLOR)  Add -vm to logs, ps, down, reset-db, clean, re, or fclean to run them in the VM.$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) logs [SERVICE=<name>]       $(CYAN_COLOR)Follow container logs$(DEFAULT_COLOR)\n"
@@ -426,6 +435,9 @@ vm-sync: secrets vm-wait
 	@$(call print,$(CYAN_COLOR),[VM] Synchronizing project files...)
 	@rsync -az --progress \
 		--exclude '/vm/' \
+		--exclude '/backups/' \
+		--exclude '/backup-extract-*/' \
+		--exclude '/shared/secrets/backup_password' \
 		--exclude '.git/' \
 		--exclude '.venv/' \
 		--exclude 'node_modules/' \
