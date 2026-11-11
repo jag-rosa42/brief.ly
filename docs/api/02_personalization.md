@@ -74,9 +74,11 @@ Header: Authorization: Bearer <access token>
   "created_at": datetime,
   "updated_at": datetime
 }
+200 OK                null: no profile yet (right after sign-up; the frontend shows onboarding)
 401 Unauthorized
-404 Not Found         PROFILE_NOT_FOUND (frontend shows onboarding)
 ```
+
+No profile yet is a normal state, not an error: answering `404` made Chrome log an error in the console for every new user. The public twin, `GET /public/v1/me/profile`, answers the same `null`.
 
 ### PUT /api/personalization/me/profile (create or update)
 

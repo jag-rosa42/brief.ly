@@ -3,7 +3,7 @@ from shared_auth import PublicApiReaderDep, PublicApiWriterDep
 from shared_errors import ErrorResponse
 
 from src.api.dependencies import (
-    GetCurrentProfileDep,
+    FindCurrentProfileDep,
     UpsertCurrentProfileDep,
 )
 from src.api.schemas.profile import ProfileResponse, UpsertProfileRequest
@@ -20,16 +20,15 @@ router = APIRouter(
 @router.get(
     path="",
     status_code=status.HTTP_200_OK,
-    response_model=ProfileResponse,
-    responses={
-        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
-    },
+    # null when the account has no profile yet, like the frontend route.
+    response_model=ProfileResponse | None,
 )
 def get_my_public_profile(
     user: PublicApiReaderDep,
-    get_current_profile: GetCurrentProfileDep,
-) -> ProfileResponse:
-    return ProfileResponse.from_domain(get_current_profile.execute(user.account_id))
+    find_current_profile: FindCurrentProfileDep,
+) -> ProfileResponse | None:
+    profile = find_current_profile.execute(user.account_id)
+    return None if profile is None else ProfileResponse.from_domain(profile)
 
 
 @router.put(
