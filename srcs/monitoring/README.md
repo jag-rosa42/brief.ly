@@ -1,8 +1,9 @@
 # Monitoring stack
 
 This directory holds Prometheus scrape configuration and Grafana provisioning.
-The stack runs under the Compose `observability` profile. For startup, VM
-access, and troubleshooting commands, see [README.docker.md](../../README.docker.md#observability-in-development).
+The stack runs in the independent `compose.monitoring.yaml` project. For
+startup, VM access, and troubleshooting commands, see
+[README.docker.md](../../README.docker.md#independent-monitoring).
 
 ## How data moves
 
@@ -11,6 +12,7 @@ Traefik :9092/metrics ──────────┐
 Five FastAPI apps :8000/metrics ├──> Prometheus ──> Grafana
 Prometheus :9090/metrics ───────┤     (15-second scrapes)   (queries, dashboards, alerts)
 AI summary worker ──> Pushgateway :9091/metrics ──┘
+Blackbox ──HTTPS──> Traefik :8443 ──> frontend
 ```
 
 Prometheus scrapes numeric time series from the targets in
@@ -20,6 +22,24 @@ Prometheus scrapes numeric time series from the targets in
 five API jobs scrape `/metrics` on port 8000. Traefik exposes its metrics on
 an internal entry point at port 9092; Prometheus reaches it over the `edge`
 network and reaches APIs and Pushgateway over `backend`.
+
+Blackbox Exporter runs in the monitoring project on both shared networks.
+Prometheus scrapes its own `/metrics` as job `blackbox` and its `/probe` result
+as job `gateway-probe`. The latter connects to Traefik's HTTPS entry point,
+then reaches the frontend. Its fixed `instance="gateway-https"` label avoids
+target URLs as metric labels. `up{job="gateway-probe"}` says whether the probe
+result was scraped; `probe_success{job="gateway-probe"}` says whether the HTTPS
+request actually worked. The development module verifies the mounted
+`localhost` certificate. Update its CA and hostname when deploying a
+different certificate; do not disable verification.
+
+The `service-health` job asks Blackbox to call each of the five internal
+`http://<service>:8000/health` routes over the backend network. Each route
+checks database connectivity. The only `service` values are the five fixed
+Compose service names; the `instance` label repeats that bounded name rather
+than a URL. The status dashboard shows `probe_success{job="service-health"}`
+as **Service /health** and retains `up` as a separate metrics scrape timeline.
+For either timeline, `0` is red, `1` is green, and missing data is Unknown.
 
 The summary worker is a separate, short-lived process. At the end of a run it
 pushes last-run gauges to Pushgateway using the fixed job
@@ -33,13 +53,13 @@ Grafana's provisioned Prometheus data source points to
 `http://prometheus:9090`. Dashboard JSON files live in [`grafana/dashboards`](grafana/dashboards),
 and the provisioned alert rules live in
 [`grafana/provisioning/alerting`](grafana/provisioning/alerting). The current
-rules cover an API target down, an elevated API 5xx rate, and a failed last
-worker run. There is currently no overdue-worker alert; the summary worker
+rules cover an API target down, an elevated API 5xx rate, a failed gateway
+probe for five minutes, and a failed last worker run. There is currently no overdue-worker alert; the summary worker
 is run manually with `make summarize` in the VM.
 
-Compose keeps Prometheus, Pushgateway, and `/metrics` internal. Only Grafana's
-UI is bound to the development host, normally at `127.0.0.1:3000`; the VM
-forwards that development port. Do not route metrics through public Traefik
+Compose keeps Prometheus, Pushgateway, and `/metrics` internal. Grafana's UI
+binds to the Docker host's `127.0.0.1:3000` by default; QEMU forwards the VM's
+Grafana port to host loopback. Do not route metrics through public Traefik
 routes or expose their ports on the host. Grafana's admin password comes from
 `shared/secrets/grafana_admin_password`, outside version control. Prometheus
 keeps data for at most 15 days or 2 GB, whichever limit is reached first;
@@ -86,12 +106,17 @@ These gauges have no metric labels. Pushgateway attaches its stable
 | `ai_worker_last_run_duration_seconds` | Duration of the last run, in seconds |
 | `ai_worker_last_run_article_failures` | Article generation failures in the last run |
 | `ai_worker_last_run_topic_failures` | Topic group generation failures in the last run |
+| `ai_worker_last_run_articles_summarized` | Accepted article summaries saved during the last run |
+| `ai_worker_last_run_average_article_summary_duration_seconds` | Average elapsed seconds for accepted article summaries in the last run, including saving to Content Management |
 
 These are last-run values, not cumulative counters or a history of runs.
 A normal content rejection is not an article generation failure. A handled
 article or topic failure is reflected in the gauge published at the end of
 the run; a fatal error is recorded and then raised. A failed push is logged.
-The gauges are absent until the first successful push.
+The gauges are absent until the first successful push. The average is
+meaningful when `ai_worker_last_run_articles_summarized` is greater than zero.
+Pushgateway replaces these latest-run values on the next worker execution;
+they do not represent lifetime totals.
 
 ### Content Management ingestion
 
@@ -110,6 +135,9 @@ already-running `409` is still an HTTP response but not a completed ingestion
 run. These in-process metric values reset when the API restarts; Prometheus
 retains earlier samples. Keep source IDs, article IDs, and error messages out
 of labels.
+
+The **Content Management Ingestion** dashboard shows 24-hour run outcomes,
+article counts, reported failures, and time since the last completed run.
 
 ## Verify the contract
 

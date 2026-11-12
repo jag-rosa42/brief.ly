@@ -21,7 +21,8 @@ The production environment loads `compose.yaml`. Development commands also load 
 
 | Command | Description |
 | --- | --- |
-| `make docker` | Build and start all enabled development services in the background. |
+| `make docker` | Build and start the application, then start the independent monitoring project. |
+| `make docker-app` | Build and start the application without starting monitoring. |
 | `make docker SERVICE=gateway` | Build and start the gateway and the frontend (the app opens at `https://localhost:8443`). |
 | `make docker SERVICE=<service>` | Build and start the backend service and its declared dependencies. Start the gateway too to call it from the browser. |
 | `make frontend-test` | Build and run frontend tests in the development container. |
@@ -30,7 +31,7 @@ The production environment loads `compose.yaml`. Development commands also load 
 
 | Command | Description |
 | --- | --- |
-| `make ps` | Show the status of development services. |
+| `make ps` | Show the status of application services. |
 | `make logs` | Follow logs for all development services. |
 | `make logs SERVICE=<service>` | Follow logs for the backend service. |
 
@@ -38,9 +39,9 @@ The production environment loads `compose.yaml`. Development commands also load 
 
 | Command | Description |
 | --- | --- |
-| `make down` | Stop the development environment while preserving named volumes. |
+| `make down` | Stop the application while leaving monitoring and its volumes running. |
 | `make clean` | Stop the development environment and remove project images; database data is preserved. |
-| `make reset-db` | Stop the development environment and remove Compose-managed volumes, including database data. |
+| `make reset-db` | Stop the application and remove its Compose-managed volumes, including database data. Monitoring volumes remain. |
 | `make fclean` | After confirmation, remove project images and the pgsql and pgvector named volumes. |
 | `make re` | Run `clean`, then rebuild and start the development environment. |
 
@@ -56,7 +57,7 @@ A service's `/docs`, `/health` and `/internal/...` routes are not reachable thro
 
 ### HTTPS certificate
 
-`make secrets` (run by `make docker` and `make vm`) creates `shared/secrets/certs/localhost.pem` and `localhost-key.pem` when they are missing: a self-signed certificate for `localhost`. The browser shows a warning for it; accept it once, or trust the certificate instead:
+`make secrets` (run by `make docker` and the VM stack targets) creates `shared/secrets/certs/localhost.pem` and `localhost-key.pem` when they are missing: a self-signed certificate for `localhost`. The browser shows a warning for it; accept it once, or trust the certificate instead:
 
 - **With mkcert (recommended):** install [mkcert](https://github.com/FiloSottile/mkcert), then run `mkcert -install` once, and replace the generated files:
 
@@ -71,18 +72,43 @@ A service's `/docs`, `/health` and `/internal/...` routes are not reachable thro
 
 To get a new self-signed certificate, delete both files and run `make secrets`.
 
-## Observability in development
+## Independent monitoring
 
-`make docker` starts the `observability` Compose profile with Prometheus,
-Grafana, and Pushgateway. Use `make ps` to check the containers,
-`make logs SERVICE=grafana` (or `prometheus` or `pushgateway`) to inspect logs,
-and `make down` to stop the stack without removing its named volumes. For the
-development VM, use `make vm`, `make ps-vm`, `make logs-vm SERVICE=grafana`,
-and `make down-vm` instead.
+`compose.monitoring.yaml` owns Prometheus, Grafana, and Pushgateway. `make
+docker` starts the application and then monitoring; `make down`, `make clean`,
+and `make reset-db` affect only the application project. `make monitoring-up`,
+`make monitoring-down`, `make monitoring-ps`, and `make monitoring-logs
+SERVICE=grafana` manage monitoring independently. The corresponding `-vm`
+targets run inside the development VM. Both projects join the external
+`DOMAIN-edge` and `DOMAIN-backend` Docker networks, which `make docker` and
+`make monitoring-up` create if absent. Grafana continues to query
+`http://prometheus:9090` on the backend network.
 
-Open Grafana at `http://127.0.0.1:3000`, or at the `GRAFANA_PORT` configured in
-`.env`. The same host address works for a development VM because that port is
-forwarded. The default admin user is `admin`; read its password from
+For an existing installation, stop and remove only the old monitoring
+containers once, while preserving their named volumes. Run these commands on
+the Docker host (inside `make connect-vm` for a VM):
+
+```bash
+docker stop prometheus grafana pushgateway
+docker rm prometheus grafana pushgateway
+make monitoring-up SECRETS_MODE=validate
+```
+
+Before removing them, inspect `docker volume ls` and confirm the existing
+`DOMAIN_prometheus_data`, `DOMAIN_grafana_data`, and
+`DOMAIN_pushgateway_data` volumes. Replace `DOMAIN` with the `.env` value
+(normally `transcendence`). The monitoring Compose file declares those exact
+volumes as external, so it reuses their data. Do not run the old application's
+`down --volumes` before the move. For a fresh installation, `make
+monitoring-up` creates the volumes.
+
+Grafana binds to `127.0.0.1:GRAFANA_PORT` when Docker runs locally. In the VM,
+Docker binds Grafana inside the guest and QEMU forwards it to **host loopback**
+in every VM network mode. Open `http://127.0.0.1:3000` (or the configured port)
+on the host whenever the VM is running. QEMU must be restarted after changing
+`GRAFANA_PORT`, because its port forwards are fixed at boot. This access path
+is independent of Traefik. The default admin
+user is `admin`; read its password from
 `shared/secrets/grafana_admin_password`. The provisioned Prometheus data
 source and dashboards should appear after Grafana starts.
 
@@ -93,16 +119,44 @@ up
 sum by (service) (rate(http_requests_total[5m]))
 sum by (service) (rate(http_requests_total{status=~"5.."}[5m]))
 ai_worker_last_run_success
+probe_success{job="gateway-probe"}
+probe_success{job="service-health"}
+time() - timestamp(probe_success{job="gateway-probe"})
 ```
 
 `up` is `1` when Prometheus can scrape a target and `0` when it cannot. The
-HTTP rates are responses per second; they include API requests handled by the
+`gateway-probe` target is different: its `up` means Prometheus reached
+Blackbox Exporter, while `probe_success` means Blackbox completed an HTTPS
+request through Traefik. The **Services Disponibilty** dashboard shows the
+gateway result and age of its last check above the internal service timeline.
+Missing probe data appears as **Unknown**, not as healthy.
+The **Service /health** timeline shows the five database-backed health checks:
+`1` is healthy and `0` is unhealthy. The separate **Metrics scrape
+availability** timeline uses `up`; it answers whether Prometheus could collect
+`/metrics`, which can still succeed when a service's `/health` check fails.
+Both timelines color `0` red and `1` green.
+
+External `/metrics` and `/metrics/...` requests return 404 at Traefik. The
+service metrics, Prometheus, Pushgateway, and Blackbox endpoints remain on
+internal Docker networks only.
+
+The development probe connects to `https://gateway:8443/` over the shared
+edge network and verifies the project's `localhost` certificate using its
+mounted public certificate and `server_name: localhost`. The probe also sends
+`Host: localhost`, which the development frontend accepts. It never disables TLS
+verification. Before deploying a certificate for another hostname, update
+`srcs/monitoring/blackbox.yml` to trust that issuer and verify the deployed
+hostname; keep the probe target routed through the gateway. A bad certificate
+should make `probe_success` become `0`.
+
+The HTTP rates are responses per second; they include API requests handled by the
 five FastAPI services, not frontend page or asset requests. A missing 5xx
 series can simply mean that service has not returned a 5xx response. The
 worker result is absent until a summary run has pushed its gauges to
 Pushgateway; `1` means its last run succeeded and `0` means it failed or had
-an item generation failure. `make summarize` runs the worker in the VM's AI
-Processing container.
+an item generation failure. The **AI Worker** dashboard also shows accepted
+article summaries saved and their average processing time in the last run.
+`make summarize` runs the worker in the VM's AI Processing container.
 
 To inspect Prometheus **Targets** without publishing Prometheus on the host,
 run this on the Docker host. For a VM stack, first enter the VM with

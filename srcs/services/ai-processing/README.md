@@ -115,7 +115,7 @@ host, use the existing Make target to start AI Processing and its dependencies
 inside the VM:
 
 ```sh
-make vm SERVICE=ai-processing
+make vm-service SERVICE=ai-processing
 ```
 
 Then enter the VM with `make connect-vm`. From the repository root inside the
@@ -125,7 +125,7 @@ VM, run the one-article test in a temporary AI Processing container:
 docker compose -f compose.yaml -f compose.override.yaml --profile backend --profile databases run --rm --no-deps ai-processing python -m scripts.try_ollama_workflow
 ```
 
-The temporary container uses the image built by `make vm` and skips database
+The temporary container uses the image built by `make vm-service` and skips database
 startup because this test has no database dependency. This also works if the
 regular AI Processing prestart step fails.
 
