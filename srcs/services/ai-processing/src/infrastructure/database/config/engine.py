@@ -28,6 +28,4 @@ engine = create_engine(
     pool_timeout=30,  # Wait up to 30 seconds for a free connection.
     pool_recycle=3600,  # Recreate connections every hour to avoid stale connections.
     pool_pre_ping=True,  # Verify a connection is still alive before using it.
-    # TODO: remove this SQL logging line before evaluation
-    echo=True,
 )

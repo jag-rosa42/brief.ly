@@ -35,7 +35,6 @@
   #    - Ensure its database name and migration setup are correct.
   # ---------------------------------------------------------------------------
 
-# TODO: Fix the condition service_completed_successfully or use a VM for docker
 name: "${DOMAIN}"
 
 # ==============================================================================

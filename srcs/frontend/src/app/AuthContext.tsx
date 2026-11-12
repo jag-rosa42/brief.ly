@@ -65,8 +65,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 					if (!active) return;
 
 					setAccount(account);
-
-					// TODO: Restore profile completion status from the backend.
 				} else {
 					setAccount(null);
 				}

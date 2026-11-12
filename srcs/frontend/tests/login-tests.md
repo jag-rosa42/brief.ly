@@ -201,7 +201,5 @@ Expected:
 
 ## Known limitations
 
-- The profile status is temporary: until the Personalization service is connected, it is stored in the browser's `localStorage` (see the TODO comments in `AuthContext.tsx`). A profile reopened after a login can therefore appear empty.
-- Until Personalization is connected, `login` assumes the profile is complete: a user who signed up but never filled in the profile can access all the tabs after logging in.
 - The `VALIDATION_ERROR` message (`Some fields are invalid, please check your input`): the front end blocks an invalid email before the API call, so this case is hard to trigger by hand.
 - Accessibility beyond keyboard navigation (Tab order, Enter to submit) and the `role="alert"` on the error message. A Lighthouse accessibility audit is a good complement.

@@ -10,9 +10,6 @@ include $(ROOT_DIR)/.env
 CONTENT_MANAGEMENT_URL ?= http://$(HOST):$(PORT)
 NEWS_API_SECRET := $(ROOT_DIR)/shared/secrets/news_api_key
 
-# ======== TMP TEST WITH LOGS ===============
-# TODO: Format loggers
-
 TEST_DIR        ?= tests
 LEVEL ?= info
 PYTEST_LOG_OPTS ?= \

@@ -31,7 +31,8 @@ export async function toApiError(response: Response): Promise<ApiError> {
 	try {
 		body = (await response.json()) as ErrorBody;
 	} catch {
-		// TODO: Once Traefik returns a consistent JSON error format, body fall back to HTTP status.
+		// Not our JSON error format (e.g. Traefik's plain-text 404 or 502):
+		// fall back to the HTTP status below.
 	}
 
 	return new ApiError(

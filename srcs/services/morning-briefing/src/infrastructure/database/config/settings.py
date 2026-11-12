@@ -126,15 +126,3 @@ class DatabaseSettings(ServiceSettings):
 
 
 database_settings = DatabaseSettings()
-
-# TODO: debug prints to remove later
-print("DB HOST:", database_settings.POSTGRES_HOST)
-print("DB PORT:", database_settings.POSTGRES_PORT)
-print("DB USER:", database_settings.POSTGRES_USER)
-print("DB NAME:", database_settings.POSTGRES_DB_NAME)
-print(
-    "DB URI:",
-    database_settings.SQLALCHEMY_DATABASE_URI.replace(
-        database_settings.POSTGRES_PASSWORD.get_secret_value(), "***"
-    ),
-)
