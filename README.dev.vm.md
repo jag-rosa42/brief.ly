@@ -128,18 +128,21 @@ SSH_PUBLIC_KEY=$(HOME)/.ssh/id_ed25519.pub
 
 ### 4. Choose where to store the VM
 
-Set `VM_DIR` in the root `.env` to a directory on a disk with enough free space. This stores the VM disk, downloaded Ubuntu image, and first-boot files. Docker images, containers, and database data live inside the VM disk.
+Set `PROJECT_STORAGE_DIR` in the root `.env` to a directory on a disk with enough free space. The explicit `VM_DIR`, `RESTORE_VM_DIR`, and `BACKUP_HOST_DIR` settings use it as their parent. `VM_DIR` stores the VM disk, downloaded Ubuntu image, and first-boot files. Docker images, containers, and database data live inside the VM disk.
 
-The default stores everything in the project's `vm/` directory:
+By default, the three storage directories sit beside each other in the project:
 
 ```dotenv
-VM_DIR=$(CURDIR)/vm
+PROJECT_STORAGE_DIR=$(CURDIR)
+VM_DIR=$(PROJECT_STORAGE_DIR)/vm
+RESTORE_VM_DIR=$(PROJECT_STORAGE_DIR)/vm-restore
+BACKUP_HOST_DIR=$(PROJECT_STORAGE_DIR)/backups
 ```
 
 If your project is on a storage-limited home directory, choose another location. For example, on a 42 Linux workstation with `/goinfre` available, replace the line with:
 
 ```dotenv
-VM_DIR=/goinfre/your-login/transcendence-vm
+PROJECT_STORAGE_DIR=/goinfre/your-login/transcendence-storage
 ```
 
 Replace `your-login` with your actual login. Use a directory you can write to; recreation replaces only the current guest’s disk, first-boot files, and firmware state. Check your campus's cleanup policy before using `/goinfre` for data you need to keep.
@@ -156,7 +159,7 @@ df -h .
 df -h /goinfre
 ```
 
-Read the `Avail` column. Set `VM_DIR` before the first launch: changing it later does not move an existing VM or its data.
+Read the `Avail` column. Set `PROJECT_STORAGE_DIR` before the first launch: changing it later does not move an existing VM, restore VM, or backup data.
 
 ### 5. Set CPU, RAM, and disk capacity
 
@@ -235,29 +238,37 @@ exit
 
 For later starts, use `make launch-vm`. To apply CPU or RAM changes, use `make stop-vm` followed by `make launch-vm`; recreation is unnecessary. When ready to start the application, continue with the VM commands below.
 
-### 7. Start the application inside the VM
+### 7. Start the stacks inside the VM
 
 Run these commands **on your host**, from the repository root, after preparing the service `.env` files from their `.env.example` templates.
 
-**Start the full development stack:**
+**Start the full application and monitoring stack:**
 
 ```bash
-make vm
+make vm-full-stack
 ```
 
-This stops and restarts the VM with development port forwarding, synchronizes your project, configuration, and secrets, then builds and starts the application containers inside the VM. Containers run in the background, so the command returns when startup completes. The existing VM disk and database data are preserved.
+This stops and restarts the VM with development port forwarding, synchronizes your project, configuration, and secrets, then builds and starts the application and monitoring containers inside the VM. Containers run in the background, so the command returns when startup completes. The existing VM disk and database data are preserved.
+
+**Start only the application stack:**
+
+```bash
+make vm-app
+```
+
+This starts all application services and stops the separate monitoring project while preserving its data volumes. Use `make vm-full-stack` to start monitoring again.
 
 **Start a specific service and its dependencies:**
 
 ```bash
-make vm SERVICE=identity
+make vm-service SERVICE=identity
 ```
 
 Replace `identity` with a service name from `compose.yaml`, such as `personalization`, `content-management`, `ai-processing`, `morning-briefing`, or `frontend`. For identity, Compose also starts PostgreSQL and runs the required database setup before starting the API.
 
-`SERVICE` selects what Compose builds and starts; it does not guarantee that all other services are stopped. Previously created containers with a restart policy can start again when the VM restarts. Both forms of `make vm` restart the whole VM, briefly interrupting any services already running there.
+`SERVICE` selects what Compose builds and starts; it does not guarantee that all other services are stopped. Previously created containers with a restart policy can start again when the VM restarts. All three VM stack commands restart the whole VM, briefly interrupting any services already running there.
 
-Start with `make vm SERVICE=identity` when working on that backend, especially on a memory-limited laptop. Use `make vm` when you need the complete application.
+Start with `make vm-service SERVICE=identity` when working on that backend, especially on a memory-limited laptop. Use `make vm-app` for the complete application without monitoring, or `make vm-full-stack` for both projects.
 
 Check the result and inspect logs:
 
@@ -266,7 +277,7 @@ make ps-vm
 make logs-vm SERVICE=identity
 ```
 
-Press Ctrl+C to stop following logs; the containers keep running. Containers are reached only through the gateway: after `make vm`, open `https://localhost:8443` (see [README.docker.md](README.docker.md#https-certificate) for the certificate warning). A service's `/docs` page is not routed by the gateway; browse it by running the service on the host with `make run SERVICE=<name>`, then `http://localhost:8081/docs` for identity.
+Press Ctrl+C to stop following logs; the containers keep running. Containers are reached only through the gateway: after `make vm-app` or `make vm-full-stack`, open `https://localhost:8443` (see [README.docker.md](README.docker.md#https-certificate) for the certificate warning). A service's `/docs` page is not routed by the gateway; browse it by running the service on the host with `make run SERVICE=<name>`, then `http://localhost:8081/docs` for identity.
 
 ### 8. Stop the VM and keep a restore point
 
@@ -284,7 +295,7 @@ To continue later:
 make launch-vm
 ```
 
-This boots the same disk. Use `make vm` or `make vm SERVICE=identity` when you also want to build and start application containers. To stop only the containers while leaving Ubuntu running, use `make down-vm`.
+This boots the same disk. Use `make vm-full-stack`, `make vm-app`, or `make vm-service SERVICE=identity` when you also want to build and start containers. To stop only the application containers while leaving Ubuntu running, use `make down-vm`.
 
 **Optional: keep a restore point**
 
@@ -313,13 +324,13 @@ Run on the host, from the repository root:
 
 ```bash
 make create-vm           # First time only; recreating deletes existing guest data
-make vm SERVICE=identity # Start your backend and its dependencies
+make vm-service SERVICE=identity # Start your backend and its dependencies
 make ps-vm               # Check container status
 # Edit source files on the host, then:
 make vm-sync             # Copy changes; development source reloads automatically
 ```
 
-Test through the gateway after `make vm` (`https://localhost:8443/api/identity/...`), or open `/docs` with `make run SERVICE=identity` (`http://localhost:8081/docs`). Rebuild with `make vm SERVICE=identity` after dependency or image changes.
+Test through the gateway after `make vm-service SERVICE=identity` (`https://localhost:8443/api/identity/...`), or open `/docs` with `make run SERVICE=identity` (`http://localhost:8081/docs`). Rebuild with `make vm-service SERVICE=identity` after dependency or image changes.
 
 If a bug occurs, run `make logs-vm SERVICE=identity`, or `make connect-vm` to inspect Ubuntu directly. Keep editing source on the host.
 
@@ -333,8 +344,9 @@ Run these commands on the host. Replace `<name>` with a Compose service such as 
 | --- | --- |
 | `make create-vm` | Create a fresh guest; **deletes existing guest data after confirmation**. |
 | `make launch-vm` | Start or reuse the VM and sync files; does not start the application stack. |
-| `make vm` | Restart the VM, sync, build, and start the full development stack. |
-| `make vm SERVICE=<name>` | Restart the VM, sync, build, and start one service with its dependencies. |
+| `make vm-full-stack` | Restart the VM, sync, build, and start the application plus monitoring. |
+| `make vm-app` | Restart the VM, sync, stop monitoring, and start the full application stack. |
+| `make vm-service SERVICE=<name>` | Restart the VM, sync, build, and start one service with its dependencies. |
 | `make vm-sync` | Copy host files, configuration, and secrets into the running VM. |
 | `make ps-vm` | Show container status. |
 | `make logs-vm` | Follow all development container logs. |
