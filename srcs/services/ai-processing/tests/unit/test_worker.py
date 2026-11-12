@@ -108,8 +108,23 @@ def test_worker_publishes_last_run_even_on_failure(
     completion = registry.get_sample_value("ai_worker_last_completion_timestamp_seconds")
     assert duration is not None and duration >= 0
     assert completion is not None and completion > 0
+    assert registry.get_sample_value("ai_worker_last_run_articles_summarized") == 0
+    assert (
+        registry.get_sample_value(
+            "ai_worker_last_run_average_article_summary_duration_seconds"
+        )
+        == 0
+    )
     samples = [sample for family in registry.collect() for sample in family.samples]
-    assert len(samples) == 5
+    assert {sample.name for sample in samples} == {
+        "ai_worker_last_completion_timestamp_seconds",
+        "ai_worker_last_run_success",
+        "ai_worker_last_run_duration_seconds",
+        "ai_worker_last_run_article_failures",
+        "ai_worker_last_run_topic_failures",
+        "ai_worker_last_run_articles_summarized",
+        "ai_worker_last_run_average_article_summary_duration_seconds",
+    }
     assert all(sample.labels == {} for sample in samples)
     assert b"sensitive exception message" not in generate_latest(registry)
 
