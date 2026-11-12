@@ -80,15 +80,6 @@ services:
     volumes:
       - ./srcs/gateway/dev/frontend.yaml:/etc/traefik/dynamic/frontend.yaml:ro
 
-  # Grafana is the only monitoring UI published in development. Normally Docker
-  # binds it to 127.0.0.1 on this computer. In the project VM, the Makefile sets
-  # DEV_BIND_ADDRESS=0.0.0.0, so Docker listens on every IPv4 interface inside
-  # the guest; QEMU separately forwards only host 127.0.0.1 to the guest port.
-  # Other VM network modes could also reach the guest's all-interface binding.
-  grafana:
-    ports:
-      - "${DEV_BIND_ADDRESS:-127.0.0.1}:${GRAFANA_PORT:-3000}:3000"
-
   front-test:
     build:
       context: ./srcs/frontend/
@@ -114,25 +105,25 @@ services:
       ADMINER_DESIGN: pepa-linha-dark
     networks: [backend]
     ports:
-      - "${DEV_BIND_ADDRESS:-127.0.0.1}:${ADMINER_PORT:?Variable not set}:8080"
+      - "${VM_GUEST_BIND_ADDRESS:-127.0.0.1}:${ADMINER_PORT:?Variable not set}:8080"
     profiles:
       - databases
 
   # The development exception of ADR-0006: the databases and Adminer are
   # published, because `make test`, `make run` and the migration commands run
-  # on the host. DEV_BIND_ADDRESS keeps them on this machine (127.0.0.1).
+  # on the host. They bind to this machine's loopback address by default.
   # The VM targets set it to 0.0.0.0: QEMU forwards to the guest's network
   # address, not its loopback, and QEMU itself listens on the host's
   # 127.0.0.1 only.
   pgsql:
     restart: "no"
     ports:
-      - "${DEV_BIND_ADDRESS:-127.0.0.1}:${POSTGRES_PORT:?Variable not set}:5432"
+      - "${VM_GUEST_BIND_ADDRESS:-127.0.0.1}:${POSTGRES_PORT:?Variable not set}:5432"
 
   pgvector:
     restart: "no"
     ports:
-      - "${DEV_BIND_ADDRESS:-127.0.0.1}:${AI_POSTGRES_PORT:?Variable not set}:5432"
+      - "${VM_GUEST_BIND_ADDRESS:-127.0.0.1}:${AI_POSTGRES_PORT:?Variable not set}:5432"
 
 
   # Ai-processing

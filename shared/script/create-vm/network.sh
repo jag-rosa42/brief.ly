@@ -15,14 +15,14 @@ configure_network() {
     case "$vm_network_mode" in
         dev|development)
             vm_network_mode=dev
-            # Adminer, Grafana and the databases are development exceptions.
-            for port_name in GATEWAY_PORT GATEWAY_HTTPS_PORT ADMINER_PORT GRAFANA_PORT; do
+            # Adminer and the databases are development exceptions.
+            for port_name in GATEWAY_PORT GATEWAY_HTTPS_PORT ADMINER_PORT; do
                 required_port "$port_name"
             done
             gateway_port=$GATEWAY_PORT
             gateway_https_port=$GATEWAY_HTTPS_PORT
-            forward_port_names=(SSH_PORT GATEWAY_PORT GATEWAY_HTTPS_PORT ADMINER_PORT GRAFANA_PORT)
-            forward_port_values=("$ssh_port" "$gateway_port" "$gateway_https_port" "$ADMINER_PORT" "$GRAFANA_PORT")
+            forward_port_names=(SSH_PORT GATEWAY_PORT GATEWAY_HTTPS_PORT ADMINER_PORT)
+            forward_port_values=("$ssh_port" "$gateway_port" "$gateway_https_port" "$ADMINER_PORT")
             ;;
         prod|production)
             vm_network_mode=prod
@@ -49,6 +49,12 @@ configure_network() {
         forward_port_names+=(POSTGRES_PORT AI_POSTGRES_PORT)
         forward_port_values+=("$postgres_port" "$ai_postgres_port")
     fi
+
+    # Grafana is reachable from the host in every VM mode. QEMU binds this
+    # forward only to host loopback, independent of the public gateway.
+    required_port GRAFANA_PORT
+    forward_port_names+=(GRAFANA_PORT)
+    forward_port_values+=("$GRAFANA_PORT")
 
     # QEMU cannot bind the same host port twice.
     for forward_index in "${!forward_port_values[@]}"; do
