@@ -156,6 +156,7 @@ help:
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-retention-preview    $(CYAN_COLOR)Preview which backup sets retention would keep$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-prune [APPLY=1]      $(CYAN_COLOR)Report backup storage and optionally remove old sets$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-extract BACKUP_SET=id  $(CYAN_COLOR)Decrypt into a new host directory$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-restore BACKUP_SET=id  $(CYAN_COLOR)Recreate the configured VM, restore its backup, and start the stack$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-verify BACKUP_SET=id  $(CYAN_COLOR)Verify one encrypted backup set$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── 📈 Monitoring ─────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) monitoring-up               $(CYAN_COLOR)Start the independent monitoring project$(DEFAULT_COLOR)\n"
@@ -390,6 +391,7 @@ fclean:
 #                                  VM DEVELOPMENT                              #
 # ============================================================================ #
 
+
 # Recreate only the current guest's disk and boot state, preserving VM_DIR.
 create-vm:
 	@vm_dir="$(VM_DIR)"; \
@@ -403,7 +405,7 @@ create-vm:
 			ssh-keygen -R "[localhost]:$(VM_SSH_PORT)" >/dev/null 2>&1 || true; \
 			$(MAKE) --no-print-directory launch-vm VM_DIR="$$vm_dir" || exit $$?; \
 			$(call print,$(GREEN_COLOR),✓ [VM] Fresh VM provisioned and synced. It is running.) ;; \
-		*) $(call print,$(YELLOW_COLOR),[VM] Recreate cancelled.) ;; \
+		*) $(call print,$(YELLOW_COLOR),[VM] Recreate cancelled.); exit 1 ;; \
 	esac
 
 # Start the existing VM only when SSH cannot already reach it. QEMU's network
@@ -444,15 +446,16 @@ vm-wait:
 			exit "$$cloud_status"; \
 		fi'
 
-# Copy host source into the VM. vm/ is excluded so QEMU disk images can never
-# be recursively copied into the guest. This intentionally copies .env and the
+# Copy host source into the VM. Storage directories are excluded so VM disks
+# and host backups stay on the host. This intentionally copies .env and the
 # project's local secret files; the VM is a trusted development environment.
 vm-sync: secrets vm-wait
 	@$(VM_SSH) 'mkdir -p "$(VM_REMOTE_DIR)"'
 	@$(call print,$(CYAN_COLOR),[VM] Synchronizing project files...)
 	@rsync -az --progress \
-		--exclude '/vm/' \
-		--exclude '/backups/' \
+		--exclude 'vm/' \
+		--exclude 'vm-restore/' \
+		--exclude 'backups/' \
 		--exclude '/backup-extract-*/' \
 		--exclude '/shared/secrets/backup_password' \
 		--exclude '.git/' \
