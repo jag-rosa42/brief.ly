@@ -309,7 +309,7 @@ Repeat the check for:
 - No application crash occurs.
 - After completing the form, the frontend sends a PUT request that creates the profile (201).
 
-> **Important:** according to the Personalization contract, the frontend route represents a missing profile by `200` with `null` (the public route keeps `404 PROFILE_NOT_FOUND`).
+> **Important:** according to the Personalization contract, a missing profile is a normal state, not an error: the frontend route answers `200` with `null`, and so does its public twin `GET /public/v1/me/profile`.
 
 ### 11. Newly registered user with a completed profile
 
