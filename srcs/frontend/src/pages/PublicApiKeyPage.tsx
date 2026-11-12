@@ -58,10 +58,16 @@ function ConfirmDialog({
 			role={role}
 			aria-modal="true"
 			aria-label={ariaLabel}
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+			// p-4 + max-w-md: on a phone the card keeps a margin instead of
+			// touching the screen edges; overflow-y-auto if it is taller.
+			className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4"
 			onClick={onCancel}
 		>
-			<Division variant="featurecard" onClick={(e) => e.stopPropagation()}>
+			<Division
+				variant="featurecard"
+				className="w-full max-w-md"
+				onClick={(e) => e.stopPropagation()}
+			>
 				<Text variant="body">{message}</Text>
 				<Button variant="primary" onClick={onCancel} disabled={busy}>
 					Cancel
@@ -91,12 +97,12 @@ function NewKeyDialog({
 }: NewKeyDialogProps) {
 	return (
 		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+			className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4"
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="new-key-title"
 		>
-			<Division variant="featurecard">
+			<Division variant="featurecard" className="w-full max-w-md">
 				<Text variant="subheading" id="new-key-title">
 					Your new API key
 				</Text>
@@ -248,7 +254,7 @@ export function PublicApiKeyPage() {
 			</Text>
 
 			<div className="w-full max-w-lg">
-				<div className="mb-4 flex items-center justify-between">
+				<div className="mb-4 flex flex-wrap items-center justify-between gap-2">
 					<Text variant="subheading">Manage your public API keys</Text>
 					{!loading && !loadError && (
 						<Text variant="body" className="text-info">

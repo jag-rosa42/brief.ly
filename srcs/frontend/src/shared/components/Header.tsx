@@ -10,7 +10,7 @@ export function Header() {
 	const { loading } = useProfile();
 
 	return (
-		<header className="flex justify-between items-center px-6 py-4">
+		<header className="flex flex-wrap justify-between items-center gap-3 px-4 py-4 md:px-6">
 			<Logo />
 			{!loading && (isLoggedIn ? <NavbarLogged /> : <NavbarUnlogged />)}
 		</header>
@@ -22,7 +22,7 @@ export function NavbarLogged() {
 	const { isProfileComplete, error } = useProfile();
 
 	return (
-		<div className="flex gap-4">
+		<div className="flex flex-wrap gap-2 sm:gap-4">
 			<Button
 				type="submit"
 				variant="primary"
@@ -46,7 +46,7 @@ export function NavbarLogged() {
 
 export function NavbarUnlogged() {
 	return (
-		<div className="flex gap-4">
+		<div className="flex flex-wrap gap-2 sm:gap-4">
 			<Link to="/login" variant="primary">
 				Log in
 			</Link>

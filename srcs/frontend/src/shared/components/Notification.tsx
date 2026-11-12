@@ -29,7 +29,7 @@ export function Notification({
 		<div
 			// An error must be read out right away: it disappears after a few seconds.
 			role={variant === "error" ? "alert" : "status"}
-			className={`fixed bottom-4 right-4 z-50 max-w-sm rounded-lg border-l-4 px-4 py-3 pr-10 shadow-lg ${style}`}
+			className={`fixed bottom-4 left-4 right-4 z-50 rounded-lg sm:left-auto sm:max-w-sm border-l-4 px-4 py-3 pr-10 shadow-lg ${style}`}
 		>
 			<p>{message}</p>
 			<button

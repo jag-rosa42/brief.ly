@@ -15,7 +15,7 @@ export function LandingPage() {
 	return (
 		<main>
 			<section className="text-center text-primary pt-16 pb-10 px-6">
-				<Text variant="title" className="text-5xl md:text-6xl tracking-tight mb-5">
+				<Text variant="title" className="md:text-6xl tracking-tight mb-5">
 					Your daily digest, tuned to what actually matters to you
 				</Text>
 				<Text variant="body" className="max-w-2xl mx-auto">

@@ -54,7 +54,8 @@ export function DashboardPage({ tab: activeTab }: { tab: DashboardTab }) {
 	}));
 
 	return (
-		<div className="bg-background min-h-screen flex">
+		// Stacked on mobile (top bar, then content), side by side from md.
+		<div className="bg-background min-h-screen flex flex-col md:flex-row">
 			<Sidebar
 				tabs={visibleTabs}
 				activeTab={activeTab}
@@ -63,7 +64,7 @@ export function DashboardPage({ tab: activeTab }: { tab: DashboardTab }) {
 					void logout();
 				}}
 			/>
-			<main className="flex-1 min-w-0 p-8">
+			<main className="flex-1 min-w-0 p-4 md:p-8">
 				{activeTab === "brief" && <BriefPage />}
 				{activeTab === "profile" && <ProfilePage />}
 				{activeTab === "saved" && <SavedArticles />}
