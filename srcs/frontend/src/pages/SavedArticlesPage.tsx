@@ -93,7 +93,8 @@ function SavedArticlesFilters({
 	onOrderChange,
 }: SavedArticlesFiltersProps) {
 	return (
-		<div className="flex flex-wrap items-end gap-4">
+		// One filter per line on a phone, two per row from sm, one row from md.
+		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:flex md:flex-wrap md:items-end">
 			<Input
 				name="search"
 				label="Search"

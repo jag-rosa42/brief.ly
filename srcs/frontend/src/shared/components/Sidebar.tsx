@@ -12,13 +12,27 @@ interface SidebarProps {
 
 export function Sidebar({ tabs, activeTab, onSelectTab, onDisconnect }: SidebarProps) {
 	return (
-		<aside className="flex flex-col gap-8 h-screen sticky top-0 overflow-y-auto shrink-0 px-6 py-4 border-r border-secondary">
+		// Mobile: a top bar, logo and "Log out" on the first row, the tabs on the
+		// second (a grid). From md: a sticky column on the left (flex), with
+		// "Log out" moved to the bottom by md:order-last.
+		<aside className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 border-b border-secondary md:flex md:flex-col md:items-stretch md:gap-8 md:h-screen md:sticky md:top-0 md:overflow-y-auto md:shrink-0 md:px-6 md:py-4 md:border-b-0 md:border-r">
 			<Logo />
-			<Tabs tabs={tabs} variant="side" activeValue={activeTab} onTabChange={onSelectTab} />
-
-			<Button type="button" variant="main" className="mt-auto" onClick={onDisconnect}>
+			<Button
+				type="button"
+				variant="main"
+				className="md:order-last md:mt-auto"
+				onClick={onDisconnect}
+			>
 				Log out
 			</Button>
+			{/* min-w-0: lets the tab row scroll sideways instead of widening the grid. */}
+			<Tabs
+				tabs={tabs}
+				variant="side"
+				className="col-span-2 min-w-0"
+				activeValue={activeTab}
+				onTabChange={onSelectTab}
+			/>
 		</aside>
 	);
 }

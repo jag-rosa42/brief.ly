@@ -17,10 +17,12 @@ export function getDivStyle(style: DivVariant): string {
 		case "page":
 			return "bg-background flex flex-col items-center pt-12 px-4";
 		case "dashboardcard":
-			return "bg-white/60 border border-white/70 rounded-3xl p-6 flex flex-col gap-y-3 shadow-soft backdrop-blur-sm";
+			return "bg-white/60 border border-white/70 rounded-3xl p-4 sm:p-6 flex flex-col gap-y-3 shadow-soft backdrop-blur-sm";
 		case "stack":
 			return "flex flex-col gap-2";
 		case "dashboardpage":
-			return "flex flex-col mx-auto w-full p-6";
+			// No padding on mobile: the dashboard's <main> already has some, and
+			// both together would leave little room on a phone.
+			return "flex flex-col mx-auto w-full md:p-6";
 	}
 }
