@@ -19,7 +19,16 @@ test("shows every section of the design system", () => {
 	renderPage();
 
 	const sections = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
-	for (const title of ["Colors", "Typography", "Icons", "Buttons and links", "Forms", "Tabs"]) {
+	for (const title of [
+		"Colors",
+		"Typography",
+		"Icons",
+		"Surfaces",
+		"Buttons and links",
+		"Forms",
+		"Tabs",
+		"Cards",
+	]) {
 		expect(sections).toContain(title);
 	}
 });
@@ -30,6 +39,14 @@ test("shows every icon", () => {
 	for (const name of ICON_NAMES) {
 		expect(screen.getByText(name)).toBeInTheDocument();
 	}
+});
+
+test("shows every relief of the neomorphic appearance", () => {
+	renderPage();
+
+	expect(screen.getByText("up").parentElement).toHaveClass("shadow-relief-up");
+	expect(screen.getByText("down").parentElement).toHaveClass("shadow-relief-down");
+	expect(screen.getByText("neomorphic")).toBeInTheDocument();
 });
 
 test("shows a notification of the chosen kind", () => {

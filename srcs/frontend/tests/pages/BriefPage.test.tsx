@@ -86,12 +86,20 @@ test("shows a spinner while the briefing is loading", () => {
 });
 
 test("greets the user by the name of their profile", async () => {
+	vi.useFakeTimers({ toFake: ["Date"] });
+	vi.setSystemTime(new Date("2026-11-10T09:00:00"));
 	vi.mocked(getBriefing).mockResolvedValue(briefing());
 
-	renderPage();
+	try {
+		renderPage();
 
-	// The name is in its own span (to truncate a long one): read the whole heading.
-	expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent("Good morning Kate!");
+		// The name is in its own span (to truncate a long one): read the whole heading.
+		expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent(
+			"Good morning Kate!",
+		);
+	} finally {
+		vi.useRealTimers();
+	}
 });
 
 test("shows one tab per interest, in the profile's order", async () => {
@@ -167,12 +175,13 @@ test("saves an article", async () => {
 	vi.mocked(saveArticle).mockResolvedValue({ ...FIRST, saved_at: "2026-11-07T08:00:00Z" });
 
 	renderPage();
-	fireEvent.click(await screen.findByRole("button", { name: "Save" }));
+	const saveButton = await screen.findByRole("button", { name: "Save" });
+	expect(saveButton).toHaveClass("shadow-relief-up");
+	fireEvent.click(saveButton);
 
-	expect(await screen.findByRole("button", { name: "Saved" })).toHaveAttribute(
-		"aria-pressed",
-		"true",
-	);
+	const savedButton = await screen.findByRole("button", { name: "Saved" });
+	expect(savedButton).toHaveClass("shadow-relief-down");
+	expect(savedButton).toHaveAttribute("aria-pressed", "true");
 	expect(saveArticle).toHaveBeenCalledWith(FIRST.article_id);
 	expect(screen.getByRole("status")).toHaveTextContent(
 		"The article has been added to your saved articles.",

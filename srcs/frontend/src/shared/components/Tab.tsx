@@ -1,10 +1,11 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { Button } from "@/shared/components/Button";
+import type { Appearance } from "@/shared/components/neomorphicVariants";
 import {
 	getTabStyle,
-	getTabButtonVariant,
 	getTabButtonStyle,
+	getTabButtonVariant,
 } from "@/shared/components/tabVariants";
 import type { TabVariant } from "@/shared/components/tabVariants";
 
@@ -17,15 +18,24 @@ export interface TabItem {
 	disabled?: boolean;
 }
 
-interface TabsProps {
+type TabsProps = {
 	tabs: TabItem[];
-	variant: TabVariant;
 	className?: string;
 	activeValue?: string;
 	onTabChange?: (value: string) => void;
-}
+} & (
+	| { variant: "pill" | "side"; appearance?: Appearance }
+	| { variant: Exclude<TabVariant, "pill" | "side">; appearance?: "classic" }
+);
 
-export function Tabs({ tabs, variant, className = "", activeValue, onTabChange }: TabsProps) {
+export function Tabs({
+	tabs,
+	variant,
+	appearance = "classic",
+	className = "",
+	activeValue,
+	onTabChange,
+}: TabsProps) {
 	const [internalIndex, setInternalIndex] = useState(0);
 	let currentIndex = Math.min(internalIndex, tabs.length - 1); // par défaut : l'état interne
 	if (activeValue !== undefined) {
@@ -41,18 +51,26 @@ export function Tabs({ tabs, variant, className = "", activeValue, onTabChange }
 	const currentContent = tabs[currentIndex]?.content;
 	return (
 		<div className={className}>
-			<div role="tablist" className={getTabStyle(variant)}>
+			<div role="tablist" className={`${getTabStyle(variant, appearance)} w-full`}>
 				{tabs.map((tab, index) => {
 					const isActive = currentIndex === index;
 					return (
 						<Button
 							key={tab.value}
 							type="button"
-							variant={getTabButtonVariant(isActive, variant)}
+							variant={getTabButtonVariant(variant)}
+							relief={
+								variant === "side" && appearance === "neomorphic"
+									? isActive
+										? "down"
+										: "none"
+									: "none"
+							}
 							role="tab"
+							aria-selected={isActive}
 							disabled={tab.disabled}
 							onClick={() => handleTabChange(tab, index)}
-							className={getTabButtonStyle(isActive, variant)}
+							className={`${getTabButtonStyle(isActive, variant, appearance)} min-w-0 flex-1 truncate`}
 						>
 							{tab.label}
 						</Button>

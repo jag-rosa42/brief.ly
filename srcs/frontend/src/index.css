@@ -36,4 +36,22 @@
 	--color-background-dark: color-mix(in srgb, var(--color-background) 96%, black);
 	--shadow-soft: 0 8px 30px color-mix(in srgb, var(--color-accent) 10%, transparent);
 	--shadow-soft-hover: 0 12px 36px color-mix(in srgb, var(--color-accent) 16%, transparent);
+	/* Two opposing lights, derived from the component's own surface color. */
+	--shadow-relief-up:
+		6px 6px 14px
+			color-mix(in srgb, var(--relief-surface, var(--color-background)) 60%, var(--color-secondary)),
+		-6px -6px 14px color-mix(in srgb, var(--relief-surface, var(--color-background)) 50%, white);
+	--shadow-relief-up-hover:
+		8px 8px 18px
+			color-mix(in srgb, var(--relief-surface, var(--color-background)) 45%, var(--color-secondary)),
+		-8px -8px 18px color-mix(in srgb, var(--relief-surface, var(--color-background)) 40%, white);
+	--shadow-relief-down:
+		inset 6px 6px 14px
+			color-mix(in srgb, var(--relief-surface, var(--color-background)) 60%, var(--color-secondary)),
+		inset -6px -6px 14px
+			color-mix(in srgb, var(--relief-surface, var(--color-background)) 50%, white);
+}
+
+.article-scroll {
+	scrollbar-color: var(--color-secondary) var(--color-background);
 }
