@@ -1,0 +1,26 @@
+modules:
+  service_health:
+    prober: http
+    timeout: 5s
+    http:
+      method: GET
+      valid_status_codes: [200]
+      follow_redirects: false
+      preferred_ip_protocol: ip4
+
+  gateway_https:
+    prober: http
+    timeout: 5s
+    http:
+      method: GET
+      headers:
+        Host: localhost
+      valid_status_codes: [200]
+      follow_redirects: false
+      preferred_ip_protocol: ip4
+      tls_config:
+        # The development gateway presents the project's localhost cert.
+        # Verify its chain and hostname while connecting over the edge network.
+        ca_file: /etc/blackbox/localhost.pem
+        server_name: localhost
+        insecure_skip_verify: false

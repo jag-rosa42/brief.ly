@@ -10,6 +10,10 @@ scrape_configs:
     static_configs:
       - targets: ["gateway:9092"]
 
+  - job_name: blackbox
+    static_configs:
+      - targets: ["blackbox:9115"]
+
   - job_name: pushgateway
     static_configs:
       - targets: ["pushgateway:9091"]
