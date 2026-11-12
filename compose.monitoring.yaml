@@ -1,0 +1,71 @@
+name: "${DOMAIN}-monitoring"
+
+services:
+  prometheus:
+    image: docker.io/prom/prometheus:v3.16.0
+    container_name: prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.size=2GB
+    volumes:
+      - prometheus_data:/prometheus
+      - ./srcs/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - edge
+      - backend
+
+  grafana:
+    image: docker.io/grafana/grafana:13.3.0
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_admin_password
+    secrets:
+      - grafana_admin_password
+    ports:
+      - "${VM_GUEST_BIND_ADDRESS:-127.0.0.1}:${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./srcs/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./srcs/monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+    networks:
+      - backend
+
+  pushgateway:
+    image: docker.io/prom/pushgateway:v1.11.3
+    container_name: pushgateway
+    restart: unless-stopped
+    command: ["--persistence.file=/pushgateway/metrics"]
+    volumes:
+      - pushgateway_data:/pushgateway
+    networks:
+      - backend
+
+secrets:
+  grafana_admin_password:
+    file: ./shared/secrets/grafana_admin_password
+
+# The first project created these volumes as ${DOMAIN}_*. Keeping those exact
+# names lets the monitoring project reuse them without a data migration.
+volumes:
+  prometheus_data:
+    name: ${DOMAIN}_prometheus_data
+    external: true
+  grafana_data:
+    name: ${DOMAIN}_grafana_data
+    external: true
+  pushgateway_data:
+    name: ${DOMAIN}_pushgateway_data
+    external: true
+
+networks:
+  edge:
+    name: ${DOMAIN}-edge
+    external: true
+  backend:
+    name: ${DOMAIN}-backend
+    external: true
