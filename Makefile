@@ -124,6 +124,7 @@ help:
 	@printf "$(ROSE_COLOR)── ⚙️  Worker ────────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ingest                      $(CYAN_COLOR)Trigger ingestion through a locally running content-management service$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ingest-vm                   $(CYAN_COLOR)Trigger ingestion through content-management in the VM$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) clear-articles-vm           $(CYAN_COLOR)Confirm deletion of VM articles and summaries; preserve users$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ingest-docker               $(CYAN_COLOR)Trigger ingestion through content-management in the docker$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) summarize                   $(CYAN_COLOR)Run the summary worker in the VM's AI Processing container$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── 🔧 Stack preparation ─────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
