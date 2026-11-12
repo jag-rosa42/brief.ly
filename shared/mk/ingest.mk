@@ -5,7 +5,7 @@ ingest:
 # client inside its container, where both the service and its secret are present.
 ingest-docker:
 	@if ! $(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) exec -T content-management true >/dev/null 2>&1; then \
-		printf '[CONTENT MANAGEMENT] Container is not running. Start it with make docker SERVICE=content-management (or make vm SERVICE=content-management).\n' >&2; \
+		printf '[CONTENT MANAGEMENT] Container is not running. Start it with make docker SERVICE=content-management (or make vm-service SERVICE=content-management).\n' >&2; \
 		exit 1; \
 	fi
 	@$(call print,$(CYAN_COLOR),[CONTENT MANAGEMENT] Ingesting articles in Docker...)
@@ -16,7 +16,7 @@ ingest-docker:
 # verifying that the caller already has a running guest.
 ingest-vm:
 	@if ! $(VM_SSH) true >/dev/null 2>&1; then \
-		printf '[VM] VM is not running or SSH is unavailable. Start it with make vm SERVICE=content-management.\n' >&2; \
+		printf '[VM] VM is not running or SSH is unavailable. Start it with make vm-service SERVICE=content-management.\n' >&2; \
 		exit 1; \
 	fi
 	@$(MAKE) --no-print-directory vm-sync
