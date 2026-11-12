@@ -26,7 +26,7 @@ Environment settings (make launch-vm supplies the port values from .env):
   VM_MEMORY          Guest RAM (default: 6G)
   VM_CPUS            Guest vCPUs (default: 4)
   SSH_PORT           Host port forwarded to guest port 22 (default: 2222)
-  VM_NETWORK_MODE    dev forwards the gateway, Adminer and database ports; local-backend forwards database ports but reserves app ports for host processes; prod forwards only the gateway ports (default: dev)
+  VM_NETWORK_MODE    dev forwards the gateway, Adminer and database ports; local-backend forwards database ports but reserves app ports for host processes; prod forwards the gateway ports (default: dev). All modes forward Grafana to host loopback.
   VM_DEBUG           Show guest VGA window and serial console in foreground (default: 0; set to 1 to debug)
   DOCKER_ENGINE_VERSION   Docker Engine/CLI apt version (default: 5:29.9.0-1~ubuntu.24.04~noble)
   DOCKER_COMPOSE_VERSION  Docker Compose plugin apt version (default: 5.6.0-1~ubuntu.24.04~noble)
