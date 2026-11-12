@@ -126,6 +126,17 @@ test("shows the empty state and a 0 / 5 counter when there is no key", () => {
 	expect(screen.getByText("0 / 5")).toBeInTheDocument();
 });
 
+test("links to the public API documentation in a new tab", () => {
+	mockHook();
+
+	renderPage();
+
+	const link = screen.getByRole("link", { name: /public api documentation/i });
+	expect(link).toHaveAttribute("href", "/public/v1/docs");
+	expect(link).toHaveAttribute("target", "_blank");
+	expect(link).toHaveAttribute("rel", "noopener noreferrer");
+});
+
 test("shows the keys and the counter", () => {
 	mockHook({ keys: [FIRST, SECOND] });
 

@@ -18,6 +18,10 @@ import type { NotificationVariant } from "@/shared/components/notificationVarian
 const NAME_MIN = 1;
 const NAME_MAX = 50;
 
+// Swagger UI page of the public API, served by Personalization through the
+// gateway (docs/api/02_personalization.md). Not a React route: a real page load.
+const PUBLIC_API_DOCS_URL = "/public/v1/docs";
+
 const SCOPE_OPTIONS: { value: ApiKeyScope; label: string; description: string }[] = [
 	{ value: "read", label: "Read", description: "View your data" },
 	{ value: "write", label: "Write", description: "Create and modify data" },
@@ -249,8 +253,21 @@ export function PublicApiKeyPage() {
 
 	return (
 		<Division variant="dashboardpage" className="items-center">
-			<Text variant="title" className="mb-10 text-center">
+			<Text variant="title" className="mb-4 text-center">
 				API keys
+			</Text>
+			<Text variant="body" className="mb-10 text-center">
+				Send your key in the <code>X-API-Key</code> header.{" "}
+				{/* A plain <a>, not our Link: /public/v1/docs is served by the backend, not by
+				    the React router, so the browser must load it (in a new tab). */}
+				<a
+					href={PUBLIC_API_DOCS_URL}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="font-semibold text-accent-dark underline hover:text-primary"
+				>
+					Read the public API documentation ↗
+				</a>
 			</Text>
 
 			<div className="w-full max-w-lg">
