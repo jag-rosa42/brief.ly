@@ -2,6 +2,7 @@ import importlib.util
 import contextlib
 import io
 import json
+import os
 from pathlib import Path
 import shlex
 import shutil
@@ -26,6 +27,18 @@ class BackupTests(unittest.TestCase):
         self.password = self.root / "password"
         self.password.write_text("test-only-password-long-enough-to-derive-keys\n")
         self.password.chmod(0o600)
+
+    def test_storage_paths_expand_from_one_root(self):
+        (self.root / ".env").write_text(
+            "PROJECT_STORAGE_DIR=$(CURDIR)/storage\n"
+            "VM_DIR=$(PROJECT_STORAGE_DIR)/vm\n"
+            "BACKUP_HOST_DIR=$(PROJECT_STORAGE_DIR)/backups\n"
+        )
+        with mock.patch.object(backup, "ROOT", self.root), mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(backup.setting("VM_DIR"), str(self.root / "storage/vm"))
+            self.assertEqual(backup.setting("BACKUP_HOST_DIR"), str(self.root / "storage/backups"))
+            with mock.patch.dict(os.environ, {"PROJECT_STORAGE_DIR": str(self.root / "elsewhere")}):
+                self.assertEqual(backup.setting("BACKUP_HOST_DIR"), str(self.root / "elsewhere/backups"))
 
     def test_backup_destination_must_be_absolute_and_outside_vm(self):
         vm_dir = self.root / "vm"
