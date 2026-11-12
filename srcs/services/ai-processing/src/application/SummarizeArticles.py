@@ -57,3 +57,7 @@ class SummarizeArticles:
                 self.content_management.save_article_assessment(
                     article.id, assessment, self.llm_model
                 )
+                if not assessment.rejected and assessment.summary:
+                    self.failure_metrics.article_summary_succeeded(
+                        max(0, perf_counter() - started_at)
+                    )

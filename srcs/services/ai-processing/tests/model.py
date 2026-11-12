@@ -13,3 +13,6 @@ class RecordingFailureMetrics:
 
     def topic_group_generation_failed(self) -> None:
         self.topic_failures += 1
+
+    def article_summary_succeeded(self, duration_seconds: float) -> None:
+        pass

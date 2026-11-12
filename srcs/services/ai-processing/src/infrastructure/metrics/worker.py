@@ -8,6 +8,8 @@ class WorkerRunMetrics:
     def __init__(self) -> None:
         self.article_failures = 0
         self.topic_failures = 0
+        self.articles_summarized = 0
+        self.successful_article_duration_seconds = 0.0
         self.registry = CollectorRegistry()
         self.completion = Gauge(
             "ai_worker_last_completion_timestamp_seconds",
@@ -34,12 +36,26 @@ class WorkerRunMetrics:
             "Topic group generation failures in the last summary run",
             registry=self.registry,
         )
+        self.articles_summarized_gauge = Gauge(
+            "ai_worker_last_run_articles_summarized",
+            "Accepted article summaries saved during the last run",
+            registry=self.registry,
+        )
+        self.average_article_duration_gauge = Gauge(
+            "ai_worker_last_run_average_article_summary_duration_seconds",
+            "Average processing time for accepted article summaries in the last run",
+            registry=self.registry,
+        )
 
     def article_generation_failed(self) -> None:
         self.article_failures += 1
 
     def topic_group_generation_failed(self) -> None:
         self.topic_failures += 1
+
+    def article_summary_succeeded(self, duration_seconds: float) -> None:
+        self.articles_summarized += 1
+        self.successful_article_duration_seconds += max(0.0, duration_seconds)
 
     def finish(self, *, completed_at: float, duration: float, fatal: bool) -> None:
         self.completion.set(completed_at)
@@ -49,6 +65,12 @@ class WorkerRunMetrics:
         self.duration.set(duration)
         self.article_failure_gauge.set(self.article_failures)
         self.topic_failure_gauge.set(self.topic_failures)
+        self.articles_summarized_gauge.set(self.articles_summarized)
+        self.average_article_duration_gauge.set(
+            self.successful_article_duration_seconds / self.articles_summarized
+            if self.articles_summarized
+            else 0.0
+        )
 
 
 def publish_worker_metrics(registry: CollectorRegistry) -> None:
