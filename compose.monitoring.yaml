@@ -45,6 +45,19 @@ services:
     networks:
       - backend
 
+  blackbox:
+    image: docker.io/prom/blackbox-exporter:v0.29.1
+    container_name: blackbox
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/blackbox/blackbox.yml
+    volumes:
+      - ./srcs/monitoring/blackbox.yml:/etc/blackbox/blackbox.yml:ro
+      - ./shared/secrets/certs/localhost.pem:/etc/blackbox/localhost.pem:ro
+    networks:
+      - edge
+      - backend
+
 secrets:
   grafana_admin_password:
     file: ./shared/secrets/grafana_admin_password
