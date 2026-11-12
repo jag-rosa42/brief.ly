@@ -72,6 +72,7 @@ print_vm_summary() {
     printf '  User: %s (SSH key login; password login disabled)\n' "$vm_username"
     printf '  RAM: %s   CPUs: %s\n' "$vm_memory" "$vm_cpus"
     printf '  SSH: localhost:%s -> guest:22\n' "$ssh_port"
+    printf '  Grafana: http://127.0.0.1:%s (host loopback)\n' "$GRAFANA_PORT"
     case "$vm_network_mode" in
         dev)
             printf '  Network mode: dev (gateway on %s and %s, Adminer on %s)\n' "$gateway_port" "$gateway_https_port" "$ADMINER_PORT"
@@ -80,7 +81,7 @@ print_vm_summary() {
             printf '  Network mode: local-backend (app ports are free for host processes)\n'
             ;;
         prod)
-            printf '  Network mode: prod (only the gateway, GATEWAY_PORT=%s and GATEWAY_HTTPS_PORT=%s, is forwarded)\n' "$gateway_port" "$gateway_https_port"
+            printf '  Network mode: prod (gateway on %s and %s)\n' "$gateway_port" "$gateway_https_port"
             ;;
     esac
     if [[ "$vm_network_mode" == dev || "$vm_network_mode" == local-backend ]]; then
