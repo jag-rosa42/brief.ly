@@ -7,6 +7,7 @@ include shared/mk/secrets.mk
 include shared/mk/ingest.mk
 include shared/mk/llm.mk
 include shared/mk/backup_recovery.mk
+include shared/mk/monitoring.mk
 
 
 NAME := Transcendence
@@ -44,7 +45,7 @@ PROD_COMPOSE_FILE := compose.yaml
 DEV_COMPOSE_FILE := compose.yaml compose.override.yaml
 DEV_COMPOSE = $(COMPOSE) $(addprefix -f ,$(DEV_COMPOSE_FILE))
 PROD_COMPOSE = $(COMPOSE) $(addprefix -f ,$(PROD_COMPOSE_FILE))
-COMPOSE_PROFILES := frontend backend databases observability
+COMPOSE_PROFILES := frontend backend databases
 COMPOSE_PROFILES_ALL := $(addprefix --profile ,$(COMPOSE_PROFILES))
 COMPOSE_CLEAN_PROFILES_ALL := $(COMPOSE_PROFILES_ALL) --profile front-test
 
@@ -78,12 +79,11 @@ VM_QEMU_ENV := VM_DIR="$(VM_DIR)" VM_USERNAME="$(VM_USERNAME)" \
 	GATEWAY_PORT="$(GATEWAY_PORT)" GATEWAY_HTTPS_PORT="$(GATEWAY_HTTPS_PORT)" \
 	ADMINER_PORT="$(ADMINER_PORT)" GRAFANA_PORT="$(GRAFANA_PORT)" \
 	POSTGRES_PORT="$(POSTGRES_PORT)" AI_POSTGRES_PORT="$(AI_POSTGRES_PORT)"
-# Inside the VM, Compose publishes the development ports (databases, Adminer,
-# Grafana)
-# on every guest address: QEMU forwards to the guest's network address, not
-# its loopback. QEMU itself only listens on the host's 127.0.0.1.
-VM_REMOTE_ENV := DEV_BIND_ADDRESS=0.0.0.0
-VM_DOCKER_TARGETS := logs ps down re clean reset-db frontend-test
+# Inside the VM, Compose publishes databases, Adminer, and Grafana on every
+# guest address: QEMU forwards to the guest's network address, not its loopback.
+# QEMU itself only listens on the host's 127.0.0.1.
+VM_REMOTE_ENV := VM_GUEST_BIND_ADDRESS=0.0.0.0
+VM_DOCKER_TARGETS := logs ps down re clean reset-db frontend-test $(MONITORING_TARGETS)
 
 
 # ============================================================================ #
@@ -113,7 +113,8 @@ help:
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) list-services               $(CYAN_COLOR)List available backend services$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) reinstall SERVICE=<name>    $(CYAN_COLOR)Reinstall dependencies for a service$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── 🐳 Dev Docker ─────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) docker                      $(CYAN_COLOR)Run the complete development stack in host Docker$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) docker                      $(CYAN_COLOR)Start the application and monitoring in host Docker$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) docker-app                  $(CYAN_COLOR)Start only the application stack in host Docker$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) docker SERVICE=<name>       $(CYAN_COLOR)Run one Compose service and its dependencies in host Docker$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) frontend-test               $(CYAN_COLOR)Run frontend tests in Docker$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── 🦙 Ollama ─────────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
@@ -129,14 +130,6 @@ help:
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) secrets                     $(CYAN_COLOR)Create missing secrets$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── 🚀 Production ─────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) prod                        $(CYAN_COLOR)Build and run the production stack inside the VM$(DEFAULT_COLOR)\n\n"
-	@printf "$(ROSE_COLOR)── 📦 Backups ────────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup                      $(CYAN_COLOR)Create and verify an encrypted host backup$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-schedule-install [BACKUP_TIME=HHMM]  $(CYAN_COLOR)Install daily host cron for make backup (default 0200)$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-list                 $(CYAN_COLOR)List completed host backup sets$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-retention-preview    $(CYAN_COLOR)Preview which backup sets retention would keep$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-prune [APPLY=1]      $(CYAN_COLOR)Report backup storage and optionally remove old sets$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-extract BACKUP_SET=id  $(CYAN_COLOR)Decrypt into a new host directory$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-verify BACKUP_SET=id  $(CYAN_COLOR)Verify one encrypted backup set$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── 📦 Shared container tools ────────────────────────────────────────────$(DEFAULT_COLOR)\n"
 	@printf "$(CYAN_COLOR)  Add -vm to logs, ps, down, reset-db, clean, re, or fclean to run them in the VM.$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) logs [SERVICE=<name>]       $(CYAN_COLOR)Follow container logs$(DEFAULT_COLOR)\n"
@@ -147,14 +140,29 @@ help:
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) re                          $(CYAN_COLOR)Clean and rebuild the stack$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) fclean                      $(CYAN_COLOR)Reset database data and remove project images 🚨$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── 🖥️  VM development ───────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) vm                          $(CYAN_COLOR)Run the complete development stack inside the VM$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) vm SERVICE=<name>           $(CYAN_COLOR)Run one Compose service and its dependencies inside the VM$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) vm-full-stack               $(CYAN_COLOR)Start the application and monitoring inside the VM$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) vm-app                      $(CYAN_COLOR)Start only the application stack inside the VM$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) vm-service SERVICE=<name>    $(CYAN_COLOR)Start one Compose service and its dependencies inside the VM$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) create-vm                   $(CYAN_COLOR)Confirm and recreate vm/, then leave the new VM running$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) launch-vm                   $(CYAN_COLOR)Start the development VM, wait for SSH, and sync this project$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) vm-sync                     $(CYAN_COLOR)Synchronize project files to the running VM$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) connect-vm                  $(CYAN_COLOR)Open an interactive SSH session in the VM$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) stop-vm                     $(CYAN_COLOR)Shut down the guest cleanly$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) debug-create-vm             $(CYAN_COLOR)Start QEMU interactively for boot troubleshooting$(DEFAULT_COLOR)\n\n"
+	@printf "$(ROSE_COLOR)── 📦 Backups ────────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup                      $(CYAN_COLOR)Create and verify an encrypted host backup$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-schedule-install [BACKUP_TIME=HHMM]  $(CYAN_COLOR)Install daily host cron for make backup (default 0200)$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-list                 $(CYAN_COLOR)List completed host backup sets$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-retention-preview    $(CYAN_COLOR)Preview which backup sets retention would keep$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-prune [APPLY=1]      $(CYAN_COLOR)Report backup storage and optionally remove old sets$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-extract BACKUP_SET=id  $(CYAN_COLOR)Decrypt into a new host directory$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-verify BACKUP_SET=id  $(CYAN_COLOR)Verify one encrypted backup set$(DEFAULT_COLOR)\n\n"
+	@printf "$(ROSE_COLOR)── 📈 Monitoring ─────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) monitoring-up               $(CYAN_COLOR)Start the independent monitoring project$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) monitoring-down             $(CYAN_COLOR)Stop monitoring, preserving its volumes$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) monitoring-ps               $(CYAN_COLOR)Inspect monitoring containers$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) monitoring-logs [SERVICE=name] $(CYAN_COLOR)Follow monitoring logs$(DEFAULT_COLOR)\n"
+	@printf "$(CYAN_COLOR)  Add -vm to these targets to run them in the VM; Grafana is on host 127.0.0.1:$(GRAFANA_PORT).$(DEFAULT_COLOR)\n\n"
 
 
 # ============================================================================ #
@@ -292,10 +300,16 @@ list-services:
 #                                  DOCKER                                      #
 # ============================================================================ #
 
-# Start the complete development stack, or one service and its dependencies.
+# Create shared networks outside either Compose project. Neither project's
+# `down` can remove an external network while the other still needs it.
+shared-networks:
+	@$(CONTAINER_CMD) network inspect "$(DOMAIN)-edge" >/dev/null 2>&1 || $(CONTAINER_CMD) network create "$(DOMAIN)-edge" >/dev/null
+	@$(CONTAINER_CMD) network inspect "$(DOMAIN)-backend" >/dev/null 2>&1 || $(CONTAINER_CMD) network create "$(DOMAIN)-backend" >/dev/null
+
+# Start the application stack, or one service and its dependencies.
 # --wait returns once every service with a healthcheck is healthy, and fails if
 # one never gets there: the success message below can then be trusted.
-docker: check-compose-service secrets
+docker-app: check-compose-service secrets shared-networks
 	@if [ -n "$$SERVICE" ]; then \
 		$(call print,$(GREEN_COLOR),[DOCKER] Starting $$SERVICE and its dependencies in dev mode...); \
 		$(DEV_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d --wait --build "$$SERVICE"; \
@@ -306,18 +320,21 @@ docker: check-compose-service secrets
 	@$(call print,$(GREEN_COLOR),✓ [DOCKER] $(NAME) development environment started successfully! 🥳🥳🥳)
 	@$(call print,$(GREEN_COLOR),  Open https://localhost:$(GATEWAY_HTTPS_PORT))
 
+docker: docker-app
+	@if [ -z "$$SERVICE" ]; then $(MAKE) --no-print-directory monitoring-up SECRETS_MODE=validate; fi
+
 
 # Build and run production Compose in the current environment. The prod target
 # invokes this from inside the VM after selecting production port forwarding.
 # Detached and waiting, like `make docker`: the command ends once the stack is
 # healthy, and the logs stay available through `make logs`.
-prod-docker: secrets
+prod-docker: secrets shared-networks
 	@$(call print,$(GREEN_COLOR),[DOCKER] Starting all services in production mode...)
 	$(PROD_COMPOSE) $(COMPOSE_PROFILES_ALL) build --no-cache && \
 	$(PROD_COMPOSE) $(COMPOSE_PROFILES_ALL) up -d --wait
 	@$(call print,$(GREEN_COLOR),✓ [DOCKER] $(NAME) production environment started successfully! 🥳🥳🥳)
 	@$(call print,$(GREEN_COLOR),  Open https://localhost:$(GATEWAY_HTTPS_PORT))
-
+	@$(MAKE) --no-print-directory monitoring-up SECRETS_MODE=validate
 
 # ============================================================================ #
 #                                  DOCKER TOOLS CMDS                           #
@@ -476,31 +493,40 @@ stop-vm:
 debug-create-vm:
 	@$(VM_QEMU_ENV) VM_DEBUG=1 $(VM_SCRIPT)
 
-# QEMU's port forwards are fixed at boot. Restart in development mode so the
-# gateway, Adminer and the databases are reachable from the host.
-vm: check-compose-service
-	@if [ -n "$$SERVICE" ]; then \
-		$(call print,$(CYAN_COLOR),[VM] Starting $$SERVICE and its dependencies in the VM...); \
-	else \
-		$(call print,$(CYAN_COLOR),[VM] Starting complete development stack in the VM...); \
-	fi
+# QEMU's port forwards are fixed at boot. Each VM stack target restarts in
+# development mode so the gateway, database, and Grafana ports are forwarded.
+vm-full-stack:
+	@test -z "$$SERVICE" || { printf '[VM] Use vm-service SERVICE=<name> for one service.\n' >&2; exit 2; }
+	@$(call print,$(CYAN_COLOR),[VM] Starting the application and monitoring in the VM...)
 	@$(MAKE) --no-print-directory stop-vm
 	@$(MAKE) --no-print-directory launch-vm VM_NETWORK_MODE=dev
-	@remote_cmd='cd "$(VM_REMOTE_DIR)" && $(VM_REMOTE_ENV) make docker SECRETS_MODE=validate'; \
-		if [ -n "$$SERVICE" ]; then remote_cmd="$$remote_cmd SERVICE=$$SERVICE"; fi; \
-		$(VM_SSH) "$$remote_cmd"
+	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && $(VM_REMOTE_ENV) make docker SECRETS_MODE=validate SERVICE='
+
+vm-app:
+	@test -z "$$SERVICE" || { printf '[VM] Use vm-service SERVICE=<name> for one service.\n' >&2; exit 2; }
+	@$(call print,$(CYAN_COLOR),[VM] Starting only the application stack in the VM...)
+	@$(MAKE) --no-print-directory stop-vm
+	@$(MAKE) --no-print-directory launch-vm VM_NETWORK_MODE=dev
+	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && $(VM_REMOTE_ENV) make monitoring-down && $(VM_REMOTE_ENV) make docker-app SECRETS_MODE=validate SERVICE='
+
+vm-service: check-compose-service
+	@test -n "$$SERVICE" || { printf '[VM] Set SERVICE=<name> to choose a Compose service.\n' >&2; exit 2; }
+	@$(call print,$(CYAN_COLOR),[VM] Starting $(SERVICE) and its dependencies in the VM...)
+	@$(MAKE) --no-print-directory stop-vm
+	@$(MAKE) --no-print-directory launch-vm VM_NETWORK_MODE=dev
+	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && $(VM_REMOTE_ENV) make docker-app SECRETS_MODE=validate SERVICE=$(SERVICE)'
 
 # Forward existing Docker-oriented Make targets into the synchronized VM.
 $(addsuffix -vm,$(VM_DOCKER_TARGETS)): launch-vm
 	@$(call print,$(CYAN_COLOR),[VM] Running make $(patsubst %-vm,%,$@) in the guest...)
 	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && $(VM_REMOTE_ENV) make $(patsubst %-vm,%,$@) SECRETS_MODE=validate $(if $(SERVICE),SERVICE=$(SERVICE),)'
 
-# Production changes the QEMU boundary to the gateway's two ports only. It
+# Production forwards the gateway and host-loopback Grafana. It
 # stops a development-mode VM first because QEMU forwarding is fixed at boot.
 prod:
 	@$(MAKE) --no-print-directory stop-vm
 	@$(MAKE) --no-print-directory launch-vm VM_NETWORK_MODE=prod
-	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && make prod-docker SECRETS_MODE=validate'
+	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && $(VM_REMOTE_ENV) make prod-docker SECRETS_MODE=validate'
 
 # fclean asks for confirmation in the guest, so force a terminal allocation.
 fclean-vm: launch-vm
@@ -520,7 +546,8 @@ fclean-vm: launch-vm
 .PHONY: clean fclean logs down reset-db secrets check-service check-compose-service \
 		vm-databases \
 		frontend frontend-install frontend-build frontend-test \
-		dev dev-databases docker vm sync run summarize migration upgrade downgrade \
+		dev dev-databases docker docker-app vm-full-stack vm-app vm-service sync run summarize migration upgrade downgrade \
 		test lint typecheck shell list-services status clear-cache reinstall \
 		up build ps logs init-env create-vm launch-vm stop-vm debug-create-vm \
+		shared-networks \
 		connect-vm vm-wait vm-sync prod prod-docker fclean-vm $(addsuffix -vm,$(VM_DOCKER_TARGETS))
