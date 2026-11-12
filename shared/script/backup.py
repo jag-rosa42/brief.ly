@@ -34,12 +34,19 @@ SET_NAME = re.compile(r"^backup-(\d{8}T\d{6}Z)-[0-9a-f]{8}$")
 def setting(name: str, default: str | None = None) -> str:
     values = {}
     for line in (ROOT / ".env").read_text().splitlines():
-        if line.startswith(name + "="):
-            values[name] = line.split("=", 1)[1]
+        if "=" in line and not line.lstrip().startswith("#"):
+            key, raw = line.split("=", 1)
+            values[key] = raw
     value = os.environ.get(name, values.get(name, default))
     if not value:
         raise ValueError(f"{name} must be set")
-    return value.replace("$(CURDIR)", str(ROOT)).replace("$(HOME)", str(Path.home()))
+    storage_root = os.environ.get("PROJECT_STORAGE_DIR", values.get("PROJECT_STORAGE_DIR", "$(CURDIR)"))
+    storage_root = storage_root.replace("$(CURDIR)", str(ROOT)).replace("$(HOME)", str(Path.home()))
+    if "$(PROJECT_STORAGE_DIR)" in storage_root:
+        raise ValueError("PROJECT_STORAGE_DIR must not refer to itself")
+    return (value.replace("$(PROJECT_STORAGE_DIR)", storage_root)
+            .replace("$(CURDIR)", str(ROOT)).replace("$(HOME)", str(Path.home()))
+            .replace("$(USER)", os.environ.get("USER") or getpass.getuser()))
 
 
 def validate_backup_path(raw: str, vm_dir: str) -> Path:
