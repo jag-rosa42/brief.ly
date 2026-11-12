@@ -121,7 +121,8 @@ http:
       # Catch-all, not an allowlist: see the header.
       rule: >-
         !(Path(`/api`) || PathPrefix(`/api/`) ||
-        Path(`/public`) || PathPrefix(`/public/`))
+        Path(`/public`) || PathPrefix(`/public/`) ||
+        Path(`/metrics`) || PathPrefix(`/metrics/`))
       service: frontend
 
   middlewares:
