@@ -122,10 +122,12 @@ help:
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ollama-down                $(CYAN_COLOR)Stop the Ollama server started by make$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── ⚙️  Worker ────────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ingest                      $(CYAN_COLOR)Trigger ingestion through a locally running content-management service$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) clear-summaries-vm          $(CYAN_COLOR)Reset VM summaries and rejection decisions; preserve articles$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ingest-vm                   $(CYAN_COLOR)Trigger ingestion through content-management in the VM$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) clear-articles-vm           $(CYAN_COLOR)Confirm deletion of VM articles, summaries, and saved snapshots; preserve users$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ingest-docker               $(CYAN_COLOR)Trigger ingestion through content-management in the docker$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) summarize                   $(CYAN_COLOR)Run the summary worker in the VM's AI Processing container$(DEFAULT_COLOR)\n\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) summarize                   $(CYAN_COLOR)Run the summary worker in the VM's AI Processing container$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) stop-summarize              $(CYAN_COLOR)Stop summary workers inside the VM; keep the API running$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── 🔧 Stack preparation ─────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) init-env                    $(CYAN_COLOR)Force generating .env files from their .env.example templates$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) secrets                     $(CYAN_COLOR)Create missing secrets$(DEFAULT_COLOR)\n\n"
@@ -278,6 +280,10 @@ run: check-service vm-databases
 # Run the worker in the existing AI Processing container inside the VM.
 summarize: launch-vm
 	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && $(PROD_COMPOSE) $(COMPOSE_PROFILES_ALL) exec -T ai-processing python -m src.worker'
+
+# Stream the helper from the host so stopping does not require a VM sync or rebuild.
+stop-summarize:
+	@$(VM_SSH) 'docker exec -i ai-processing python -' < shared/script/stop_summarize.py
 
 #service testing
 test: check-service vm-databases
@@ -572,7 +578,7 @@ fclean-vm: launch-vm
 .PHONY: clean fclean logs down reset-db secrets check-service check-compose-service \
 		vm-databases \
 		frontend frontend-install frontend-build frontend-test \
-		dev dev-databases docker docker-app vm-full-stack vm-app vm-service sync run summarize migration upgrade downgrade \
+		dev dev-databases docker docker-app vm-full-stack vm-app vm-service sync run summarize stop-summarize migration upgrade downgrade \
 		test lint typecheck shell list-services status clear-cache reinstall \
 		up build ps logs init-env create-vm launch-vm stop-vm debug-create-vm \
 		shared-networks \

@@ -18,10 +18,16 @@ For this QEMU VM, `.env.example` sets
 `http://content-management:8000` for Content Management. Set
 `CONTENT_MANAGEMENT_BASE_URL` only when running outside Compose.
 `OLLAMA_TIMEOUT_SECONDS` defaults to 120.
+`OLLAMA_CONTEXT_LENGTH` defaults to 8192 tokens and is sent as `num_ctx` on every
+article and topic request, so the worker does not depend on the host's default.
 `ARTICLE_BATCH_SIZE` defaults to 25 and controls the `limit` sent when the
 worker fetches articles missing summaries. Content Management currently accepts
 limits of 1–25, so keep this value in that range. Set it in the service's
 `.env` to change the worker batch size.
+After four failed generation attempts, the worker saves the article as rejected
+with no summary and the comment `AI assessment failed after 4 attempts.` It then
+continues to later batches and topic summaries. Generation failures still count
+in worker metrics. A failure to save an assessment still stops the run.
 If an existing `.env` has `CONTENT_MANAGEMENT_BASE_URL=` with an empty value,
 remove that line so the default applies. Update `OLLAMA_BASE_URL` in that file
 too; changing `.env.example` does not change an existing `.env`.
