@@ -123,6 +123,7 @@ help:
 	@printf "$(ROSE_COLOR)── ⚙️  Worker ────────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ingest                      $(CYAN_COLOR)Trigger ingestion through a locally running content-management service$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ingest-vm                   $(CYAN_COLOR)Trigger ingestion through content-management in the VM$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) clear-articles-vm           $(CYAN_COLOR)Confirm deletion of VM articles, summaries, and saved snapshots; preserve users$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) ingest-docker               $(CYAN_COLOR)Trigger ingestion through content-management in the docker$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) summarize                   $(CYAN_COLOR)Run the summary worker in the VM's AI Processing container$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── 🔧 Stack preparation ─────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
@@ -390,6 +391,28 @@ fclean:
 # ============================================================================ #
 #                                  VM DEVELOPMENT                              #
 # ============================================================================ #
+
+all:
+	@test -z "$(SERVICE)" || { printf '[ALL] Unset SERVICE to start the full stack.\n' >&2; exit 2; }
+	@if [ ! -s "$(NEWS_API_KEY)" ]; then \
+		printf '$(YELLOW_COLOR)[WARNING] NewsAPI key missing or empty: %s. NewsAPI ingestion will be unavailable.$(DEFAULT_COLOR)\n' "$(NEWS_API_KEY)"; \
+	fi
+	@vm_present=false; \
+	for disk in "$(VM_DIR)"/ubuntu-server-cloud-*.qcow2; do \
+		if [ -f "$$disk" ]; then vm_present=true; break; fi; \
+	done; \
+	if [ "$$vm_present" = false ]; then \
+		$(MAKE) --no-print-directory create-vm; \
+	fi
+	@$(MAKE) --no-print-directory vm-full-stack
+	@sleep 3
+	@$(MAKE) --no-print-directory ingest-vm
+	@sleep 3
+	@$(MAKE) --no-print-directory ollama
+	@sleep 3
+	@$(MAKE) --no-print-directory summarize
+
+
 
 
 # Recreate only the current guest's disk and boot state, preserving VM_DIR.
