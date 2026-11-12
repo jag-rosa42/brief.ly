@@ -40,15 +40,15 @@
       }
     ],
     "cursorSync": "Off",
-    "description": "1: collect success\n0: collect failed\n\"\": collect missing",
+    "description": "Gateway reachability, database-backed service health, and metrics scrape availability. Missing data is Unknown.",
     "editable": true,
     "elements": {
       "panel-1": {
         "kind": "Panel",
         "spec": {
           "id": 1,
-          "title": "Services Disponibilty",
-          "description": "1 for up\n0 for down",
+          "title": "Metrics scrape availability",
+          "description": "Prometheus /metrics scrapes only; gateway and service health probes have separate panels. OK means the scrape succeeded, Scrape failed means it failed, and missing data is Unknown.",
           "links": [],
           "data": {
             "kind": "QueryGroup",
@@ -66,7 +66,7 @@
                       },
                       "spec": {
                         "editorMode": "code",
-                        "expr": "up",
+                        "expr": "up{job!~\"gateway-probe|service-health\"}",
                         "legendFormat": "{{job}}",
                         "range": true
                       }
@@ -107,17 +107,17 @@
                     "mode": "absolute",
                     "steps": [
                       {
-                        "value": 0,
-                        "color": "green"
+                        "value": null,
+                        "color": "red"
                       },
                       {
-                        "value": 80,
-                        "color": "red"
+                        "value": 1,
+                        "color": "green"
                       }
                     ]
                   },
                   "color": {
-                    "mode": "thresholds"
+                    "mode": "palette-classic"
                   },
                   "custom": {
                     "axisPlacement": "auto",
@@ -130,7 +130,306 @@
                     "insertNulls": false,
                     "lineWidth": 0,
                     "spanNulls": false
+                  },
+                  "mappings": [
+                    {
+                      "type": "value",
+                      "options": {
+                        "0": {
+                          "text": "Scrape failed",
+                          "color": "red"
+                        },
+                        "1": {
+                          "text": "OK",
+                          "color": "green"
+                        }
+                      }
+                    }
+                  ],
+                  "noValue": "Unknown"
+                },
+                "overrides": []
+              }
+            }
+          },
+          "transparent": true
+        }
+      },
+      "panel-2": {
+        "kind": "Panel",
+        "spec": {
+          "id": 2,
+          "title": "Gateway HTTPS",
+          "description": "1 means an HTTPS request through the gateway succeeded; 0 means it failed. Unknown means no recent probe data.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "PBFA97CFB590B2093"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "probe_success{job=\"gateway-probe\",instance=\"gateway-https\"}",
+                        "instant": true,
+                        "legendFormat": "__auto",
+                        "range": false
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
                   }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.3.0",
+            "spec": {
+              "options": {
+                "reduceOptions": {
+                  "values": false,
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": ""
+                },
+                "orientation": "auto",
+                "textMode": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "justifyMode": "auto"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "mappings": [
+                    {
+                      "type": "value",
+                      "options": {
+                        "0": {
+                          "text": "Down",
+                          "color": "red"
+                        },
+                        "1": {
+                          "text": "Healthy",
+                          "color": "green"
+                        }
+                      }
+                    }
+                  ],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "red",
+                        "value": null
+                      },
+                      {
+                        "color": "green",
+                        "value": 1
+                      }
+                    ]
+                  },
+                  "noValue": "Unknown"
+                },
+                "overrides": []
+              }
+            }
+          },
+          "transparent": true
+        }
+      },
+      "panel-3": {
+        "kind": "Panel",
+        "spec": {
+          "id": 3,
+          "title": "Last gateway check",
+          "description": "Seconds since Prometheus last scraped the gateway HTTPS probe. Unknown means no recent probe data.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "PBFA97CFB590B2093"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "time() - timestamp(probe_success{job=\"gateway-probe\",instance=\"gateway-https\"})",
+                        "instant": true,
+                        "legendFormat": "__auto",
+                        "range": false
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "stat",
+            "version": "13.3.0",
+            "spec": {
+              "options": {
+                "reduceOptions": {
+                  "values": false,
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": ""
+                },
+                "orientation": "auto",
+                "textMode": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "justifyMode": "auto"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "unit": "s",
+                  "decimals": 0,
+                  "noValue": "Unknown"
+                },
+                "overrides": []
+              }
+            }
+          },
+          "transparent": true
+        }
+      },
+      "panel-4": {
+        "kind": "Panel",
+        "spec": {
+          "id": 4,
+          "title": "Service /health",
+          "description": "Blackbox calls each service /health endpoint, which checks its database. 1 is healthy, 0 is unhealthy; missing data is Unknown.",
+          "links": [],
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "query": {
+                      "kind": "DataQuery",
+                      "group": "prometheus",
+                      "version": "v0",
+                      "datasource": {
+                        "name": "PBFA97CFB590B2093"
+                      },
+                      "spec": {
+                        "editorMode": "code",
+                        "expr": "probe_success{job=\"service-health\"}",
+                        "legendFormat": "{{service}}",
+                        "range": true
+                      }
+                    },
+                    "refId": "A",
+                    "hidden": false
+                  }
+                }
+              ],
+              "transformations": [],
+              "queryOptions": {}
+            }
+          },
+          "vizConfig": {
+            "kind": "VizConfig",
+            "group": "state-timeline",
+            "version": "13.3.0",
+            "spec": {
+              "options": {
+                "alignValue": "left",
+                "legend": {
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "mergeValues": true,
+                "rowHeight": 0.9,
+                "showValue": "auto",
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "value": null,
+                        "color": "red"
+                      },
+                      {
+                        "value": 1,
+                        "color": "green"
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisPlacement": "auto",
+                    "fillOpacity": 70,
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineWidth": 0,
+                    "spanNulls": false
+                  },
+                  "mappings": [
+                    {
+                      "type": "value",
+                      "options": {
+                        "0": {
+                          "text": "Unhealthy",
+                          "color": "red"
+                        },
+                        "1": {
+                          "text": "Healthy",
+                          "color": "green"
+                        }
+                      }
+                    }
+                  ],
+                  "noValue": "Unknown"
                 },
                 "overrides": []
               }
@@ -152,6 +451,33 @@
             "spec": {
               "element": {
                 "kind": "ElementReference",
+                "name": "panel-2"
+              }
+            }
+          },
+          {
+            "kind": "AutoGridLayoutItem",
+            "spec": {
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-3"
+              }
+            }
+          },
+          {
+            "kind": "AutoGridLayoutItem",
+            "spec": {
+              "element": {
+                "kind": "ElementReference",
+                "name": "panel-4"
+              }
+            }
+          },
+          {
+            "kind": "AutoGridLayoutItem",
+            "spec": {
+              "element": {
+                "kind": "ElementReference",
                 "name": "panel-1"
               }
             }
@@ -162,7 +488,10 @@
     "links": [],
     "liveNow": false,
     "preload": false,
-    "tags": ["observability", "request"],
+    "tags": [
+      "observability",
+      "request"
+    ],
     "timeSettings": {
       "timezone": "browser",
       "from": "now-15m",

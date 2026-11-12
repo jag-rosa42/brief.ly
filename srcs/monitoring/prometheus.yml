@@ -14,6 +14,43 @@ scrape_configs:
     static_configs:
       - targets: ["blackbox:9115"]
 
+  - job_name: gateway-probe
+    metrics_path: /probe
+    params:
+      module: [gateway_https]
+    static_configs:
+      - targets: ["https://gateway:8443/"]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - target_label: instance
+        replacement: gateway-https
+      - target_label: __address__
+        replacement: blackbox:9115
+
+  - job_name: service-health
+    metrics_path: /probe
+    params:
+      module: [service_health]
+    static_configs:
+      - targets: ["http://identity:8000/health"]
+        labels: {service: identity}
+      - targets: ["http://content-management:8000/health"]
+        labels: {service: content-management}
+      - targets: ["http://personalization:8000/health"]
+        labels: {service: personalization}
+      - targets: ["http://morning-briefing:8000/health"]
+        labels: {service: morning-briefing}
+      - targets: ["http://ai-processing:8000/health"]
+        labels: {service: ai-processing}
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [service]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115
+
   - job_name: pushgateway
     static_configs:
       - targets: ["pushgateway:9091"]
