@@ -39,9 +39,19 @@ const SECOND: BriefingArticle = {
 	title: "Researchers examine the link between sleep and health",
 	publisher_name: "Health Monitor",
 	url: "https://example.com/sleep",
-	summary: null,
+	summary: "Regular sleep is linked to better long-term health.",
 	read_time_minutes: 0,
 	topic_id: "health",
+};
+
+const WITHOUT_SUMMARY: BriefingArticle = {
+	article_id: "6f1c1b2e-1d2a-4c3b-9a8e-333333333333",
+	title: "A story whose summary is not ready yet",
+	publisher_name: "TechDaily",
+	url: "https://example.com/no-summary",
+	summary: null,
+	read_time_minutes: 2,
+	topic_id: "technologies",
 };
 
 function briefing(overrides: Partial<Briefing> = {}): Briefing {
@@ -141,6 +151,34 @@ test("says when a topic has no article today", async () => {
 	renderPage();
 
 	expect(await screen.findByText("No story for this topic today.")).toBeInTheDocument();
+});
+
+test("hides the articles that have no summary yet", async () => {
+	vi.mocked(getBriefing).mockResolvedValue(
+		briefing({
+			topic_clusters: [
+				{ topic_id: "technologies", summary: null, articles: [FIRST, WITHOUT_SUMMARY] },
+			],
+		}),
+	);
+
+	renderPage();
+
+	expect(await screen.findByText(FIRST.title)).toBeInTheDocument();
+	expect(screen.queryByText(WITHOUT_SUMMARY.title)).not.toBeInTheDocument();
+});
+
+test("says there is no story when no article has a summary yet", async () => {
+	vi.mocked(getBriefing).mockResolvedValue(
+		briefing({
+			topic_clusters: [{ topic_id: "technologies", summary: null, articles: [WITHOUT_SUMMARY] }],
+		}),
+	);
+
+	renderPage();
+
+	expect(await screen.findByText("No story for this topic today.")).toBeInTheDocument();
+	expect(screen.queryByText(WITHOUT_SUMMARY.title)).not.toBeInTheDocument();
 });
 
 test("marks the articles already saved", async () => {
