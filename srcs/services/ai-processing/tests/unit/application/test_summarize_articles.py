@@ -2,6 +2,7 @@ from uuid import UUID
 
 import pytest
 
+from src.application.models.answer_validation_error import AnswerValidationError
 from src.application.models.article import Article
 from src.application.summarize_articles_and_topics import SummarizeArticlesAndTopics
 from src.application.SummarizeArticles import (
@@ -47,7 +48,12 @@ def test_exhausted_retries_allow_later_batches_and_topics_unless_save_fails(
             saved.append((article_id, assessment))
 
     class Summarizer:
-        def ai_summarize_article(self, article: Article) -> ArticleAssessment:
+        def ai_summarize_article(
+            self,
+            article: Article,
+            *,
+            previous_failure: AnswerValidationError | None = None,
+        ) -> ArticleAssessment:
             calls.append(article.id)
             if article.id == failed.id:
                 raise ValueError("Ollama stopped generating a decision: length")
@@ -100,7 +106,12 @@ def test_processes_all_batches_and_stops_on_empty_result() -> None:
             self.saved.append((article_id, assessment, llm_model))
 
     class Summarizer:
-        def ai_summarize_article(self, article: Article) -> ArticleAssessment:
+        def ai_summarize_article(
+            self,
+            article: Article,
+            *,
+            previous_failure: AnswerValidationError | None = None,
+        ) -> ArticleAssessment:
             return ArticleAssessment(
                 False, "Complete article", f"Summary of {article.id}", 1234
             )
@@ -148,7 +159,12 @@ def test_failed_write_stops_before_fetching_another_batch() -> None:
             raise RuntimeError("write failed")
 
     class Summarizer:
-        def ai_summarize_article(self, article: Article) -> ArticleAssessment:
+        def ai_summarize_article(
+            self,
+            article: Article,
+            *,
+            previous_failure: AnswerValidationError | None = None,
+        ) -> ArticleAssessment:
             return ArticleAssessment(False, "Complete article", "Summary", 1234)
 
     content_management = ContentManagement()
@@ -183,7 +199,12 @@ def test_rejected_article_is_recorded_without_a_summary() -> None:
             self.saved.append((article_id, assessment, llm_model))
 
     class Summarizer:
-        def ai_summarize_article(self, article: Article) -> ArticleAssessment:
+        def ai_summarize_article(
+            self,
+            article: Article,
+            *,
+            previous_failure: AnswerValidationError | None = None,
+        ) -> ArticleAssessment:
             return ArticleAssessment(True, "Article is incomplete", None, 1234)
 
     content_management = ContentManagement()
@@ -235,7 +256,12 @@ def test_generation_failures_retry_only_failed_articles(
     calls: list[UUID] = []
 
     class Summarizer:
-        def ai_summarize_article(self, article: Article) -> ArticleAssessment:
+        def ai_summarize_article(
+            self,
+            article: Article,
+            *,
+            previous_failure: AnswerValidationError | None = None,
+        ) -> ArticleAssessment:
             calls.append(article.id)
             if article.id == failed.id:
                 if calls.count(failed.id) <= failures_before_result:
