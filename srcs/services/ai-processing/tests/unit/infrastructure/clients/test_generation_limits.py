@@ -34,3 +34,15 @@ def test_generation_is_bounded():
     result, requests = ask(valid_response())
     assert result.summary == "A complete summary."
     assert requests[0]["options"]["num_predict"] == 512
+
+
+def test_truncation_preserves_bounded_answer_for_shorter_retry():
+    from src.application.models.generation_limit_error import GenerationLimitError
+    response = httpx.Response(200, content=json.dumps({
+        "message": {"content": "x" * 3000}, "done": True, "done_reason": "length",
+    }) + "\n")
+    with pytest.raises(GenerationLimitError) as caught:
+        ask(response)
+    assert len(caught.value.previous_answer) == 2000
+    _, requests = ask(valid_response(), caught.value)
+    assert requests[0]["options"]["num_predict"] == 256
