@@ -21,6 +21,9 @@ CONTENT_MANAGEMENT_SCOPES: Final[tuple[str, ...]] = (
     "articles:read",
     "summaries:write",
 )
+# The digest routes (ADR-0011) only read the topic summaries: their token
+# asks for that scope only, so a bug in a route can never write a summary.
+DIGEST_CONTENT_MANAGEMENT_SCOPES: Final[tuple[str, ...]] = ("topics:read",)
 
 
 class ServiceClientSettings(ServiceSettings):
@@ -30,7 +33,8 @@ class ServiceClientSettings(ServiceSettings):
 
     Separate from WorkerSettings because the client secret lives in another
     directory locally (see base.py). Like WorkerSettings, it is only built
-    when the worker starts, so tests never need the secret.
+    when the worker starts, or on the first digest request (see
+    api/dependencies.py), so tests never need the secret.
     """
 
     # Only the secrets directory changes; the rest comes from ServiceSettings.

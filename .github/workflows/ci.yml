@@ -110,6 +110,7 @@ jobs:
       working-directory: srcs/services/ai-processing
       postgres-image: pgvector/pgvector:pg18 # enable vector extension
       postgres-host-port: 5433 # preserve AI port contract
+      generate-jwt-keys: true # the digest routes verify user tokens
 
   content-management:
     needs: check-changes
