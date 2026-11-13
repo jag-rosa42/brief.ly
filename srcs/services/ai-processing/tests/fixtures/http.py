@@ -12,17 +12,44 @@ application to those database resources.
 The regular ``client`` fixture uses the isolated per-test ``db_session``.
 The ``concurrent_clients`` fixture intentionally creates independent
 sessions so tests can exercise multiple independent database transactions.
+The ``api_client`` fixture has no database at all: the digest routes use
+none, so their tests run without PostgreSQL.
 """
 
 from collections.abc import Generator
 
 import pytest
 from fastapi.testclient import TestClient
+from shared_auth.testing import FakeTokenIssuer
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.api.dependencies import get_db
 from src.main import app
+from tests.fixtures.auth import SERVICE_AUDIENCE
+
+# ---------------------------------------------------------------------------
+# FastAPI Test Client without a database
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def api_client(token_issuer: FakeTokenIssuer) -> Generator[TestClient]:
+    """
+    Provide a FastAPI TestClient for the routes that use no database.
+
+    The app verifies the issuer's test tokens instead of Identity's, with
+    shared_auth's real checks. Each test replaces the outside services
+    (Personalization, Content Management, Ollama) with fakes.
+    """
+    token_issuer.override_authenticator(app, service_audience=SERVICE_AUDIENCE)
+
+    try:
+        with TestClient(app) as test_client:
+            yield test_client
+    finally:
+        app.dependency_overrides.clear()
+
 
 # ---------------------------------------------------------------------------
 # FastAPI Test Client

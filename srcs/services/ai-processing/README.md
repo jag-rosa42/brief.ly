@@ -1,7 +1,8 @@
 # AI Processing
 
 AI Processing reads articles from Content Management, generates summaries with
-Ollama, and writes them back to Content Management. Its HTTP API exposes only
+Ollama, and writes them back to Content Management. Its HTTP API also serves
+the digest and its chat (see "The digest and its chat" below), besides
 `/health`. The worker sends each article's summary, rejection flag, and quality
 comment through one `PUT`, then builds each topic summary from up to 25 eligible
 articles returned by Content Management. The article phase finishes before the
@@ -66,6 +67,41 @@ The worker calls Content Management with a service token from Identity
 | --- | --- | --- |
 | `IDENTITY_URL` | Base URL of Identity, which gives the token | `http://localhost:8081` (host), `http://identity:8000` (containers, set by `compose.yaml`) |
 | `ai_processing_client_secret` (secret file) | This service's client secret at Identity, created by `make secrets` | `shared/secrets/services/ai_processing_client_secret` (host), `/run/secrets/ai_processing_client_secret` (containers) |
+
+## The digest and its chat
+
+Two routes the browser calls through the gateway (ADR-0011,
+[`docs/api/05_ai-processing.md`](../../../docs/api/05_ai-processing.md)):
+`POST /digest` writes a digest of the user's topics, `POST /digest/chat`
+answers a follow-up question. Both stream the answer as Server-Sent Events.
+
+| Setting | Description | Example |
+| --- | --- | --- |
+| `PERSONALIZATION_URL` | Base URL of Personalization (the user's topics) | `http://localhost:8082` (host), `http://personalization:8000` (containers, set by `compose.yaml`) |
+| `CONTENT_MANAGEMENT_BASE_URL` | As for the worker (the topic summaries) | default `http://content-management:8000` |
+| `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, `OLLAMA_TIMEOUT_SECONDS` | As for the worker | see above |
+| `JWT_SERVICE_AUDIENCE` | Required by `shared_auth` | `transcendence:ai-processing` |
+| `jwt_public_key` (secret file) | Verifies the users' access tokens | `shared/secrets/jwt_public_key` (host), `/run/secrets/jwt_public_key` (containers) |
+
+The routes ask Identity for a service token with `topics:read` only (the
+worker's token has more scopes). The gateway limits them: 6 answers a minute
+per session (burst 3), and at most 2 answers being written at once in total.
+
+Where the prompt-injection defenses live:
+
+- `src/api/schemas/digest.py`: what the user may type (422 otherwise);
+- `src/application/digest_prompt.py`: the fixed instructions, the blocks
+  that hold untrusted text, and why each defense is there.
+
+Try it in the dev stack (log in in the browser first, then copy the access
+token from a request's `Authorization` header in the browser's network tab):
+
+```sh
+curl -kN https://localhost:8443/api/ai-processing/digest \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"length": "short", "focus": "finance"}'
+```
 
 ## Test the local Ollama API
 
