@@ -48,6 +48,9 @@ class OpenApiResponse:
     # The body's schema. None when the answer is not in our error format,
     # like Traefik's plain-text 429.
     model: type[BaseModel] | None = None
+    # The body's media type when it is not JSON, e.g. "text/event-stream"
+    # for a streamed answer. The body is then documented as plain text.
+    media_type: str | None = None
     headers: tuple[OpenApiHeader, ...] = ()
 
     def to_fastapi(self) -> dict[str, Any]:
@@ -55,6 +58,8 @@ class OpenApiResponse:
         response: dict[str, Any] = {"description": self.description}
         if self.model is not None:
             response["model"] = self.model
+        if self.media_type is not None:
+            response["content"] = {self.media_type: {"schema": {"type": "string"}}}
         if self.headers:
             response["headers"] = {
                 header.name: {

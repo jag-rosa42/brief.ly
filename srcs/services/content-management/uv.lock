@@ -1634,7 +1634,7 @@ wheels = [
 
 [[package]]
 name = "shared-auth"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "../../../shared/packages/shared_auth" }
 dependencies = [
     { name = "fastapi", extra = ["standard"] },

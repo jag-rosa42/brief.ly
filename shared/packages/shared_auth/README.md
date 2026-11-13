@@ -137,6 +137,9 @@ responses = to_fastapi_responses({
 })
 ```
 
+A body that is not JSON (a streamed `text/event-stream` answer, say) takes
+`media_type` instead of `model`.
+
 ## Call another service
 
 ```python
