@@ -75,6 +75,22 @@ http:
       middlewares: [strip-morning-briefing-prefix]
       service: morning-briefing
 
+    # The digest and its chat (ADR-0011): the only routes of AI Processing,
+    # and the only ones that call the LLM while a reader waits. Two limits
+    # protect the LLM (one Ollama, on the host's CPU) before the request
+    # reaches the service; see ai-digest-rate-limit and ai-digest-in-flight.
+    ai-processing:
+      entrypoints: [websecure]
+      rule: >-
+        Path(`/api/ai-processing/digest`) ||
+        Path(`/api/ai-processing/digest/chat`)
+      middlewares:
+        - ai-digest-rate-limit
+        - ai-digest-one-bucket
+        - ai-digest-in-flight
+        - strip-ai-processing-prefix
+      service: ai-processing
+
     # --------------------------------------------------------------------------
     # Public API
     # --------------------------------------------------------------------------
@@ -135,6 +151,50 @@ http:
     strip-morning-briefing-prefix:
       stripPrefix:
         prefixes: ["/api/morning-briefing"]
+    strip-ai-processing-prefix:
+      stripPrefix:
+        prefixes: ["/api/ai-processing"]
+
+    # --- The digest's limits (ADR-0011) --------------------------------------
+    # An answer costs the LLM several seconds of CPU, so the digest routes get
+    # their own, much lower limits than the public API. Both answer 429 in
+    # plain text; the frontend shows "Try again in N s" from Retry-After.
+
+    # 1. Per session: 6 answers a minute, and at most 3 in a row without
+    # waiting (burst). Generous on purpose: a 422 or a "follow some topics
+    # first" answer counts too, since the limit sits in front of the service;
+    # limit 2 below is what protects the LLM's CPU. Keyed on the
+    # Authorization header, so each logged-in session has its own bucket (the
+    # access token changes at each refresh, every 15 minutes at most: a
+    # session then starts a new bucket). A digest and its follow-up questions
+    # share the bucket. A made-up header gets its own bucket too, but the
+    # service answers it 401 without calling the LLM.
+    # Just over the limit, Traefik holds the request up to 1 / (2 × average)
+    # = 5 s instead of refusing it; beyond that, 429.
+    ai-digest-rate-limit:
+      rateLimit:
+        average: 6
+        period: 1m
+        burst: 3
+        sourceCriterion:
+          requestHeaderName: Authorization
+
+    # 2. For everyone together: at most 2 answers being written at once; a
+    # third reader gets 429 until one answer ends. An answer counts until its
+    # stream is over. inFlightReq counts per "source", read from a header:
+    # ai-digest-one-bucket first writes the same value in X-Digest-Bucket
+    # for every request (replacing whatever the client sent), so all readers
+    # share one counter. Counting per Host header instead would let a client
+    # get its own counter by sending another Host.
+    ai-digest-one-bucket:
+      headers:
+        customRequestHeaders:
+          X-Digest-Bucket: "all"
+    ai-digest-in-flight:
+      inFlightReq:
+        amount: 2
+        sourceCriterion:
+          requestHeaderName: X-Digest-Bucket
 
     # --- Public API chain (ADR-0009) -----------------------------------------
     # Every public router uses this one chain, so a new router can't skip a
@@ -232,5 +292,9 @@ http:
       loadBalancer:
         servers:
           - url: "http://morning-briefing:8000" #uses the Docker Compose service name as the network destination
+    ai-processing:
+      loadBalancer:
+        servers:
+          - url: "http://ai-processing:8000" #uses the Docker Compose service name as the network destination
 
     # the frontend service is in frontend.yaml: it differs between production (nginx) and development (Vite)
