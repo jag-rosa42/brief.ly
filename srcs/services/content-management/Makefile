@@ -5,6 +5,7 @@ PORT      = $(CONTENT_MANAGEMENT_PORT)
 
 
 include $(ROOT_DIR)/shared/mk/service.mk
+include $(ROOT_DIR)/.env
 
 CONTENT_MANAGEMENT_URL ?= http://$(HOST):$(PORT)
 NEWS_API_SECRET := $(ROOT_DIR)/shared/secrets/news_api_key
@@ -25,7 +26,7 @@ test-tmp: check-env
 
 ##################################### RULES ####################################
 
-.PHONY: ingest test-tmp
+.PHONY: ingest logs test
 
 ingest: check-env
 	@$(call print,$(CYAN_COLOR),[CONTENT MANAGEMENT] Ingesting articles...)
