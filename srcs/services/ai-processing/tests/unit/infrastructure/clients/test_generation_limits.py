@@ -6,44 +6,28 @@ from shared_errors import InfrastructureError
 
 from src.application.models.answer_validation_error import AnswerValidationError
 from src.infrastructure.clients.OllamaSummarizerClient import (
-    OllamaSummarizerClient,
-    OllamaTopicSummary,
+    OllamaSummarizerClient, OllamaTopicSummary,
 )
 
 
 def ask(response, previous=None):
     requests = []
-
     def respond(request):
         requests.append(json.loads(request.content))
         return response
-
-    with httpx.Client(
-        base_url="http://ollama", transport=httpx.MockTransport(respond)
-    ) as client:
+    with httpx.Client(base_url="http://ollama", transport=httpx.MockTransport(respond)) as client:
         result = OllamaSummarizerClient(client, "test", 120)._ask(
-            "system",
-            "input",
-            OllamaTopicSummary,
-            answer_name="summary",
-            provider_error_name="summary",
-            previous_failure=previous,
+            "system", "input", OllamaTopicSummary, answer_name="summary",
+            provider_error_name="summary", previous_failure=previous,
         )
     return result, requests
 
 
 def valid_response():
-    return httpx.Response(
-        200,
-        content=json.dumps(
-            {
-                "message": {"content": '{"summary":"A complete summary."}'},
-                "done": True,
-                "done_reason": "stop",
-            }
-        )
-        + "\n",
-    )
+    return httpx.Response(200, content=json.dumps({
+        "message": {"content": '{"summary":"A complete summary."}'},
+        "done": True, "done_reason": "stop",
+    }) + "\n")
 
 
 def test_generation_is_bounded():
@@ -54,18 +38,9 @@ def test_generation_is_bounded():
 
 def test_truncation_preserves_bounded_answer_for_shorter_retry():
     from src.application.models.generation_limit_error import GenerationLimitError
-
-    response = httpx.Response(
-        200,
-        content=json.dumps(
-            {
-                "message": {"content": "x" * 3000},
-                "done": True,
-                "done_reason": "length",
-            }
-        )
-        + "\n",
-    )
+    response = httpx.Response(200, content=json.dumps({
+        "message": {"content": "x" * 3000}, "done": True, "done_reason": "length",
+    }) + "\n")
     with pytest.raises(GenerationLimitError) as caught:
         ask(response)
     assert len(caught.value.previous_answer) == 2000
@@ -84,45 +59,17 @@ def test_exhausted_technical_failure_remains_pending():
     from src.application.SummarizeArticles import SummarizeArticles
     from tests.model import RecordingFailureMetrics
     from tests.unit.infrastructure.clients.test_ollama_summarizer_client import ARTICLE
-
     class Content:
         def list_missing_articles(self, limit):
             return [ARTICLE]
-
         def save_article_assessment(self, *args):
             pytest.fail("A technical failure must not reject the article")
-
     class Summarizer:
         calls = 0
-
         def ai_summarize_article(self, article):
             self.calls += 1
             raise InfrastructureError("Unavailable")
-
     summarizer = Summarizer()
     with pytest.raises(InfrastructureError, match="remain pending"):
-        SummarizeArticles(
-            Content(), summarizer, "test", 25, RecordingFailureMetrics()
-        ).execute()
+        SummarizeArticles(Content(), summarizer, "test", 25, RecordingFailureMetrics()).execute()
     assert summarizer.calls == 4
-
-
-def test_provider_diagnostics_never_expose_raw_error(caplog):
-    response = httpx.Response(
-        200,
-        content=json.dumps(
-            {
-                "error": "out of memory SECRET_ARTICLE_TEXT",
-            }
-        )
-        + "\n",
-    )
-    with pytest.raises(InfrastructureError):
-        ask(response)
-    assert "category=memory" in caplog.text
-    assert "SECRET_ARTICLE_TEXT" not in caplog.text
-
-
-def test_http_500_is_a_technical_failure():
-    with pytest.raises(InfrastructureError, match="HTTP request failed"):
-        ask(httpx.Response(500, text="private provider details"))

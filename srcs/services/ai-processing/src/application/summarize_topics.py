@@ -32,22 +32,10 @@ class SummarizeTopics:
             raise ValueError("Content Management returned duplicate topics")
 
         for topic_id in sorted(topics):
-            topic_started_at = perf_counter()
             summaries = self._load_summaries(topic_id)
-            logger.info(
-                "Loaded topic inputs topic=%s count=%s elapsed=%.2fs",
-                topic_id,
-                len(summaries),
-                perf_counter() - topic_started_at,
-            )
             if not summaries:
                 self.content_management.save_topic_summary(
                     topic_id, EMPTY_TOPIC_SUMMARY, self.llm_model, 0
-                )
-                logger.info(
-                    "Saved empty topic topic=%s elapsed=%.2fs",
-                    topic_id,
-                    perf_counter() - topic_started_at,
                 )
                 continue
 
@@ -57,35 +45,18 @@ class SummarizeTopics:
             self.content_management.save_topic_summary(
                 topic_id, summary, self.llm_model, generation_duration_ms
             )
-            logger.info(
-                "Saved topic summary topic=%s generation_elapsed=%.2fs elapsed=%.2fs",
-                topic_id,
-                generation_duration_ms / 1000,
-                perf_counter() - topic_started_at,
-            )
 
     def _combine(self, topic_id: str, summaries: list[str]) -> str:
         latest_summary = summaries[0]
         while len(summaries) > 1:
             combined: list[str] = []
             for group in batched(summaries, TOPIC_SUMMARY_GROUP_SIZE, strict=False):
-                group_started_at = perf_counter()
                 try:
                     summary = self._summarize_group(topic_id, group)
                 except Exception:
                     self.failure_metrics.topic_group_generation_failed()
-                    logger.exception(
-                        "Topic summary generation failed for %s elapsed=%.2fs",
-                        topic_id,
-                        perf_counter() - group_started_at,
-                    )
+                    logger.exception("Topic summary generation failed for %s", topic_id)
                     return latest_summary
-                logger.info(
-                    "Combined topic group topic=%s count=%s elapsed=%.2fs",
-                    topic_id,
-                    len(group),
-                    perf_counter() - group_started_at,
-                )
                 combined.append(summary)
                 if len(group) > 1:
                     latest_summary = summary

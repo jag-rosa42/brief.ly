@@ -62,31 +62,17 @@ def run_worker(
         ).execute()
         fatal = False
     finally:
-        logger.info(
-            "Finished AI worker fatal=%s elapsed=%.2fs",
-            fatal,
-            perf_counter() - started_at,
-        )
         metrics.finish(
             completed_at=time(), duration=max(0, perf_counter() - started_at), fatal=fatal
         )
-        publish_started_at = perf_counter()
         try:
             publish(metrics.registry)
         except Exception:
             logger.exception("Failed to push AI worker metrics to Pushgateway")
-        finally:
-            logger.info(
-                "Finished publishing worker metrics elapsed=%.2fs",
-                perf_counter() - publish_started_at,
-            )
 
 
 def main() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
-    )
+    logging.basicConfig(level=logging.INFO)
     settings = WorkerSettings()
     client_settings = ServiceClientSettings()
     # One provider for the whole run: it caches the token and renews it if

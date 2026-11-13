@@ -99,10 +99,6 @@ class OllamaChatChunk(BaseModel):
     done: bool = False
     done_reason: str | None = None
     eval_count: int | None = None
-    total_duration: int | None = None
-    load_duration: int | None = None
-    prompt_eval_duration: int | None = None
-    eval_duration: int | None = None
     error: str | None = None
 
 
@@ -149,9 +145,6 @@ class OllamaSummarizerClient:
             ) as response:
                 if response.status_code in OLLAMA_UNAVAILABLE_STATUSES:
                     raise InfrastructureError("Ollama is unavailable.")
-                if response.is_error:
-                    logger.warning("Ollama HTTP failure status=%s", response.status_code)
-                    raise InfrastructureError("Ollama HTTP request failed.")
                 response.raise_for_status()
                 yield response
         except httpx2.TransportError as exc:
@@ -258,13 +251,6 @@ class OllamaSummarizerClient:
                     },
                 ]
             )
-        logger.info(
-            "Ollama input answer=%s prompt_chars=%s correction=%s context_tokens=%s",
-            answer_name,
-            sum(len(message["content"]) for message in messages),
-            previous_failure is not None,
-            self.context_length,
-        )
         body: dict[str, object] = {
             "model": self.model,
             "messages": messages,
@@ -273,25 +259,12 @@ class OllamaSummarizerClient:
             "options": {
                 "temperature": TEMPERATURE,
                 "num_ctx": self.context_length,
-                "num_predict": 256
-                if isinstance(previous_failure, GenerationLimitError)
-                else 512,
+                "num_predict": 256 if isinstance(previous_failure, GenerationLimitError) else 512,
             },
         }
-        started_at = perf_counter()
-        completed = False
-        try:
-            answer_text = self._collect_streamed_content(
-                body, answer_name=answer_name, provider_error_name=provider_error_name
-            )
-            completed = True
-        finally:
-            logger.info(
-                "Ollama request answer=%s completed=%s elapsed=%.2fs",
-                answer_name,
-                completed,
-                perf_counter() - started_at,
-            )
+        answer_text = self._collect_streamed_content(
+            body, answer_name=answer_name, provider_error_name=provider_error_name
+        )
         try:
             return answer_model.model_validate_json(answer_text)
         except ValidationError as exc:
@@ -349,17 +322,6 @@ class OllamaSummarizerClient:
                 continue
             chunk = OllamaChatChunk.model_validate_json(line)
             if chunk.error is not None:
-                error = chunk.error.lower()
-                category = (
-                    "memory"
-                    if "memory" in error
-                    else "context"
-                    if "context" in error
-                    else "model"
-                    if "model" in error
-                    else "other"
-                )
-                logger.warning("Ollama stream failure category=%s", category)
                 raise InfrastructureError(
                     f"Ollama failed while generating a {provider_error_name}"
                 )
@@ -369,23 +331,6 @@ class OllamaSummarizerClient:
                 finished = True
                 done_reason = chunk.done_reason
                 eval_count = chunk.eval_count
-                # Ollama reports durations in nanoseconds; keep absent values explicit.
-                logger.info(
-                    "Ollama timings answer=%s total_s=%s load_s=%s "
-                    "prompt_eval_s=%s eval_s=%s",
-                    answer_name,
-                    *(
-                        round(duration / 1_000_000_000, 3)
-                        if duration is not None
-                        else None
-                        for duration in (
-                            chunk.total_duration,
-                            chunk.load_duration,
-                            chunk.prompt_eval_duration,
-                            chunk.eval_duration,
-                        )
-                    ),
-                )
                 break
 
         answer_text = "".join(content_chunks).strip()
@@ -398,7 +343,7 @@ class OllamaSummarizerClient:
             )
         if done_reason == "length":
             raise GenerationLimitError(
-                "Generation length limit reached; return a much shorter JSON answer",
+                "Generation token limit reached; return a much shorter JSON answer",
                 answer_text[:2000],
             )
         if done_reason not in (None, "stop"):
