@@ -91,11 +91,12 @@ Two container networks:
 
 | Network | Members |
 | --- | --- |
-| `edge` | gateway, frontend, Identity, Personalization, Morning Briefing |
+| `edge` | gateway, frontend, Identity, Personalization, Morning Briefing, AI Processing |
 | `backend` | every backend service, `pgsql`, `pgvector` |
 
-Content Management and AI Processing are only on `backend`, so the gateway
-cannot reach them at all.
+Content Management is only on `backend`, so the gateway cannot reach it at
+all. AI Processing is on `edge` for its digest routes only (ADR-0011): the
+gateway routes those two paths to it, nothing else.
 
 The Gateway hides internal service topology from the frontend.
 

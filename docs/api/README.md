@@ -1,6 +1,6 @@
 # Transcendence — API Contract
 
-Last updated: 2026-11-11
+Last updated: 2026-11-12
 
 The contract is split into one file per service. The `plan/` folder holds short summaries of what we are changing and why. Each one links to the contract files that have the details.
 
@@ -20,7 +20,7 @@ The contract is split into one file per service. The `plan/` folder holds short 
 | [02_personalization.md](02_personalization.md) | Profile, topic catalog, saved articles; Frontend, Public and Internal routes; public docs page |
 | [03_morning-briefing.md](03_morning-briefing.md) | The briefing; Frontend and Public routes |
 | [04_content-management.md](04_content-management.md) | Articles, topics and their summaries (internal only) |
-| [05_ai-processing.md](05_ai-processing.md) | The summary worker: commands, no business routes |
+| [05_ai-processing.md](05_ai-processing.md) | The summary worker (commands), the digest and its chat (streamed Frontend routes) |
 | [06_service-to-service.md](06_service-to-service.md) | Who calls whom with which token; summaries as an enrichment pipeline |
 | [plan/01_Modification_Plan.md](plan/01_Modification_Plan.md) | Plan: gateway, auth, service-to-service calls, public API, order of work |
 | [plan/02_Summaries_Plan.md](plan/02_Summaries_Plan.md) | Plan: summaries move from AI Processing to Content Management |
@@ -36,4 +36,4 @@ Endpoints per service, by status (see each file for the details):
 | Personalization | 15 (+ `/health`) | 0 | 0 |
 | Morning Briefing | 3 (+ `/health`) | 0 | 0 |
 | Content Management | 0 (+ `/health`) | 6 | 1 |
-| AI Processing | 0 (+ `/health`) | 0 | 2 commands |
+| AI Processing | 2 (+ `/health`; `summarize` command done) | 0 | 1 command (`embed`) |
