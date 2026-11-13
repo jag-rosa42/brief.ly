@@ -8,6 +8,9 @@ export interface ApiOptions {
 	headers?: Record<string, string>;
 	auth?: boolean; //add the Bearer token
 	signal?: AbortSignal;
+	// The whole request, body included. A streamed answer (apiStream) needs
+	// longer than the default 10 s.
+	timeoutMs?: number;
 }
 
 export function send(path: string, options: ApiOptions = {}): Promise<Response> {
@@ -19,7 +22,7 @@ export function send(path: string, options: ApiOptions = {}): Promise<Response> 
 	if (options.auth !== false && token !== null) {
 		headers.Authorization = `Bearer ${token}`;
 	}
-	const timeout = AbortSignal.timeout(DEFAULT_TIMEOUT_MS);
+	const timeout = AbortSignal.timeout(options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
 	return fetch(path, {
 		method: options.method ?? "GET",
