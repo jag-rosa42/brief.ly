@@ -15,7 +15,7 @@ export function Sidebar({ tabs, activeTab, onSelectTab, onDisconnect }: SidebarP
 		// Mobile: a top bar, logo and "Log out" on the first row, the tabs on the
 		// second (a grid). From md: a sticky column on the left (flex), with
 		// "Log out" moved to the bottom by md:order-last.
-		<aside className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 border-b border-secondary md:flex md:flex-col md:items-stretch md:gap-8 md:h-screen md:sticky md:top-0 md:overflow-y-auto md:shrink-0 md:px-6 md:py-4 md:border-b-0 md:border-r">
+		<aside className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 border-b border-secondary md:flex md:flex-col md:items-stretch md:gap-8 md:h-screen md:sticky md:top-0 md:overflow-y-auto md:shrink-0 md:w-56 md:px-6 md:py-4 md:border-b-0 md:border-r">
 			<Logo />
 			<Button
 				type="button"
