@@ -47,6 +47,8 @@ Body:
 201 Created           { "access_token": str, "token_type": "Bearer" } + Set-Cookie refresh_token
 409 Conflict          EMAIL_ALREADY_REGISTERED
 422 Unprocessable     VALIDATION_ERROR (email format, password length)
+429 Too Many Requests gateway, plain text + Retry-After: more than 10 attempts
+                      at once (then 1 every 6 s) from one IP, login and register together
 ```
 
 ### POST /api/identity/auth/login
@@ -63,6 +65,7 @@ Body:
 200 OK                { "access_token": str, "token_type": "Bearer" } + Set-Cookie refresh_token
 401 Unauthorized      INVALID_CREDENTIALS
 422 Unprocessable     VALIDATION_ERROR
+429 Too Many Requests gateway rate limit, see register
 ```
 
 ### POST /api/identity/auth/logout

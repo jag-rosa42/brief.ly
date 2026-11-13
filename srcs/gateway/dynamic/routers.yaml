@@ -45,6 +45,19 @@
 
 http:
   routers:
+    # Login and registration: the same service as identity below, plus a rate
+    # limit per IP against password guessing (auth-rate-limit). The priority
+    # makes this router win over identity: by default a router's priority is
+    # the length of its rule, and identity's is the longest, over 200.
+    identity-auth-limited:
+      entrypoints: [websecure]
+      priority: 1000
+      rule: >-
+        Path(`/api/identity/auth/login`) ||
+        Path(`/api/identity/auth/register`)
+      middlewares: [auth-rate-limit, strip-identity-prefix]
+      service: identity
+
     identity:
       entrypoints: [websecure]
       rule: >-
@@ -125,6 +138,33 @@ http:
       service: frontend
 
   middlewares:
+    # --- Security headers, on every answer (traefik.yaml, websecure) ---------
+    # Not here, on purpose:
+    # - Strict-Transport-Security: the host is localhost, and a browser applies
+    #   HSTS to the host, not the port, so it would force HTTPS on Vite
+    #   (http://localhost:5173) and Adminer (http://localhost:8086) too.
+    # - Content-Security-Policy: Vite injects inline scripts in development,
+    #   and /public/v1/docs loads Swagger UI from jsDelivr. A policy that
+    #   allows both allows too much to be worth it.
+    security-headers:
+      headers:
+        contentTypeNosniff: true                       # X-Content-Type-Options: nosniff
+        frameDeny: true                                # X-Frame-Options: DENY
+        referrerPolicy: "strict-origin-when-cross-origin"
+        customResponseHeaders:
+          Permissions-Policy: "camera=(), microphone=(), geolocation=()"
+
+    # --- Login and registration (identity-auth-limited) ----------------------
+    # Per client IP: 10 attempts at once, then 1 every 6 seconds. Enough for a
+    # person who mistypes, not for a program guessing passwords. Over the
+    # limit, Traefik answers 429 itself, in plain text, with Retry-After. Like
+    # the public limits below, it is in memory and resets with the gateway.
+    auth-rate-limit:
+      rateLimit:
+        average: 10
+        period: 1m
+        burst: 10
+
     strip-identity-prefix:
       stripPrefix:
         prefixes: ["/api/identity"]

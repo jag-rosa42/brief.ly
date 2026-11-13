@@ -64,6 +64,9 @@ export function LoginPage() {
 				setErrorMessage("Invalid email or password");
 			} else if (err instanceof ApiError && err.code === "VALIDATION_ERROR") {
 				setErrorMessage("Some fields are invalid, please check your input");
+			} else if (err instanceof ApiError && err.status === 429) {
+				// The gateway's limit on login attempts (plain text, so no code).
+				setErrorMessage("Too many attempts, please wait a minute and try again");
 			} else if (err instanceof ApiError) {
 				notify("Something went wrong, please try again", "error");
 			} else {

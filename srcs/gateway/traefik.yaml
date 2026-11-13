@@ -44,6 +44,9 @@ entrypoints:
       # TLS on every router of this entry point; the certificate comes from
       # dynamic/tls.yml.
       tls: {}
+      # Security headers on every answer of this entry point, whatever the
+      # router (middleware in dynamic/routers.yaml).
+      middlewares: [security-headers@file]
       # Refuse (400) any path hiding a character in percent-encoding, so an
       # encoded "../" (%2F, %5C, %25...) cannot slip past the allowlist.
       # Traefik's defaults changed between versions, so every switch is
