@@ -64,7 +64,7 @@ function DashboardHeader({ firstName, today }: DashboardHeaderProps) {
 }
 
 function TopicPanel({ cluster, isSaved, onToggleSave, onReadMore }: TopicPanelProps) {
-	const articles = cluster.articles.map(toArticle);
+	const articles = cluster.articles.filter((a) => a.summary !== null).map(toArticle);
 
 	let stories;
 	if (articles.length > 0) {
