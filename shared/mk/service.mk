@@ -9,7 +9,6 @@
 ################################### VARIABLES ##################################
 # Fixed/calculated variables configuration
 SHELL        := /bin/bash
-ROOT_DIR     := $(shell git rev-parse --show-toplevel)
 SERVICE_DIR  := $(CURDIR)
 ENV_FILE     := ${SERVICE_DIR}/.env
 
@@ -36,7 +35,7 @@ check-env:
 
 ##################################### RULES ####################################
 
-.PHONY: run sync migration upgrade downgrade test lint typecheck shell status \
+.PHONY: check-env ensure-databases run sync migration upgrade downgrade test lint typecheck shell status \
 		clear-cache reinstall
 
 run: check-env
@@ -49,7 +48,7 @@ sync: check-env
 	@$(call print,$(GREEN_COLOR),[SYNC] Dependencies synchronized for $(PROJECT_NAME).)
 
 ensure-databases: check-env
-	@$(call, print,$(CYAN_COLOR),[DATABASE] Ensuring $(POSTGRES_DB_NAME) database exists...)
+	@$(call print,$(CYAN_COLOR),[DATABASE] Ensuring $(POSTGRES_DB_NAME) database exists...)
 	@$(RUN) python -m src.infrastructure.database.bootstrap
 
 migration: check-env

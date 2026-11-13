@@ -23,7 +23,6 @@ OS := $(shell uname -s)
 #                                DIRECTORIES                                   #
 # ============================================================================ #
 
-SRC_DIR := srcs
 FRONTEND_DIR := srcs/frontend
 SERVICES_DIR := srcs/services
 
@@ -31,10 +30,8 @@ SERVICES_DIR := srcs/services
 #                               VARIABLES & FLAGS                              #
 # ============================================================================ #
 
-MAKE_CMD ?= $(MAKE)
 COMPOSE := docker compose
 CONTAINER_CMD := docker
-ENV_FILE := .env
 ENV_EXAMPLE_FILES := .env.example $(wildcard $(SERVICES_DIR)/*/.env.example)
 
 
@@ -565,22 +562,19 @@ debug-create-vm:
 vm-full-stack:
 	@test -z "$$SERVICE" || { printf '[VM] Use vm-service SERVICE=<name> for one service.\n' >&2; exit 2; }
 	@$(call print,$(CYAN_COLOR),[VM] Starting the application and monitoring in the VM...)
-	@$(MAKE) --no-print-directory stop-vm
-	@$(MAKE) --no-print-directory launch-vm VM_NETWORK_MODE=dev
+	@$(MAKE) --no-print-directory vm-restart VM_NETWORK_MODE=dev
 	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && $(VM_REMOTE_ENV) make docker SECRETS_MODE=validate SERVICE='
 
 vm-app:
 	@test -z "$$SERVICE" || { printf '[VM] Use vm-service SERVICE=<name> for one service.\n' >&2; exit 2; }
 	@$(call print,$(CYAN_COLOR),[VM] Starting only the application stack in the VM...)
-	@$(MAKE) --no-print-directory stop-vm
-	@$(MAKE) --no-print-directory launch-vm VM_NETWORK_MODE=dev
+	@$(MAKE) --no-print-directory vm-restart VM_NETWORK_MODE=dev
 	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && $(VM_REMOTE_ENV) make monitoring-down && $(VM_REMOTE_ENV) make docker-app SECRETS_MODE=validate SERVICE='
 
 vm-service: check-compose-service
 	@test -n "$$SERVICE" || { printf '[VM] Set SERVICE=<name> to choose a Compose service.\n' >&2; exit 2; }
 	@$(call print,$(CYAN_COLOR),[VM] Starting $(SERVICE) and its dependencies in the VM...)
-	@$(MAKE) --no-print-directory stop-vm
-	@$(MAKE) --no-print-directory launch-vm VM_NETWORK_MODE=dev
+	@$(MAKE) --no-print-directory vm-restart VM_NETWORK_MODE=dev
 	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && $(VM_REMOTE_ENV) make docker-app SECRETS_MODE=validate SERVICE=$(SERVICE)'
 
 # Forward existing Docker-oriented Make targets into the synchronized VM.
@@ -591,8 +585,7 @@ $(addsuffix -vm,$(VM_DOCKER_TARGETS)): launch-vm
 # Production forwards the gateway and host-loopback Grafana. It
 # stops a development-mode VM first because QEMU forwarding is fixed at boot.
 prod:
-	@$(MAKE) --no-print-directory stop-vm
-	@$(MAKE) --no-print-directory launch-vm VM_NETWORK_MODE=prod
+	@$(MAKE) --no-print-directory vm-restart VM_NETWORK_MODE=prod
 	@$(VM_SSH) 'cd "$(VM_REMOTE_DIR)" && $(VM_REMOTE_ENV) make prod-docker SECRETS_MODE=validate'
 
 # fclean asks for confirmation in the guest, so force a terminal allocation.
@@ -610,11 +603,11 @@ fclean-vm: launch-vm
 #Delete target files if command fails
 .DELETE_ON_ERROR:
 
-.PHONY: all clean fclean logs down reset-db secrets check-service check-compose-service \
+.PHONY: all help list-frontend clean fclean down reset-db check-service check-compose-service \
 		vm-databases \
 		frontend frontend-install frontend-build frontend-test \
-		dev dev-databases docker docker-app vm-full-stack vm-app vm-service sync run summarize stop-summarize-vm migration upgrade downgrade \
+		dev-databases docker docker-app vm-full-stack vm-app vm-service sync run summarize stop-summarize-vm migration upgrade downgrade \
 		test lint typecheck shell list-services status clear-cache reinstall \
-		up build ps logs init-env create-vm launch-vm stop-vm debug-create-vm \
+		ps logs init-env create-vm launch-vm stop-vm debug-create-vm \
 		shared-networks \
 		connect-vm vm-wait vm-sync prod prod-docker fclean-vm $(addsuffix -vm,$(VM_DOCKER_TARGETS))
