@@ -7,6 +7,9 @@ export const ICON_PATHS = {
 	check: "M5 12.5l4.5 4.5L19 7",
 	bookmark: "M7 4h10v16l-5-4-5 4z",
 	search: "M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM20 20l-4.8-4.8",
+	// A large and a small four-point star: what the AI writes.
+	sparkles:
+		"M10 3.5l1.6 4.9 4.9 1.6-4.9 1.6L10 16.5l-1.6-4.9L3.5 10l4.9-1.6zM18 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z",
 } as const;
 
 export type IconName = keyof typeof ICON_PATHS;

@@ -12,7 +12,9 @@ export type { ApiOptions } from "@/shared/components/api/request";
 // the token is checked whenever a request is made so that the user's status (connected/non connected)
 // is updated at that moment.
 
-export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
+// Send the request with the session's token, refreshing it when needed.
+// Returns the response once it is OK; throws an ApiError otherwise.
+async function sendWithSession(path: string, options: ApiOptions): Promise<Response> {
 	const auth = options.auth !== false;
 	const token = session.getAccessToken();
 
@@ -31,9 +33,23 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
 	}
 	if (!response.ok) throw await toApiError(response);
 
+	return response;
+}
+
+export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
+	const response = await sendWithSession(path, options);
+
 	if (response.status === 204) {
 		return undefined as T;
 	}
 
 	return (await response.json()) as T;
+}
+
+// For an answer that arrives piece by piece (text/event-stream): returns the
+// response as soon as its status is OK, without reading the body, so the
+// caller can read response.body while it arrives. Errors before the stream
+// (401, 422, 429, 503...) throw an ApiError, like apiFetch.
+export function apiStream(path: string, options: ApiOptions = {}): Promise<Response> {
+	return sendWithSession(path, options);
 }

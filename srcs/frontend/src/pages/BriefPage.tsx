@@ -9,6 +9,7 @@ import { Spinner } from "@/shared/components/Spinner";
 import { useBriefing } from "@/features/briefing/hooks/useBriefing";
 import type { TopicCluster } from "@/features/briefing/types";
 import { toArticle, topicLabel } from "@/shared/utils/article";
+import { DigestDrawer } from "@/features/digest/DigestDrawer";
 
 interface TopicPanelProps {
 	cluster: TopicCluster;
@@ -172,10 +173,13 @@ export function BriefPage() {
 	}));
 
 	return (
-		<Division variant="dashboardpage" className="max-w-6xl gap-8">
+		// pb-24: room for the "Ask the AI" button, so it never hides the last story.
+		<Division variant="dashboardpage" className="max-w-6xl gap-8 pb-24">
 			<DashboardHeader firstName={data.profile.name} today={today} />
 			<TopicSection tabs={tabs} />
 			<ArticleModal article={selectedArticle} onClose={() => setSelectedArticle(null)} />
+			{/* The AI digest of these topics, written on request (ADR-0011). */}
+			<DigestDrawer />
 		</Division>
 	);
 }
