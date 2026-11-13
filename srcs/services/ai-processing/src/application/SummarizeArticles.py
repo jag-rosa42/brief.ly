@@ -2,11 +2,8 @@ import logging
 from time import perf_counter
 from uuid import UUID
 
-from shared_errors import InfrastructureError
-
 from src.application.models.answer_validation_error import AnswerValidationError
 from src.application.models.article import Article
-from src.application.models.generation_limit_error import GenerationLimitError
 from src.application.ports.ai_summarizer import ArticleSummarizerPort
 from src.application.ports.content_management import ArticleContentManagementPort
 from src.application.ports.failure_metrics import FailureMetricsPort
@@ -46,7 +43,6 @@ class SummarizeArticles:
             pending = articles
             corrections: dict[UUID, AnswerValidationError] = {}
             failed_duration_ms: dict[UUID, int] = {}
-            technical_failures: set[UUID] = set()
             for attempt in range(1, ARTICLE_GENERATION_MAX_ATTEMPTS + 1):
                 retry_articles: list[Article] = []
                 for article in pending:
@@ -68,10 +64,6 @@ class SummarizeArticles:
                         failed_duration_ms[article.id] = failed_duration_ms.get(
                             article.id, 0
                         ) + max(0, round((perf_counter() - started_at) * 1000))
-                        if isinstance(exc, (InfrastructureError, GenerationLimitError)):
-                            technical_failures.add(article.id)
-                        else:
-                            technical_failures.discard(article.id)
                         if isinstance(exc, AnswerValidationError):
                             corrections[article.id] = exc
                         self.failure_metrics.article_generation_failed()
@@ -105,11 +97,7 @@ class SummarizeArticles:
                 if not pending:
                     break
 
-            deferred_count = 0
             for article in pending:
-                if article.id in technical_failures:
-                    deferred_count += 1
-                    continue
                 self.content_management.save_article_assessment(
                     article.id,
                     ArticleAssessment(
@@ -128,8 +116,7 @@ class SummarizeArticles:
                     article.id,
                     ARTICLE_GENERATION_MAX_ATTEMPTS,
                 )
-            if deferred_count:
-                raise InfrastructureError(
-                    f"AI assessment deferred for {deferred_count} articles after "
-                    f"{ARTICLE_GENERATION_MAX_ATTEMPTS} attempts; articles remain pending."
-                )
+                if not assessment.rejected and assessment.summary:
+                    self.failure_metrics.article_summary_succeeded(
+                        max(0, perf_counter() - started_at)
+                    )

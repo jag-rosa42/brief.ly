@@ -53,23 +53,3 @@ def test_correction_explicitly_addresses_length_and_rejection():
     instruction = requests[0]["messages"][-1]["content"]
     assert "120 characters" in instruction
     assert "If rejected=true, summary must be null" in instruction
-
-
-def test_exhausted_technical_failure_remains_pending():
-    from src.application.SummarizeArticles import SummarizeArticles
-    from tests.model import RecordingFailureMetrics
-    from tests.unit.infrastructure.clients.test_ollama_summarizer_client import ARTICLE
-    class Content:
-        def list_missing_articles(self, limit):
-            return [ARTICLE]
-        def save_article_assessment(self, *args):
-            pytest.fail("A technical failure must not reject the article")
-    class Summarizer:
-        calls = 0
-        def ai_summarize_article(self, article):
-            self.calls += 1
-            raise InfrastructureError("Unavailable")
-    summarizer = Summarizer()
-    with pytest.raises(InfrastructureError, match="remain pending"):
-        SummarizeArticles(Content(), summarizer, "test", 25, RecordingFailureMetrics()).execute()
-    assert summarizer.calls == 4
