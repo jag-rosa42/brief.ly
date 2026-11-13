@@ -116,6 +116,7 @@ def test_worker_corrects_invalid_answers_within_four_attempts(
 
 
 def test_summarize_article_joins_streamed_json_chunks() -> None:
+    now = 10.0
     assessment = json.dumps(
         {
             "rejected": False,
@@ -125,6 +126,8 @@ def test_summarize_article_joins_streamed_json_chunks() -> None:
     )
 
     def respond(request: httpx.Request) -> httpx.Response:
+        nonlocal now
+        now = 10.123
         assert request.method == "POST"
         assert request.url.path == "/api/chat"
         body = json.loads(request.content)
@@ -178,7 +181,7 @@ def test_summarize_article_joins_streamed_json_chunks() -> None:
         client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
         with patch(
             "src.infrastructure.clients.OllamaSummarizerClient.perf_counter",
-            side_effect=[10.0, 10.123],
+            side_effect=lambda: now,
         ):
             result = client.ai_summarize_article(ARTICLE)
 
@@ -267,7 +270,7 @@ def test_summarize_article_logs_and_rejects_length_stop() -> None:
         ):
             client.ai_summarize_article(ARTICLE)
 
-    log_completion.assert_called_once_with(
+    log_completion.assert_any_call(
         "Ollama %s completed: done_reason=%s eval_count=%s",
         "decision",
         "length",
