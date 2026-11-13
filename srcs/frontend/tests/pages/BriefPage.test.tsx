@@ -54,6 +54,26 @@ const WITHOUT_SUMMARY: BriefingArticle = {
 	topic_id: "technologies",
 };
 
+const WITHOUT_TITLE: BriefingArticle = {
+	article_id: "6f1c1b2e-1d2a-4c3b-9a8e-444444444444",
+	title: "",
+	publisher_name: "TechDaily",
+	url: "https://example.com/no-title",
+	summary: "A summary whose story has no title.",
+	read_time_minutes: 2,
+	topic_id: "technologies",
+};
+
+const BLANK_SUMMARY: BriefingArticle = {
+	article_id: "6f1c1b2e-1d2a-4c3b-9a8e-555555555555",
+	title: "A story whose summary is only spaces",
+	publisher_name: "TechDaily",
+	url: "https://example.com/blank-summary",
+	summary: "   ",
+	read_time_minutes: 2,
+	topic_id: "technologies",
+};
+
 function briefing(overrides: Partial<Briefing> = {}): Briefing {
 	return {
 		profile: {
@@ -166,6 +186,28 @@ test("hides the articles that have no summary yet", async () => {
 
 	expect(await screen.findByText(FIRST.title)).toBeInTheDocument();
 	expect(screen.queryByText(WITHOUT_SUMMARY.title)).not.toBeInTheDocument();
+});
+
+test("hides the articles without a title or with a blank summary", async () => {
+	vi.mocked(getBriefing).mockResolvedValue(
+		briefing({
+			topic_clusters: [
+				{
+					topic_id: "technologies",
+					summary: null,
+					articles: [FIRST, WITHOUT_TITLE, BLANK_SUMMARY],
+				},
+			],
+		}),
+	);
+
+	renderPage();
+
+	expect(await screen.findByText(FIRST.title)).toBeInTheDocument();
+	expect(screen.queryByText("A summary whose story has no title.")).not.toBeInTheDocument();
+	expect(screen.queryByText(BLANK_SUMMARY.title)).not.toBeInTheDocument();
+	// One card left: only one Save button.
+	expect(screen.getAllByRole("button", { name: "Save" })).toHaveLength(1);
 });
 
 test("says there is no story when no article has a summary yet", async () => {
