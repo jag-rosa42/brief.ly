@@ -1,9 +1,3 @@
-# Warn without blocking startup: ingestion can use providers other than NewsAPI.
-ingest-check-key:
-	@if [ ! -s "$(NEWS_API_KEY)" ]; then \
-		printf '$(YELLOW_COLOR)[WARNING] NewsAPI key missing or empty: %s. NewsAPI ingestion will be unavailable.$(DEFAULT_COLOR)\n' "$(NEWS_API_KEY)"; \
-	fi
-
 ingest:
 	@$(MAKE) -C $(SERVICES_DIR)/content-management $@ -s
 
@@ -69,4 +63,4 @@ clear-articles-vm:
 		*) printf '[CONTENT MANAGEMENT] Article deletion cancelled.\n' ;; \
 	esac
 
-.PHONY: ingest-check-key ingest ingest-docker ingest-vm clear-articles-vm clear-summaries-vm
+.PHONY: ingest ingest-docker ingest-vm clear-articles-vm clear-summaries-vm
