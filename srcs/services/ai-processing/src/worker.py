@@ -10,9 +10,11 @@ from shared_auth import ClientCredentialsTokenProvider, DownstreamClient
 from src.application.summarize_articles_and_topics import SummarizeArticlesAndTopics
 from src.application.summarize_topics import SummarizeTopics
 from src.application.SummarizeArticles import SummarizeArticles
-from src.infrastructure.clients.content_management import CONTENT_MANAGEMENT_SERVICE
-from src.infrastructure.clients.ContentManagementClient import ContentManagementClient
-from src.infrastructure.clients.OllamaSummarizerClient import OllamaSummarizerClient
+from src.infrastructure.clients.content_management.client import ContentManagementClient
+from src.infrastructure.clients.content_management.service_name import (
+    CONTENT_MANAGEMENT_SERVICE,
+)
+from src.infrastructure.clients.ollama.summarizer_client import OllamaSummarizerClient
 from src.infrastructure.clients.service_token_provider import ServiceTokenProvider
 from src.infrastructure.config.service_client import (
     CLIENT_ID,

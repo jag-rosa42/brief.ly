@@ -8,7 +8,7 @@ from shared_auth import DownstreamClient, DownstreamError
 from shared_errors import InfrastructureError
 
 from src.domain.value_objects.article_assessment import ArticleAssessment
-from src.infrastructure.clients.ContentManagementClient import ContentManagementClient
+from src.infrastructure.clients.content_management.client import ContentManagementClient
 from tests.fakes import FakeServiceTokenProvider
 from tests.model import DEFAULT_MODEL
 

@@ -15,6 +15,12 @@ from src.application.models.generation_limit_error import GenerationLimitError
 from src.application.summarize_topics import TOPIC_SUMMARY_GROUP_SIZE
 from src.domain.value_objects.article_assessment import ArticleAssessment
 from src.domain.value_objects.summary import Summary
+from src.infrastructure.clients.ollama.chat_format import (
+    OllamaChatChunk,
+    OllamaChatRequest,
+    OllamaOptions,
+    OllamaRequestMessage,
+)
 
 logger = logging.getLogger(__name__)
 SENTENCE_TERMINATORS = (".", "!", "?", "…", "。", "\uff01", "\uff1f")
@@ -86,26 +92,6 @@ class OllamaTopicSummary(_OllamaAnswer):
     summary: SummaryText
 
 
-class OllamaChatMessage(BaseModel):
-    content: str = ""
-
-
-class OllamaChatChunk(BaseModel):
-    """One line of Ollama's streamed /api/chat response."""
-
-    model_config = ConfigDict(extra="ignore")
-
-    message: OllamaChatMessage | None = None
-    done: bool = False
-    done_reason: str | None = None
-    eval_count: int | None = None
-    total_duration: int | None = None
-    load_duration: int | None = None
-    prompt_eval_duration: int | None = None
-    eval_duration: int | None = None
-    error: str | None = None
-
-
 AnswerModel = TypeVar("AnswerModel", bound=_OllamaAnswer)
 
 
@@ -142,10 +128,10 @@ class OllamaSummarizerClient:
         self.context_length = context_length
 
     @contextmanager
-    def _stream_chat(self, body: dict[str, object]) -> Iterator[httpx2.Response]:
+    def _stream_chat(self, request: OllamaChatRequest) -> Iterator[httpx2.Response]:
         try:
             with self.http_client.stream(
-                "POST", "/api/chat", json=body, timeout=self.timeout_seconds
+                "POST", "/api/chat", json=request.to_json(), timeout=self.timeout_seconds
             ) as response:
                 if response.status_code in OLLAMA_UNAVAILABLE_STATUSES:
                     raise InfrastructureError("Ollama is unavailable.")
@@ -230,16 +216,19 @@ class OllamaSummarizerClient:
         previous_failure: AnswerValidationError | None = None,
     ) -> AnswerModel:
         messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
+            OllamaRequestMessage(role="system", content=system_prompt),
+            OllamaRequestMessage(role="user", content=user_prompt),
         ]
         if previous_failure is not None:
+            # A second try: show the model its rejected answer and why.
             messages.extend(
                 [
-                    {"role": "assistant", "content": previous_failure.previous_answer},
-                    {
-                        "role": "user",
-                        "content": (
+                    OllamaRequestMessage(
+                        role="assistant", content=previous_failure.previous_answer
+                    ),
+                    OllamaRequestMessage(
+                        role="user",
+                        content=(
                             f"The previous answer failed validation: {previous_failure}. "
                             "Rewrite the entire JSON assessment using the original "
                             "article. For usable content, write one short, complete "
@@ -255,34 +244,33 @@ class OllamaSummarizerClient:
                             "After a token limit, omit detail and return a much "
                             "shorter answer rather than continuing the prior text."
                         ),
-                    },
+                    ),
                 ]
             )
         logger.info(
             "Ollama input answer=%s prompt_chars=%s correction=%s context_tokens=%s",
             answer_name,
-            sum(len(message["content"]) for message in messages),
+            sum(len(message.content) for message in messages),
             previous_failure is not None,
             self.context_length,
         )
-        body: dict[str, object] = {
-            "model": self.model,
-            "messages": messages,
-            "stream": True,
-            "format": _generation_schema(answer_model),
-            "options": {
-                "temperature": TEMPERATURE,
-                "num_ctx": self.context_length,
-                "num_predict": 256
+        request = OllamaChatRequest(
+            model=self.model,
+            messages=messages,
+            format=_generation_schema(answer_model),
+            options=OllamaOptions(
+                temperature=TEMPERATURE,
+                num_ctx=self.context_length,
+                num_predict=256
                 if isinstance(previous_failure, GenerationLimitError)
                 else 512,
-            },
-        }
+            ),
+        )
         started_at = perf_counter()
         completed = False
         try:
             answer_text = self._collect_streamed_content(
-                body, answer_name=answer_name, provider_error_name=provider_error_name
+                request, answer_name=answer_name, provider_error_name=provider_error_name
             )
             completed = True
         finally:
@@ -305,13 +293,13 @@ class OllamaSummarizerClient:
 
     def _collect_streamed_content(
         self,
-        body: dict[str, object],
+        request: OllamaChatRequest,
         *,
         answer_name: str,
         provider_error_name: str,
     ) -> str:
         deadline = monotonic() + self.timeout_seconds
-        with self._stream_chat(body) as response:
+        with self._stream_chat(request) as response:
             # Check raw chunks too: thinking output and partial JSON lines must
             # not keep generation alive indefinitely. The read timeout still
             # bounds a stalled network read between these deadline checks.
