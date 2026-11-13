@@ -304,15 +304,27 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:?Variable not set}
       POSTGRES_DEFAULT_DB_NAME: ${POSTGRES_DEFAULT_DB_NAME:?Variable not set}
       IDENTITY_URL: ${IDENTITY_INTERNAL_URL:?Variable not set}
+      # The digest routes (ADR-0011): the reader's topics, then their summaries.
+      PERSONALIZATION_URL: ${PERSONALIZATION_INTERNAL_URL:?Variable not set}
+      CONTENT_MANAGEMENT_BASE_URL: ${CONTENT_MANAGEMENT_INTERNAL_URL:?Variable not set}
+      # Required by shared_auth when the app starts (config/auth.py). Set here
+      # so a .env written before the digest routes still starts the container.
+      JWT_SERVICE_AUDIENCE: transcendence:ai-processing
     depends_on:
       pgvector:
         condition: service_healthy
       prestart-ai-processing:
         condition: service_completed_successfully
     # Replaces the anchor's list too, so postgres_password is repeated.
+    # jwt_public_key: the digest routes verify the reader's token.
     secrets:
+      - jwt_public_key
       - postgres_password
       - ai_processing_client_secret
+    # The browser reaches its digest routes through the gateway (ADR-0011).
+    networks:
+      - edge
+      - backend
 
   # -- Content-management -----------------------------------------------------
   prestart-content-management:
