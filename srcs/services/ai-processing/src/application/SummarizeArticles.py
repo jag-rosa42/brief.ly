@@ -1,6 +1,8 @@
 import logging
 from time import perf_counter
+from uuid import UUID
 
+from src.application.models.answer_validation_error import AnswerValidationError
 from src.application.models.article import Article
 from src.application.ports.ai_summarizer import ArticleSummarizerPort
 from src.application.ports.content_management import ArticleContentManagementPort
@@ -9,7 +11,7 @@ from src.domain.value_objects.article_assessment import ArticleAssessment
 
 # The command entry point creates the HTTP clients and passes them to this use case.
 logger = logging.getLogger(__name__)
-GENERATION_FAILURE_COMMENT = "Article summary generation failed"
+ARTICLE_GENERATION_MAX_ATTEMPTS = 4  # Initial attempt plus three retries.
 
 
 class SummarizeArticles:
@@ -37,27 +39,80 @@ class SummarizeArticles:
             if not articles:
                 return
 
-            for article in articles:
-                started_at = perf_counter()
-                try:
-                    assessment = self.ai_summarizer.ai_summarize_article(article)
-                except Exception:
-                    self.failure_metrics.article_generation_failed()
-                    logger.exception(
-                        "Article summary generation failed for %s", article.id
+            logger.info("Fetched %s articles awaiting assessment", len(articles))
+            pending = articles
+            corrections: dict[UUID, AnswerValidationError] = {}
+            failed_duration_ms: dict[UUID, int] = {}
+            for attempt in range(1, ARTICLE_GENERATION_MAX_ATTEMPTS + 1):
+                retry_articles: list[Article] = []
+                for article in pending:
+                    started_at = perf_counter()
+                    logger.info(
+                        "Starting article assessment for %s (attempt %s/%s)",
+                        article.id,
+                        attempt,
+                        ARTICLE_GENERATION_MAX_ATTEMPTS,
                     )
-                    assessment = ArticleAssessment(
-                        rejected=True,
-                        quality_comment=GENERATION_FAILURE_COMMENT,
-                        summary=None,
-                        generation_duration_ms=max(
-                            0, round((perf_counter() - started_at) * 1000)
-                        ),
+                    try:
+                        if article.id in corrections:
+                            assessment = self.ai_summarizer.ai_summarize_article(
+                                article, previous_failure=corrections[article.id]
+                            )
+                        else:
+                            assessment = self.ai_summarizer.ai_summarize_article(article)
+                    except Exception as exc:
+                        failed_duration_ms[article.id] = failed_duration_ms.get(
+                            article.id, 0
+                        ) + max(0, round((perf_counter() - started_at) * 1000))
+                        if isinstance(exc, AnswerValidationError):
+                            corrections[article.id] = exc
+                        self.failure_metrics.article_generation_failed()
+                        logger.exception(
+                            "Article summary generation failed for %s (attempt %s/%s)",
+                            article.id,
+                            attempt,
+                            ARTICLE_GENERATION_MAX_ATTEMPTS,
+                        )
+                        retry_articles.append(article)
+                        continue
+
+                    # A valid quality rejection is final, just like a valid summary.
+                    # Failed generations are retried before the fallback rejection below.
+                    self.content_management.save_article_assessment(
+                        article.id, assessment, self.llm_model
                     )
+                    corrections.pop(article.id, None)
+                    logger.info(
+                        "Saved article assessment for %s: rejected=%s elapsed=%.2fs",
+                        article.id,
+                        assessment.rejected,
+                        perf_counter() - started_at,
+                    )
+                    if not assessment.rejected and assessment.summary:
+                        self.failure_metrics.article_summary_succeeded(
+                            max(0, perf_counter() - started_at)
+                        )
+
+                pending = retry_articles
+                if not pending:
+                    break
+
+            for article in pending:
                 self.content_management.save_article_assessment(
-                    article.id, assessment, self.llm_model
+                    article.id,
+                    ArticleAssessment(
+                        rejected=True,
+                        quality_comment=(
+                            "AI assessment failed after "
+                            f"{ARTICLE_GENERATION_MAX_ATTEMPTS} attempts."
+                        ),
+                        summary=None,
+                        generation_duration_ms=failed_duration_ms[article.id],
+                    ),
+                    self.llm_model,
                 )
-                if not assessment.rejected and assessment.summary:
-                    self.failure_metrics.article_summary_succeeded(
-                        max(0, perf_counter() - started_at)
-                    )
+                logger.warning(
+                    "Marked article %s rejected after %s failed generation attempts",
+                    article.id,
+                    ARTICLE_GENERATION_MAX_ATTEMPTS,
+                )

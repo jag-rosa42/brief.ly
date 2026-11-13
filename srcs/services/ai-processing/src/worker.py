@@ -46,6 +46,7 @@ def run_worker(
             ollama_http_client,
             settings.OLLAMA_MODEL,
             settings.OLLAMA_TIMEOUT_SECONDS,
+            context_length=settings.OLLAMA_CONTEXT_LENGTH,
         )
         SummarizeArticlesAndTopics(
             SummarizeArticles(
