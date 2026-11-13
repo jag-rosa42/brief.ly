@@ -8,6 +8,7 @@ include shared/mk/ingest.mk
 include shared/mk/llm.mk
 include shared/mk/backup_recovery.mk
 include shared/mk/monitoring.mk
+include shared/mk/vm.mk
 
 
 NAME := Transcendence
@@ -445,22 +446,11 @@ fclean:
 
 all:
 	@test -z "$(SERVICE)" || { printf '[ALL] Unset SERVICE to start the full stack.\n' >&2; exit 2; }
-	@if [ ! -s "$(NEWS_API_KEY)" ]; then \
-		printf '$(YELLOW_COLOR)[WARNING] NewsAPI key missing or empty: %s. NewsAPI ingestion will be unavailable.$(DEFAULT_COLOR)\n' "$(NEWS_API_KEY)"; \
-	fi
-	@vm_present=false; \
-	for disk in "$(VM_DIR)"/ubuntu-server-cloud-*.qcow2; do \
-		if [ -f "$$disk" ]; then vm_present=true; break; fi; \
-	done; \
-	if [ "$$vm_present" = false ]; then \
-		$(MAKE) --no-print-directory create-vm; \
-	fi
+	@$(MAKE) --no-print-directory ingest-check-key
+	@$(MAKE) --no-print-directory vm-ensure
 	@$(MAKE) --no-print-directory vm-full-stack
-	@sleep 3
 	@$(MAKE) --no-print-directory ingest-vm
-	@sleep 3
 	@$(MAKE) --no-print-directory ollama
-	@sleep 3
 	@$(MAKE) --no-print-directory summarize
 
 
@@ -620,7 +610,7 @@ fclean-vm: launch-vm
 #Delete target files if command fails
 .DELETE_ON_ERROR:
 
-.PHONY: clean fclean logs down reset-db secrets check-service check-compose-service \
+.PHONY: all clean fclean logs down reset-db secrets check-service check-compose-service \
 		vm-databases \
 		frontend frontend-install frontend-build frontend-test \
 		dev dev-databases docker docker-app vm-full-stack vm-app vm-service sync run summarize stop-summarize-vm migration upgrade downgrade \
