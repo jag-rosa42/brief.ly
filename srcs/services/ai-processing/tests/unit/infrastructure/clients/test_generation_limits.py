@@ -46,10 +46,3 @@ def test_truncation_preserves_bounded_answer_for_shorter_retry():
     assert len(caught.value.previous_answer) == 2000
     _, requests = ask(valid_response(), caught.value)
     assert requests[0]["options"]["num_predict"] == 256
-
-
-def test_correction_explicitly_addresses_length_and_rejection():
-    _, requests = ask(valid_response(), AnswerValidationError("too long", "{}"))
-    instruction = requests[0]["messages"][-1]["content"]
-    assert "120 characters" in instruction
-    assert "If rejected=true, summary must be null" in instruction

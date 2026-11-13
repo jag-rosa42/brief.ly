@@ -240,13 +240,7 @@ class OllamaSummarizerClient:
                             "Finish the sentence before closing the JSON string. "
                             "Do not just append punctuation to an unfinished clause. "
                             "Do not add facts. Keep the original rejection rules "
-                            "and JSON field length limits. "
-                            "quality_comment must be one brief sentence of at most "
-                            "120 characters (never more than 500). "
-                            "If rejected=true, summary must be null. "
-                            "If rejected=false, provide a complete summary. "
-                            "After a token limit, omit detail and return a much "
-                            "shorter answer rather than continuing the prior text."
+                            "and JSON field length limits."
                         ),
                     },
                 ]
