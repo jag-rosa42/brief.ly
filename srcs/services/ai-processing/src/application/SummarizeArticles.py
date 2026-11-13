@@ -36,8 +36,14 @@ class SummarizeArticles:
 
     def execute(self) -> None:
         while True:
+            fetched_at = perf_counter()
             articles: list[Article] = self.content_management.list_missing_articles(
                 self.batch_size
+            )
+            logger.info(
+                "Fetched article batch count=%s elapsed=%.2fs",
+                len(articles),
+                perf_counter() - fetched_at,
             )
             if not articles:
                 return
@@ -76,25 +82,32 @@ class SummarizeArticles:
                             corrections[article.id] = exc
                         self.failure_metrics.article_generation_failed()
                         logger.exception(
-                            "Article summary generation failed for %s (attempt %s/%s)",
+                            "Article summary generation failed for %s "
+                            "(attempt %s/%s) elapsed=%.2fs cumulative_failed=%.2fs",
                             article.id,
                             attempt,
                             ARTICLE_GENERATION_MAX_ATTEMPTS,
+                            perf_counter() - started_at,
+                            failed_duration_ms[article.id] / 1000,
                         )
                         retry_articles.append(article)
                         continue
 
                     # A valid quality rejection is final, just like a valid summary.
                     # Failed generations are retried before the fallback rejection below.
+                    save_started_at = perf_counter()
                     self.content_management.save_article_assessment(
                         article.id, assessment, self.llm_model
                     )
                     corrections.pop(article.id, None)
                     logger.info(
-                        "Saved article assessment for %s: rejected=%s elapsed=%.2fs",
+                        "Saved article assessment for %s: rejected=%s elapsed=%.2fs "
+                        "save_elapsed=%.2fs cumulative_failed=%.2fs",
                         article.id,
                         assessment.rejected,
                         perf_counter() - started_at,
+                        perf_counter() - save_started_at,
+                        failed_duration_ms.get(article.id, 0) / 1000,
                     )
                     if not assessment.rejected and assessment.summary:
                         self.failure_metrics.article_summary_succeeded(
@@ -131,5 +144,6 @@ class SummarizeArticles:
             if deferred_count:
                 raise InfrastructureError(
                     f"AI assessment deferred for {deferred_count} articles after "
-                    f"{ARTICLE_GENERATION_MAX_ATTEMPTS} attempts; articles remain pending."
+                    f"{ARTICLE_GENERATION_MAX_ATTEMPTS} attempts; "
+                    "articles remain pending."
                 )
