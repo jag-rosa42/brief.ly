@@ -7,7 +7,7 @@ import { ArticleCard } from "@/shared/components/ArticleCard";
 import { ArticleModal, type Article } from "@/shared/components/ArticleModal";
 import { Spinner } from "@/shared/components/Spinner";
 import { useBriefing } from "@/features/briefing/hooks/useBriefing";
-import type { TopicCluster } from "@/features/briefing/types";
+import type { BriefingArticle, TopicCluster } from "@/features/briefing/types";
 import { toArticle, topicLabel } from "@/shared/utils/article";
 import { DigestDrawer } from "@/features/digest/DigestDrawer";
 
@@ -64,8 +64,20 @@ function DashboardHeader({ firstName, today }: DashboardHeaderProps) {
 	);
 }
 
+// A card without a title or a summary says nothing: the story waits until it has both.
+// trim(): a title or summary made only of spaces counts as missing too.
+function hasTitleAndSummary(article: BriefingArticle): boolean {
+	// No summary yet (null): nothing to show.
+	if (article.summary === null) {
+		return false;
+	}
+	const hasTitle = article.title.trim() !== "";
+	const hasSummary = article.summary.trim() !== "";
+	return hasTitle && hasSummary;
+}
+
 function TopicPanel({ cluster, isSaved, onToggleSave, onReadMore }: TopicPanelProps) {
-	const articles = cluster.articles.filter((a) => a.summary !== null).map(toArticle);
+	const articles = cluster.articles.filter(hasTitleAndSummary).map(toArticle);
 
 	let stories;
 	if (articles.length > 0) {
