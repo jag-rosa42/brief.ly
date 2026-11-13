@@ -11,7 +11,7 @@ from shared_errors import InfrastructureError
 from src.application.models.article import Article
 from src.application.SummarizeArticles import SummarizeArticles
 from src.domain.value_objects.article_assessment import ArticleAssessment
-from src.infrastructure.clients.OllamaSummarizerClient import (
+from src.infrastructure.clients.ollama.summarizer_client import (
     OllamaArticleAssessment,
     OllamaSummarizerClient,
     OllamaTopicSummary,
@@ -180,7 +180,7 @@ def test_summarize_article_joins_streamed_json_chunks() -> None:
     ) as http_client:
         client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
         with patch(
-            "src.infrastructure.clients.OllamaSummarizerClient.perf_counter",
+            "src.infrastructure.clients.ollama.summarizer_client.perf_counter",
             side_effect=lambda: now,
         ):
             result = client.ai_summarize_article(ARTICLE)
@@ -264,7 +264,7 @@ def test_summarize_article_logs_and_rejects_length_stop() -> None:
         client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
         with (
             patch(
-                "src.infrastructure.clients.OllamaSummarizerClient.logger.info"
+                "src.infrastructure.clients.ollama.summarizer_client.logger.info"
             ) as log_completion,
             pytest.raises(ValueError, match="length"),
         ):
@@ -398,7 +398,7 @@ def test_generation_deadline_closes_an_active_stream(data: bytes) -> None:
         client = OllamaSummarizerClient(http_client, DEFAULT_MODEL, 120.0)
         with (
             patch(
-                "src.infrastructure.clients.OllamaSummarizerClient.monotonic",
+                "src.infrastructure.clients.ollama.summarizer_client.monotonic",
                 side_effect=[0.0, 60.0, 120.0],
             ),
             pytest.raises(InfrastructureError, match="exceeded its time limit"),
