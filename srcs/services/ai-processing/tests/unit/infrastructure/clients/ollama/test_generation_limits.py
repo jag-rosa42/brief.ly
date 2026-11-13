@@ -9,7 +9,7 @@ from shared_errors import InfrastructureError
 from src.application.models.answer_validation_error import AnswerValidationError
 from src.application.models.article import Article
 from src.domain.value_objects.article_assessment import ArticleAssessment
-from src.infrastructure.clients.OllamaSummarizerClient import (
+from src.infrastructure.clients.ollama.summarizer_client import (
     OllamaSummarizerClient,
     OllamaTopicSummary,
 )
@@ -87,7 +87,7 @@ def test_correction_explicitly_addresses_length_and_rejection():
 def test_exhausted_technical_failure_remains_pending():
     from src.application.SummarizeArticles import SummarizeArticles
     from tests.model import RecordingFailureMetrics
-    from tests.unit.infrastructure.clients.test_ollama_summarizer_client import ARTICLE
+    from tests.unit.infrastructure.clients.ollama.test_summarizer_client import ARTICLE
 
     class Content:
         def list_missing_articles(self, limit: int) -> list[Article]:
@@ -119,7 +119,7 @@ def test_exhausted_technical_failure_remains_pending():
 
 
 def test_provider_diagnostics_never_expose_raw_error(caplog, monkeypatch):
-    logger = logging.getLogger("src.infrastructure.clients.OllamaSummarizerClient")
+    logger = logging.getLogger("src.infrastructure.clients.ollama.summarizer_client")
     # Alembic's logging configuration can disable existing application loggers.
     monkeypatch.setattr(logger, "disabled", False)
     caplog.set_level(logging.WARNING, logger=logger.name)

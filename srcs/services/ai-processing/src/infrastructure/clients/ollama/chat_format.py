@@ -59,4 +59,9 @@ class OllamaChatChunk(BaseModel):
     done: bool = False
     done_reason: str | None = None
     eval_count: int | None = None
+    # Timings, in nanoseconds, only on the final (done) chunk.
+    total_duration: int | None = None
+    load_duration: int | None = None
+    prompt_eval_duration: int | None = None
+    eval_duration: int | None = None
     error: str | None = None
