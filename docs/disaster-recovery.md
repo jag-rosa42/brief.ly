@@ -94,14 +94,24 @@ been tested.
 
 ### Preparing a host schedule
 
-Run `make backup-schedule-install BACKUP_TIME=1234` on the **host** to install
-one daily 12:34 cron entry. `BACKUP_TIME` is exactly four digits in 24-hour
-`HHMM` format; for example, `0203` means 02:03 and `2305` means 23:05.
-Omitting it uses `0200` (02:00). Invalid hours or minutes are rejected. The
-entry calls the same `make backup` command used manually; the
-installer preserves unrelated cron jobs and replaces its own marked entry on
-repeat runs. Inspect the installed entry with `crontab -l`. It writes a private
-log to `BACKUP_HOST_DIR/backup.log`.
+Run `make backup-schedule` on the **host**. This starts a foreground Python
+scheduler that runs `make backup` immediately and then every five minutes.
+Use `make backup-schedule BACKUP_INTERVAL=600` for a different interval in
+seconds. No cron installation is needed. Keep the process running in a terminal
+or a persistent terminal session such as tmux. It does not start automatically
+after reboot, and cannot run while the host is asleep or powered off.
+
+Backup output is appended to `BACKUP_HOST_DIR/backup.log`; the terminal reports
+success or failure for each run. `make backup` verifies authentication, decrypts
+the archive, and checks each member's size and checksum before publishing a set.
+A failed backup is reported and retried at the next interval. Slow backups skip
+missed intervals instead of overlapping. A host file lock prevents a second
+scheduler using the same backup directory. Ctrl+C or SIGTERM stops the scheduler
+after any active backup finishes. No automatic pruning is performed.
+
+If you installed the previous cron schedule, remove its line ending with
+`# ft_transcendance backup` using `crontab -e` once before starting this script.
+Leave unrelated cron entries intact; the new scheduler never uses crontab.
 
 Every `make backup` run atomically writes `BACKUP_HOST_DIR/backup-status.json`
 with the last run time, outcome, last success time, and completed set name. The
@@ -123,11 +133,8 @@ is still from November 11:
 }
 ```
 
-The installed cron entry uses absolute paths for Make, the project, and the
-log, and supplies a `PATH` containing the required host tools. Its five time
-fields mean minute, hour, every day, every month, and every weekday.
-A log and status file are useful only if someone checks for failures and stale
-`last_success_utc` values.
+Check the log and status file for failures and stale `last_success_utc` values.
+Archive verification checks integrity; periodically test restoring a set too.
 
 ## Data needed for recovery
 

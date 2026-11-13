@@ -2,15 +2,15 @@
 # root .env; none of these targets should be forwarded into the guest VM.
 
 TARGET_DIR ?= $(CURDIR)/backup-extract-$(BACKUP_SET)
-BACKUP_TIME ?= 0200
+BACKUP_INTERVAL ?= 300
 
-.PHONY: backup backup-schedule-install backup-list backup-retention-preview backup-prune backup-verify backup-extract backup-restore
+.PHONY: backup backup-schedule backup-list backup-retention-preview backup-prune backup-verify backup-extract backup-restore
 
 backup:
 	@python3 shared/script/backup.py backup
 
-backup-schedule-install:
-	@python3 shared/script/install_backup_cron.py --time "$(BACKUP_TIME)"
+backup-schedule:
+	@python3 shared/script/backup_scheduler.py --interval "$(BACKUP_INTERVAL)"
 
 backup-list:
 	@python3 shared/script/backup.py list

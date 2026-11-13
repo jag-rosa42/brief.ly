@@ -154,7 +154,7 @@ help:
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) debug-create-vm             $(CYAN_COLOR)Start QEMU interactively for boot troubleshooting$(DEFAULT_COLOR)\n\n"
 	@printf "$(ROSE_COLOR)── 📦 Backups ────────────────────────────────────────────────────────────$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup                      $(CYAN_COLOR)Create and verify an encrypted host backup$(DEFAULT_COLOR)\n"
-	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-schedule-install [BACKUP_TIME=HHMM]  $(CYAN_COLOR)Install daily host cron for make backup (default 0200)$(DEFAULT_COLOR)\n"
+	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-schedule [BACKUP_INTERVAL=300]  $(CYAN_COLOR)Run verified host backups every 300 seconds without cron$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-list                 $(CYAN_COLOR)List completed host backup sets$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-retention-preview    $(CYAN_COLOR)Preview which backup sets retention would keep$(DEFAULT_COLOR)\n"
 	@printf "$(BLUE_COLOR)    make$(YELLOW_COLOR) backup-prune [APPLY=1]      $(CYAN_COLOR)Report backup storage and optionally remove old sets$(DEFAULT_COLOR)\n"

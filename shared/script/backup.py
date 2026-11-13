@@ -385,7 +385,7 @@ def write_status(directory: Path, outcome: str, completed_set: str | None) -> No
 
 
 def run_backup() -> None:
-    """Run a backup and record success or failure for manual and cron use."""
+    """Run a backup and record success or failure for manual and scheduled use."""
     directory = backup_dir()
     try:
         completed_set = backup()
