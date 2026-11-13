@@ -16,8 +16,10 @@ def article_summary(number: int) -> TopicArticleSummary:
 
 
 def test_reads_one_list_and_combines_summaries_in_bounded_groups(monkeypatch) -> None:
-    now = 10.0
-    monkeypatch.setattr("src.application.summarize_topics.perf_counter", lambda: now)
+    times = iter((10.0, 10.1234))
+    monkeypatch.setattr(
+        "src.application.summarize_topics.perf_counter", lambda: next(times)
+    )
 
     class ContentManagement:
         def __init__(self) -> None:
@@ -45,8 +47,6 @@ def test_reads_one_list_and_combines_summaries_in_bounded_groups(monkeypatch) ->
             self.inputs: list[tuple[str, list[str]]] = []
 
         def ai_summarize_topic(self, topic_id: str, summaries: list[str]) -> str:
-            nonlocal now
-            now += 0.0617
             assert 2 <= len(summaries) <= 4
             self.inputs.append((topic_id, summaries))
             return "[" + "|".join(summaries) + "]"
