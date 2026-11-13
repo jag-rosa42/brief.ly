@@ -4,7 +4,7 @@ How the services call each other, which token each call uses, and how summaries 
 
 ## Who calls whom
 
-The browser and third-party programs only ever talk to Traefik. Traefik reaches Identity, Personalization, Morning Briefing and the frontend (`edge` network). Services call each other directly (`backend` network). Content Management and AI Processing are only on `backend`.
+The browser and third-party programs only ever talk to Traefik. Traefik reaches Identity, Personalization, Morning Briefing, AI Processing (its two digest routes only, ADR-0011) and the frontend (`edge` network). Services call each other directly (`backend` network). Content Management is only on `backend`.
 
 ```mermaid
 flowchart TD
@@ -16,21 +16,24 @@ flowchart TD
     ID["Identity<br/>accounts, tokens, API keys"]
     PE["Personalization<br/>profile, saved articles"]
     MB["Morning Briefing<br/>dashboard data"]
+    AI["AI Processing<br/>summary worker, digest and chat"]
   end
   subgraph backendonly ["backend network only: /internal/v1"]
     CM["Content Management<br/>articles, topics, summaries"]
-    AI["AI Processing<br/>summary worker"]
   end
 
   GW --> ID
   GW --> PE
   GW --> MB
+  GW -- "digest, chat (rate limited)" --> AI
   GW -. "ForwardAuth: /internal/v1/api-keys/verify" .-> ID
 
   MB -- "profile (forwarded token)" --> PE
   MB -- "topics, articles with summaries (service token)" --> CM
   PE -- "topics, article with summary (service token)" --> CM
   AI -- "reads articles, writes summaries (service token)" --> CM
+  AI -- "digest: profile (forwarded token)" --> PE
+  AI -- "digest: topic summaries (service token)" --> CM
 ```
 
 | Caller | Callee | Endpoint | Token | Why |
@@ -42,11 +45,13 @@ flowchart TD
 | Morning Briefing | Content Management | `GET /internal/v1/topics`, `GET /internal/v1/articles?topic_id=` | Service | All topics and their non-rejected articles, with their summaries |
 | AI Processing | Content Management | `GET /internal/v1/articles?summary=missing`, `GET /internal/v1/topics`, `GET /internal/v1/articles?topic_id=` | Service | Articles without summary rows, then all topics using their non-rejected articles |
 | AI Processing | Content Management | `PUT /internal/v1/articles/{article_id}/summary`, `PUT /internal/v1/topics/{topic_id}/summary` | Service (`summaries:write`) | Store the summaries |
+| AI Processing (digest) | Personalization | `GET /internal/v1/me/profile` | User (forwarded access token) | The topics the user follows (ADR-0011) |
+| AI Processing (digest) | Content Management | `GET /internal/v1/topics` | Service (`topics:read` only) | The latest summary of each topic (ADR-0011) |
 | Any service | Identity | `POST /internal/v1/oauth/token` | Client id + secret (HTTP Basic) | Get a service token; which client may ask for which audience and scopes: `srcs/services/identity/src/infrastructure/oauth/service_clients.py` |
 
 **Which token for which call.** A service forwards the user's token only to a service that holds **that user's** data (Morning Briefing → Personalization). For data that belongs to no user (Content Management), it uses its own service token, even while it is handling a user's request. So Content Management only ever sees service tokens, and a user's token can only expire on the first call of a chain.
 
-**Timeouts.** Every internal call has a timeout, so a slow or stopped service gives a `503` instead of a request that hangs. Morning Briefing and Personalization call other services through shared_auth's `DownstreamClient`, which uses 5 s by default. That stays under the frontend's 10 s, so the browser gets the `503` before it gives up. The AI Processing worker uses `DownstreamClient` too, with 10 s: no user waits for it.
+**Timeouts.** Every internal call has a timeout, so a slow or stopped service gives a `503` instead of a request that hangs. Morning Briefing and Personalization call other services through shared_auth's `DownstreamClient`, which uses 5 s by default. That stays under the frontend's 10 s, so the browser gets the `503` before it gives up. The AI Processing worker uses `DownstreamClient` too, with 10 s: no user waits for it. The digest routes use the default 5 s for Personalization and Content Management; the LLM itself has `OLLAMA_TIMEOUT_SECONDS` (120 s) between two pieces of its streamed answer.
 
 ---
 
@@ -107,9 +112,11 @@ Related name to look up: the **Content Enricher** pattern in *Enterprise Integra
 | Frontend | In the briefing and saved-articles responses | No |
 | Content Management | Receives them from AI Processing (`PUT .../summary`) | No (it is called) |
 
+Only the browser calls AI Processing, for the digest and its chat (ADR-0011): an answer written on request, streamed, never stored. No page needs it to load: the dashboard still works without it.
+
 ### Advantages
 
-- **The dashboard keeps working when AI Processing is down**: nothing calls AI Processing during a request.
+- **The dashboard keeps working when AI Processing is down**: no service calls AI Processing during a request (only the digest panel, which the browser calls on its own, ADR-0011).
 - **Summaries are computed by AI Processing and stored in one place** for every reader. A later run may replace the latest topic summary.
 - **Fewer calls per dashboard load**: articles arrive with their summaries, so a dashboard load makes at most 6 internal calls (1 profile, 1 topic list, 1 article list per interest, max 4) instead of about 50 (one summary call per article and per topic to AI Processing).
 - **AI Processing can change how it summarizes** (another LLM, RAG over its embeddings) without changing this contract: Content Management only ever receives a `PUT .../summary`.
@@ -121,4 +128,4 @@ Related name to look up: the **Content Enricher** pattern in *Enterprise Integra
 - **Content Management stores data it does not produce**, so its database needs summary columns (a migration) and two write routes.
 - **Only the latest topic summary is kept**; there is no history.
 - **A saved article keeps the summary it had when saved.** If AI Processing later rewrites the summary, the saved copy does not change.
-- **Summaries are not computed on demand**: a user can't ask for a summary that doesn't exist yet.
+- **Summaries are not computed on demand**: a user can't ask for a summary that doesn't exist yet. (The digest of ADR-0011 is written on demand, but only from summaries that already exist.)
