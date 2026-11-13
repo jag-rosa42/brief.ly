@@ -8,4 +8,9 @@ vm-ensure:
 		$(MAKE) --no-print-directory create-vm; \
 	fi
 
-.PHONY: vm-ensure
+# Keep stop and launch sequential, including when Make runs with -j.
+vm-restart:
+	@$(MAKE) --no-print-directory stop-vm
+	@$(MAKE) --no-print-directory launch-vm
+
+.PHONY: vm-ensure vm-restart
