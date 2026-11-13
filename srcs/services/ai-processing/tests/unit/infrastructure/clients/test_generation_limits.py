@@ -1,10 +1,14 @@
 import json
+import logging
+from uuid import UUID
 
 import httpx2 as httpx
 import pytest
 from shared_errors import InfrastructureError
 
 from src.application.models.answer_validation_error import AnswerValidationError
+from src.application.models.article import Article
+from src.domain.value_objects.article_assessment import ArticleAssessment
 from src.infrastructure.clients.OllamaSummarizerClient import (
     OllamaSummarizerClient,
     OllamaTopicSummary,
@@ -86,16 +90,23 @@ def test_exhausted_technical_failure_remains_pending():
     from tests.unit.infrastructure.clients.test_ollama_summarizer_client import ARTICLE
 
     class Content:
-        def list_missing_articles(self, limit):
+        def list_missing_articles(self, limit: int) -> list[Article]:
             return [ARTICLE]
 
-        def save_article_assessment(self, *args):
+        def save_article_assessment(
+            self, article_id: UUID, assessment: ArticleAssessment, llm_model: str
+        ) -> None:
             pytest.fail("A technical failure must not reject the article")
 
     class Summarizer:
         calls = 0
 
-        def ai_summarize_article(self, article):
+        def ai_summarize_article(
+            self,
+            article: Article,
+            *,
+            previous_failure: AnswerValidationError | None = None,
+        ) -> ArticleAssessment:
             self.calls += 1
             raise InfrastructureError("Unavailable")
 
@@ -107,7 +118,11 @@ def test_exhausted_technical_failure_remains_pending():
     assert summarizer.calls == 4
 
 
-def test_provider_diagnostics_never_expose_raw_error(caplog):
+def test_provider_diagnostics_never_expose_raw_error(caplog, monkeypatch):
+    logger = logging.getLogger("src.infrastructure.clients.OllamaSummarizerClient")
+    # Alembic's logging configuration can disable existing application loggers.
+    monkeypatch.setattr(logger, "disabled", False)
+    caplog.set_level(logging.WARNING, logger=logger.name)
     response = httpx.Response(
         200,
         content=json.dumps(
