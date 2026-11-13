@@ -11,7 +11,6 @@ from shared_errors import InfrastructureError
 
 from src.application.models.answer_validation_error import AnswerValidationError
 from src.application.models.article import Article
-from src.application.models.generation_limit_error import GenerationLimitError
 from src.application.summarize_topics import TOPIC_SUMMARY_GROUP_SIZE
 from src.domain.value_objects.article_assessment import ArticleAssessment
 from src.domain.value_objects.summary import Summary
@@ -253,7 +252,7 @@ class OllamaSummarizerClient:
             "options": {
                 "temperature": TEMPERATURE,
                 "num_ctx": self.context_length,
-                "num_predict": 256 if isinstance(previous_failure, GenerationLimitError) else 512,
+                "num_predict": 512,
             },
         }
         answer_text = self._collect_streamed_content(
@@ -334,11 +333,6 @@ class OllamaSummarizerClient:
                 answer_name,
                 done_reason,
                 eval_count,
-            )
-        if done_reason == "length":
-            raise GenerationLimitError(
-                "Generation token limit reached; return a much shorter JSON answer",
-                answer_text[:2000],
             )
         if done_reason not in (None, "stop"):
             raise ValueError(f"Ollama stopped generating a {answer_name}: {done_reason}")
