@@ -24,6 +24,16 @@ class TestOpenApiResponse:
             "model": ErrorResponse,
         }
 
+    def test_with_a_non_json_media_type(self) -> None:
+        response = OpenApiResponse(
+            description="A stream of events", media_type="text/event-stream"
+        )
+
+        assert response.to_fastapi() == {
+            "description": "A stream of events",
+            "content": {"text/event-stream": {"schema": {"type": "string"}}},
+        }
+
     def test_with_headers(self) -> None:
         response = OpenApiResponse(
             description="Slow down",
