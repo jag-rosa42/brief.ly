@@ -249,7 +249,11 @@ class OllamaSummarizerClient:
             "messages": messages,
             "stream": True,
             "format": _generation_schema(answer_model),
-            "options": {"temperature": TEMPERATURE, "num_ctx": self.context_length},
+            "options": {
+                "temperature": TEMPERATURE,
+                "num_ctx": self.context_length,
+                "num_predict": 512,
+            },
         }
         answer_text = self._collect_streamed_content(
             body, answer_name=answer_name, provider_error_name=provider_error_name
