@@ -116,7 +116,3 @@ class SummarizeArticles:
                     article.id,
                     ARTICLE_GENERATION_MAX_ATTEMPTS,
                 )
-                if not assessment.rejected and assessment.summary:
-                    self.failure_metrics.article_summary_succeeded(
-                        max(0, perf_counter() - started_at)
-                    )
